@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sourdough Guide - Juzzycooks</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, var(--bg) 0%, var(--bg) 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--surface);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.8em;
+            font-style: italic;
+            margin: 20px 0;
+            font-family: 'Brush Script MT', cursive;
+        }
+
+        .tabs {
+            display: flex;
+            background: var(--surface);
+            border-bottom: 3px solid var(--accent);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: var(--surface);
+            color: var(--text-primary);
+            border: none;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border-bottom: 4px solid transparent;
+        }
+
+        .tab:hover {
+            background: var(--border);
+        }
+
+        .tab.active {
+            background: var(--surface);
+            border-bottom: 4px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .yield-info {
+            font-size: 1.2em;
+            margin: 15px 0;
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .reminder {
+            background: var(--accent);
+            color: white;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .supplies {
+            background: var(--surface);
+            padding: 30px;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        .supplies h2 {
+            color: var(--accent);
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .supplies ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .supplies li {
+            padding: 10px 15px;
+            background: var(--surface);
+            border-left: 4px solid var(--accent);
+            border-radius: 5px;
+            color: var(--text-primary);
+        }
+
+        .supplies li::before {
+            content: "✓ ";
+            color: var(--accent);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .days-container {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .day-card {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--surface) 100%);
+            border-radius: 15px;
+            padding: 25px;
+            border: 3px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+            color: var(--text-primary);
+        }
+
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3);
+            border-color: var(--accent);
+        }
+
+        .day-card.completed {
+            border-color: var(--success);
+            background: linear-gradient(135deg, var(--success-bg) 0%, var(--success-bg) 100%);
+        }
+
+        .day-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .checkbox {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--accent);
+            border-radius: 5px;
+            margin-right: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .day-title {
+            font-size: 1.8em;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .instructions {
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+
+        .step {
+            margin: 15px 0;
+            padding: 10px;
+            background: var(--surface);
+            border-radius: 8px;
+        }
+
+        .step-title {
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .ingredient {
+            font-weight: bold;
+            color: var(--accent-hover);
+        }
+
+        .note {
+            background: #4a4225;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 5px;
+            font-size: 0.95em;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .next-steps {
+            background: var(--accent);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .reset-btn {
+            background: var(--error);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: var(--error);
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .subtitle {
+                font-size: 1.3em;
+            }
+            
+            .days-container {
+                grid-template-columns: 1fr;
+            }
+
+            .tab {
+                font-size: 1em;
+                padding: 15px 10px;
+            }
+        }
+
+        .dont-forget {
+            background: var(--surface);
+            border: 3px dashed var(--accent);
+            padding: 20px;
+            margin: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .dont-forget h3 {
+            color: var(--accent);
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .dont-forget p {
+            color: var(--text-primary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: var(--surface);
+            border-radius: 15px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Bread Recipe Styles */
+        .recipe-content {
+            padding: 30px;
+            color: var(--text-primary);
+            line-height: 1.8;
+        }
+
+        .recipe-content h2 {
+            color: var(--accent);
+            margin: 30px 0 15px 0;
+            font-size: 2em;
+        }
+
+        .recipe-content h3 {
+            color: var(--accent-hover);
+            margin: 20px 0 10px 0;
+            font-size: 1.5em;
+        }
+
+        .recipe-content p {
+            margin: 15px 0;
+        }
+
+        .recipe-content strong {
+            color: var(--accent);
+        }
+
+        .recipe-ingredients {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .recipe-ingredients ul {
+            list-style: none;
+        }
+
+        .recipe-ingredients li {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .recipe-ingredients li:last-child {
+            border-bottom: none;
+        }
+
+        .recipe-steps {
+            counter-reset: step-counter;
+        }
+
+        .recipe-step {
+            background: var(--surface);
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 4px solid var(--accent);
+            position: relative;
+            padding-left: 60px;
+        }
+
+        .recipe-step::before {
+            counter-increment: step-counter;
+            content: counter(step-counter);
+            position: absolute;
+            left: 15px;
+            top: 15px;
+            width: 35px;
+            height: 35px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .schedule-box {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid var(--accent);
+        }
+
+        .schedule-box h3 {
+            color: var(--accent);
+            margin-bottom: 15px;
+        }
+
+        .schedule-box ul {
+            list-style: none;
+        }
+
+        .schedule-box li {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .schedule-box li:last-child {
+            border-bottom: none;
+        }
+    </style>
+
+<link rel="stylesheet" href="/static/pages/_theme.css">
+<style id="jf-theme"></style>
+<script>(function(){try{var t=localStorage.getItem("theme")||((window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Juzzycooks</h1>
+            <div class="subtitle">Sourdough Guide</div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('starter')">🌾 Starter Guide</button>
+            <button class="tab" onclick="switchTab('bread')">🍞 Bread Recipe</button>
+        </div>
+
+        <!-- STARTER TAB -->
+        <div id="starter" class="tab-content active">
+            <div style="background: var(--accent); color: white; padding: 30px; text-align: center;">
+                <h2 style="font-size: 2.5em; margin: 20px 0;">SOURDOUGH STARTER</h2>
+                <div class="yield-info">
+                    <strong>Yields approx. 236g or 1 cup of starter</strong><br>
+                    Feed your starter at the same time each day for best results
+                </div>
+            </div>
+
+            <div class="reminder">
+                ⏰ Feed your starter at the same time each day for best results ⏰
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar">0%</div>
+            </div>
+
+            <div class="supplies">
+                <h2>YOU WILL NEED:</h2>
+                <ul>
+                    <li>Glass Jar (24 oz)</li>
+                    <li>Small Rubber Spatula</li>
+                    <li>Whole Wheat flour</li>
+                    <li>AP or Bread flour</li>
+                    <li>Digital Kitchen Scale</li>
+                    <li>This guide (bookmark it!)</li>
+                </ul>
+            </div>
+
+            <div class="dont-forget">
+                <h3>Don't Forget! ✓</h3>
+                <p>It's easy to forget what day you are on. Check off each day when completed.</p>
+            </div>
+
+            <div class="days-container">
+                <!-- Day 1 -->
+                <div class="day-card" data-day="1">
+                    <div class="day-header">
+                        <div class="checkbox" onclick="toggleDay(1)"></div>
+                        <div class="day-title">Day 1</div>
+                    </div>
+                    <div class="instructions">
+                        <div class="step">
+                            <div class="step-title">To a glass jar, Add:</div>
+                            <div><span class="ingredient">60g Whole wheat flour</span></div>
+                            <div><span class="ingredient">60g water</span></div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Yields:</div>
+                            <div>Approx. 120g starter</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Rest:</div>
+                            <div>24 hrs at 70-75°F / 21-24°C</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 2 -->
+                <div class="day-card" data-day="2">
+                    <div class="day-header">
+                        <div class="checkbox" onclick="toggleDay(2)"></div>
+                        <div class="day-title">Day 2</div>
+                    </div>
+                    <div class="instructions">
+                        <div class="step">
+                            <div class="step-title">Instructions:</div>
+                            <div>Let rest for 24 hours, stirring once or twice to oxygenate the mixture.</div>
+                            <div style="margin-top: 10px;">You may or may not see bubbles. Either way is OK.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 3 -->
+                <div class="day-card" data-day="3">
+                    <div class="day-header">
+                        <div class="checkbox" onclick="toggleDay(3)"></div>
+                        <div class="day-title">Day 3</div>
+                    </div>
+                    <div class="instructions">
+                        <div class="step">
+                            <div class="step-title">Discard half (60g)</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Feed (add):</div>
+                            <div><span class="ingredient">60g AP or Bread flour</span></div>
+                            <div><span class="ingredient">60g water</span></div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Yields:</div>
+                            <div>Approx. 180g starter</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Rest:</div>
+                            <div>24 hrs at 70-75°F / 21-24°C</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 4 -->
+                <div class="day-card" data-day="4">
+                    <div class="day-header">
+                        <div class="checkbox" onclick="toggleDay(4)"></div>
+                        <div class="day-title">Day 4</div>
+                    </div>
+                    <div class="instructions">
+                        <div class="step">
+                            <div class="step-title">Discard half (90g)</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Feed (add):</div>
+                            <div><span class="ingredient">60g AP or Bread flour</span></div>
+                            <div><span class="ingredient">60g water</span></div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Yields:</div>
+                            <div>Approx. 210g starter</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Rest:</div>
+                            <div>24 hrs at 70-75°F / 21-24°C</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 5 -->
+                <div class="day-card" data-day="5">
+                    <div class="day-header">
+                        <div class="checkbox" onclick="toggleDay(5)"></div>
+                        <div class="day-title">Day 5</div>
+                    </div>
+                    <div class="instructions">
+                        <div class="step">
+                            <div class="step-title">Discard half (105g)</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Feed (add):</div>
+                            <div><span class="ingredient">60g AP or Bread flour</span></div>
+                            <div><span class="ingredient">60g water</span></div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Yields:</div>
+                            <div>Approx. 225g starter</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Rest:</div>
+                            <div>24 hrs at 70-75°F / 21-24°C</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 6 -->
+                <div class="day-card" data-day="6">
+                    <div class="day-header">
+                        <div class="checkbox" onclick="toggleDay(6)"></div>
+                        <div class="day-title">Day 6</div>
+                    </div>
+                    <div class="instructions">
+                        <div class="step">
+                            <div class="step-title">Discard half (112g)</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Feed (add):</div>
+                            <div><span class="ingredient">60g AP or Bread flour</span></div>
+                            <div><span class="ingredient">60g water</span></div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Yields:</div>
+                            <div>Approx. 233g starter</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Rest:</div>
+                            <div>24 hrs at 70-75°F / 21-24°C</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day 7 -->
+                <div class="day-card" data-day="7">
+                    <div class="day-header">
+                        <div class="checkbox" onclick="toggleDay(7)"></div>
+                        <div class="day-title">Day 7 onward*</div>
+                    </div>
+                    <div class="instructions">
+                        <div class="step">
+                            <div class="step-title">Discard half (116g)</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Feed (add):</div>
+                            <div><span class="ingredient">60g AP or Bread flour</span></div>
+                            <div><span class="ingredient">60g water</span></div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Yields:</div>
+                            <div>Approx. 236g starter</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-title">Rest:</div>
+                            <div>At 70-75°F / 21-24°C until active</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="note">
+                <strong>*Important Note for Day 7+:</strong><br>
+                Up to 6 hours after feeding, your starter might be active. An active starter will <strong>double in size</strong> and have lots of bubbles on the surface. It's now ready to use!<br><br>
+                <strong>If your starter has NOT doubled in size:</strong> Feed every <strong>8-12 hours</strong> (not 24) and continue the same formula: Discard half starter. Feed (Add): 60g flour & 60g water at 70-75°F / 21-24°C.<br><br>
+                <strong>Too runny?</strong> Add an additional 1-2 tbs of flour.
+            </div>
+
+            <div class="next-steps">
+                <button class="reset-btn" onclick="resetProgress()">Reset Progress</button>
+            </div>
+        </div>
+
+        <!-- BREAD RECIPE TAB -->
+        <div id="bread" class="tab-content">
+            <div style="background: var(--accent); color: white; padding: 30px; text-align: center;">
+                <h2 style="font-size: 2.5em; margin: 20px 0;">SOURDOUGH BREAD</h2>
+                <div class="yield-info">
+                    <strong>Makes 1 large loaf</strong><br>
+                    Total Time: ~14 hours (with minimal hands-on time)
+                </div>
+            </div>
+
+            <div class="recipe-content">
+                <h2>Ingredients</h2>
+                <div class="recipe-ingredients">
+                    <ul>
+                        <li><span class="ingredient">150g</span> bubbly, active sourdough starter</li>
+                        <li><span class="ingredient">250g</span> warm water (see notes)</li>
+                        <li><span class="ingredient">25g</span> olive oil</li>
+                        <li><span class="ingredient">500g</span> bread flour (not all-purpose)</li>
+                        <li><span class="ingredient">10g</span> fine sea salt</li>
+                        <li>Cornmeal or parchment paper for dusting</li>
+                    </ul>
+                </div>
+
+                <div class="note">
+                    <strong>Note:</strong> For a softer, more pliable dough, increase water to 300-325g. If using higher hydration, proof in a cloth-lined bowl instead of directly in the Dutch oven.
+                </div>
+
+                <h2>Instructions</h2>
+                <div class="recipe-steps">
+                    <div class="recipe-step">
+                        <h3>Make The Dough</h3>
+                        <p>In a large bowl, add the sourdough starter, water and olive oil. Mix with a fork to combine. Add the flour and salt. Continue mixing with your fork until the dough becomes stiff. Then squish everything together with your hands to incorporate all of the flour. The dough will be dry and shaggy.</p>
+                        <p>Cover the bowl with plastic wrap, reusable wrap or a clean, very damp kitchen towel. Let rest (autolyse) for 30 minutes or up to 1 hour, if preferred.</p>
+                        <p>After the dough has rested: return to the bowl and work the dough into a rough ball, about 15 seconds.</p>
+                        <p><strong>Note:</strong> For the dough, I've given a range in water quantity (see ingredient list above). If using 250 g of water, the texture at this stage will be quite dry and stiff. If using an increased amount of water, approximately 300-325 g, the dough will be more wet. Both textures are normal, depending on which route you take.</p>
+                    </div>
+
+                    <div class="recipe-step">
+                        <h3>Bulk Rise</h3>
+                        <p>Cover the bowl with lightly oiled plastic wrap (alternatively, transfer the dough to a high-sided dough tub with lid and measuring marks). Let rest in a warm spot to rise, ideally 70-75 F. The dough is ready when it no longer looks dense and has almost doubled in size.</p>
+                        <p><strong>Note:</strong> The bulk rise time can take anywhere from 3-12 hours depending on the temperature of your ingredients, the potency of your sourdough starter, and your current room temperature. This will be different for everyone. For example, in the summer rise times can take anywhere between 2-4 hours @ 80 F/ 26 C whereas in the winter, the dough will take about 10-12 hours @ 68º F/ 20º C. Watch the dough and not the clock.</p>
+                    </div>
+
+                    <div class="recipe-step">
+                        <h3>Optional Step: Stretch & Fold The Dough</h3>
+                        <p>During bulk rise, you have the option to perform a series of 'stretch & folds' to strengthen the dough. Start 30-45 minutes into the bulk rise. Gather a portion of the dough, stretch it upwards and then fold it over itself. Rotate the bowl ¼ turn and repeat this process until you have come full circle to complete 1 set. Do this once or twice spaced about 1 hour apart. Although this step is not mandatory, it has the potential to increase the total volume and height of your bread.</p>
+                        <p><strong>Note:</strong> Doughs made with 250 g of water vs. 300-325 g of water will feel completely different. The former will be more stiff; the latter will have more elasticity. When in doubt, always give the dough extra rest time in between sets if it won't stretch with ease.</p>
+                    </div>
+
+                    <div class="recipe-step">
+                        <h3>Shape The Dough</h3>
+                        <p>Remove the dough from the bowl onto a lightly floured surface. You do not need to 'punch down' the dough; it will gently deflate as you fold and shape it.</p>
+                        <p><strong>To shape:</strong> Starting at the top, fold the dough over toward the center. Give it a slight turn, and then fold over the next section of dough. Repeat until you have come full circle. Then flip the dough over and place it seam side down. Using your hands, gently cup the sides of the dough and rotate it, using quarter turns in a circular motion. You can also pull it towards you to even out the shape. Repeat this process until you are happy with its appearance.</p>
+                        <p><strong>Note:</strong> When shaping, the idea is for the dough to catch enough surface tension on a non-floured area in order to create a tight ball. If there is flour present, it will slide around… and drive you nuts.</p>
+                    </div>
+
+                    <div class="recipe-step">
+                        <h3>Second Rise</h3>
+                        <p>Now the dough needs to rise again, but for a shorter period of time. If you've used 250g water in your dough, you can do a free form second rise in the Dutch oven (if not, see note directly below). Coat the bottom of your Dutch oven with cornmeal. Alternatively, use parchment paper to prevent sticking (this is what I do, now). Place the dough inside of the pot, cover and let rise for about 30 minutes to 1 hour. The dough ready when it is slightly puffy but not double in size. Preheat your oven to 450 F/ 232 C towards the tail end of the second rise.</p>
+                        <p><strong>Note:</strong> If your dough contains more than 250g water, omit the free from rise. Your dough will spread. You'll need to do the second rise in a cloth-lined, floured proofing basket instead. The basket will hold its shape to prevent spreading.</p>
+                    </div>
+
+                    <div class="recipe-step">
+                        <h3>Score The Dough</h3>
+                        <p>Right before your bread goes into the oven, make a shallow slash about 2-3 inches long (or more) in the center of the dough. Use a bread lame, razor blade, sharp paring or a small serrated steak knife. The cut should be about 1/4-inch deep.</p>
+                    </div>
+
+                    <div class="recipe-step">
+                        <h3>Bake The Dough</h3>
+                        <p>Place the bread into the oven on the center rack (lid on) and reduce the temperature to 400° F/ 204° C. Bake for 20 minutes. Remove the lid, and continue to bake (uncovered) for an additional 40 minutes or until deep, golden brown. Keep in mind that all ovens are different; you might have to make minimal adjustments to these temperatures.</p>
+                        <p>You can also take the internal temperature of your bread to double check that it is done. For sourdough, it should read about 205-210º F/ 96-98º C.</p>
+                        <p>Remove the bread from the oven, and cool on a wire rack for at least an hour before slicing. Don't cut too soon or else the inside will have a damp and gummy texture.</p>
+                    </div>
+                </div>
+
+                <h2>Sample Baking Schedule</h2>
+                <div class="schedule-box">
+                    <ul>
+                        <li><strong>Friday Evening:</strong> Feed starter, leave on counter overnight</li>
+                        <li><strong>Saturday Morning:</strong> Check starter is bubbly and doubled (use float test). Mix dough for daytime bulk rise</li>
+                        <li><strong>Saturday Afternoon/Evening:</strong> Shape dough when ready, do second rise</li>
+                        <li><strong>Saturday Evening:</strong> Bake, cool, enjoy!</li>
+                    </ul>
+                </div>
+
+                <h2>Key Tips</h2>
+                <div class="note">
+                    <ul style="margin-top: 15px; padding-left: 20px;">
+                        <li style="margin-bottom: 10px;"><strong>Temperature is everything:</strong> Warmer = faster rise, cooler = slower rise. Adjust your timing based on your kitchen temperature.</li>
+                        <li style="margin-bottom: 10px;"><strong>Float test:</strong> Drop 1 tsp of starter in water. If it floats, it's ready to use.</li>
+                        <li style="margin-bottom: 10px;"><strong>Weigh ingredients:</strong> Use a digital scale for best results. Measuring cups vary too much.</li>
+                        <li style="margin-bottom: 10px;"><strong>Dutch oven alternatives:</strong> Any oven-safe pot with lid that can handle 450°F works!</li>
+                        <li><strong>Storage:</strong> Store at room temperature for 2-3 days, or freeze slices for longer storage.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="next-steps">
+                <p style="margin-bottom: 20px; font-size: 1.2em;">Ready to start your sourdough journey? Switch to the Starter Guide tab!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Load saved progress from localStorage
+        function loadProgress() {
+            const saved = localStorage.getItem('sourdoughProgress');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                progress.forEach(day => {
+                    const card = document.querySelector(`[data-day="${day}"]`);
+                    if (card) {
+                        card.classList.add('completed');
+                        card.querySelector('.checkbox').classList.add('checked');
+                        card.querySelector('.checkbox').textContent = '✓';
+                    }
+                });
+                updateProgressBar();
+            }
+        }
+
+        function toggleDay(day) {
+            const card = document.querySelector(`[data-day="${day}"]`);
+            const checkbox = card.querySelector('.checkbox');
+            
+            if (card.classList.contains('completed')) {
+                card.classList.remove('completed');
+                checkbox.classList.remove('checked');
+                checkbox.textContent = '';
+            } else {
+                card.classList.add('completed');
+                checkbox.classList.add('checked');
+                checkbox.textContent = '✓';
+            }
+            
+            saveProgress();
+            updateProgressBar();
+        }
+
+        function saveProgress() {
+            const completed = [];
+            document.querySelectorAll('.day-card.completed').forEach(card => {
+                completed.push(card.dataset.day);
+            });
+            localStorage.setItem('sourdoughProgress', JSON.stringify(completed));
+        }
+
+        function updateProgressBar() {
+            const total = 7;
+            const completed = document.querySelectorAll('.day-card.completed').length;
+            const percentage = Math.round((completed / total) * 100);
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = percentage + '%';
+        }
+
+        function resetProgress() {
+            if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                localStorage.removeItem('sourdoughProgress');
+                document.querySelectorAll('.day-card').forEach(card => {
+                    card.classList.remove('completed');
+                    const checkbox = card.querySelector('.checkbox');
+                    checkbox.classList.remove('checked');
+                    checkbox.textContent = '';
+                });
+                updateProgressBar();
+                location.reload();
+            }
+        }
+
+        // Load progress on page load
+        loadProgress();
+    </script>
+</body>
+</html>

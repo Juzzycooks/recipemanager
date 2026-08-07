@@ -1,0 +1,57 @@
+/* Shared theme for Recipe Manager "Extras" pages.
+   Loaded AFTER each page's own <style> so these rules win on source order.
+   Mirrors the app design tokens in templates/base.html. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root, [data-theme="light"] {
+  --accent: #c0440e; --accent-hover: #a33a0b; --accent-subtle: #fdf0eb;
+  --text-primary: #1a1a1a; --text-secondary: #6b6b6b; --text-tertiary: #999;
+  --bg: #f7f7f5; --surface: #ffffff; --border: #e5e5e3; --border-light: #f0f0ee;
+  --success: #1a7f37; --success-bg: #dafbe1;
+  --error: #cf222e; --error-bg: #ffebe9;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --radius: 8px; --radius-lg: 12px;
+  --input-bg: #ffffff;
+}
+[data-theme="dark"] {
+  --accent: #e85a24; --accent-hover: #f06b35; --accent-subtle: #2d1f1a;
+  --text-primary: #e8e8e6; --text-secondary: #a0a0a0; --text-tertiary: #707070;
+  --bg: #121212; --surface: #1e1e1e; --border: #333333; --border-light: #2a2a2a;
+  --success: #3fb950; --success-bg: #1a2e1a;
+  --error: #f85149; --error-bg: #2d1b1b;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --input-bg: #2a2a2a;
+}
+
+/* ── Generic element theming (element specificity, wins by source order) ── */
+html, body {
+  background: var(--bg) !important;
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif !important;
+}
+body::before { display: none !important; content: none !important; } /* kill decorative overlays */
+
+h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-family: inherit; }
+a { color: var(--accent); }
+a:hover { color: var(--accent-hover); }
+hr { border-color: var(--border); }
+code, pre, .mono { color: var(--text-secondary); }
+
+/* Form controls */
+input, select, textarea {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text-primary);
+  background: var(--input-bg);
+  border-color: var(--border);
+}
+input[type="range"] { accent-color: var(--accent); }
+
+/* Utility helpers pages can opt into */
+.jf-accent { color: var(--accent) !important; }
+.jf-accent-bg { background: var(--accent) !important; color: #fff !important; }
+.jf-surface { background: var(--surface) !important; color: var(--text-primary) !important;
+              border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important; }

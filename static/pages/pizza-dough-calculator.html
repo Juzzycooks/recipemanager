@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pizza Dough Calculator – Juzzycooks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,600;0,700;1,400&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); font-family: 'Source Sans 3', system-ui, sans-serif; color: var(--text-primary); min-height: 100vh; }
+    body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events: none; z-index: 0; }
+    #root { position: relative; z-index: 1; }
+    .serif { font-family: 'Lora', Georgia, serif; }
+
+    /* Header */
+    .header { background: var(--surface); padding: 36px 28px 0; border-bottom: 1px solid var(--border); }
+    .header-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 4px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+    .header-title { font-family: 'Lora', Georgia, serif; font-size: clamp(26px,6vw,34px); font-weight: 700; color: var(--text-primary); line-height: 1.15; margin-bottom: 28px; letter-spacing: -0.5px; }
+    .header-title span { color: var(--accent); }
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+    .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 600; padding: 11px 16px; color: var(--text-tertiary); transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.8px; }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* Tab fade animation */
+    .tab-panel { animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .content { max-width: 520px; margin: 0 auto; padding: 36px 24px 80px; }
+
+    /* Field labels */
+    .field-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 11px; }
+    .field-label-text { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-tertiary); }
+    .field-value { font-family: 'Lora', Georgia, serif; font-size: 16px; font-weight: 700; color: var(--accent); }
+
+    /* Pills */
+    .pill-group { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 28px; }
+    .pill { border-radius: 3px; border: 1.5px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 600; padding: 8px 17px; transition: all 0.15s; }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .pill.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent-hover); box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); }
+
+    /* Size buttons */
+    .size-group { display: flex; gap: 6px; margin-bottom: 28px; }
+    .sizebtn { flex: 1; padding: 9px 0; border-radius: 3px; border: 1.5px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.15s; }
+    .sizebtn:hover { border-color: var(--accent); color: var(--accent); }
+    .sizebtn.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent-hover); box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); }
+
+    /* Counter */
+    .counter { display: flex; align-items: center; margin-bottom: 28px; width: fit-content; }
+    .stepbtn { width: 42px; height: 42px; border: 1.5px solid var(--border); background: transparent; border-radius: 3px; color: var(--text-secondary); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; line-height: 1; }
+    .stepbtn:hover { border-color: var(--accent); color: var(--accent); }
+    .counter-val { font-family: 'Lora', Georgia, serif; font-size: 28px; font-weight: 700; color: var(--accent); width: 52px; text-align: center; }
+
+    /* Slider */
+    input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 3px; border-radius: 2px; background: var(--border); outline: none; cursor: pointer; display: block; margin-bottom: 10px; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); box-shadow: 0 1px 6px rgba(0,0,0,0.5); }
+    input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); }
+
+    /* Hydration bar */
+    .hydration-bar-wrap { margin-bottom: 28px; }
+    .hydration-bar-track { height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+    .hydration-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-hover)); transition: width 0.3s ease; }
+    .hydration-bar-labels { display: flex; justify-content: space-between; }
+    .hydration-bar-label { font-size: 10px; color: var(--text-tertiary); }
+
+    .hairline { height: 1px; background: var(--border); margin: 30px 0 28px; }
+
+    /* Dough ball viz */
+    .dough-viz { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; padding: 14px 16px; background: var(--surface); border-radius: 6px; border: 1px solid var(--border); }
+
+    /* Ingredient table */
+    .ing-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .ing-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+    .ing-table tr { border-bottom: 1px solid var(--surface); }
+    .ing-table tr:last-child { border-bottom: none; }
+    .ing-table tr.flour-row { background: rgba(124,156,191,0.07); }
+    .ing-table tr.flour-row .ing-label { color: var(--accent-hover); font-weight: 600; }
+    .ing-table tr.flour-row .ing-val { color: var(--accent-hover); }
+    .ing-table td { padding: 13px 8px; vertical-align: baseline; }
+    .ing-table td:first-child { padding-left: 10px; }
+    .ing-table td:last-child { padding-right: 10px; }
+    .ing-label { font-size: 15px; color: var(--text-secondary); }
+    .ing-pct { font-size: 11px; color: #4a5568; margin-left: 9px; transition: opacity 0.2s; }
+    .ing-pct.hidden { opacity: 0; pointer-events: none; }
+    .ing-val { font-family: 'Lora', Georgia, serif; font-size: 22px; font-weight: 700; color: var(--accent-hover); text-align: right; white-space: nowrap; }
+    .total-row { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0 4px; border-top: 1px solid var(--border); margin-top: 4px; }
+
+    /* Baker's % toggle */
+    .pct-toggle { background: none; border: 1px solid var(--border); border-radius: 3px; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 10px; font-weight: 700; padding: 3px 9px; color: #4a5568; letter-spacing: 0.5px; transition: all 0.15s; }
+    .pct-toggle.on { color: var(--accent); border-color: var(--accent); background: var(--accent-subtle); }
+
+    /* Biga section divider */
+    .biga-section-label { display: flex; align-items: center; gap: 12px; margin: 20px 0 14px; }
+    .biga-section-line { flex: 1; height: 1px; background: var(--surface); }
+    .biga-section-text { font-family: 'Lora', Georgia, serif; font-size: 12px; font-style: italic; color: #4a5568; white-space: nowrap; }
+
+    /* Unit toggle */
+    .unit-toggle { display: flex; gap: 2px; background: var(--surface); border-radius: 4px; padding: 3px; border: 1px solid var(--border); }
+    .unit-btn { background: none; border: none; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 3px; color: var(--text-tertiary); transition: all 0.15s; }
+    .unit-btn.active { background: var(--accent-subtle); color: var(--accent-hover); box-shadow: inset 0 1px 3px rgba(0,0,0,0.4); }
+
+    /* Tip box */
+    .tip-box { margin: 7px 0 2px 32px; padding: 9px 13px; border-left: 2px solid var(--accent); background: var(--surface); border-radius: 0 4px 4px 0; font-size: 12px; color: var(--accent); font-style: italic; line-height: 1.55; }
+
+    /* Ferment time */
+    .ferment-time { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 28px; padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; }
+    .ferment-time-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #4a5568; }
+    .ferment-time-val { font-family: 'Lora', Georgia, serif; font-size: 14px; font-weight: 700; color: var(--accent); }
+
+    /* Collapsible sections (Instructions + Notes) */
+    .collapse-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .collapse-title { font-family: 'Lora', Georgia, serif; font-size: 18px; font-weight: 700; color: var(--text-primary); }
+    .collapse-label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; }
+    .instr-list { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+    .instr-item { display: flex; gap: 13px; align-items: flex-start; }
+    .instr-num { font-family: 'Lora', Georgia, serif; font-size: 13px; font-weight: 700; color: var(--accent); min-width: 20px; padding-top: 2px; }
+    .instr-text { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+
+    /* Notes */
+    .notes-list { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+    .note-item { display: flex; gap: 12px; }
+    .note-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 8px; flex-shrink: 0; }
+    .note-text { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+    .note-text strong { color: var(--accent); font-weight: 600; }
+
+    /* Timeline */
+    .timeline { display: flex; align-items: flex-start; overflow-x: auto; padding-bottom: 6px; margin-bottom: 32px; }
+    .tl-step { text-align: center; flex: 1; min-width: 64px; }
+    .tl-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); margin: 0 auto 7px; }
+    .tl-label { font-size: 10px; font-weight: 700; color: var(--accent); margin-bottom: 3px; line-height: 1.3; }
+    .tl-desc  { font-size: 10px; color: var(--text-tertiary); line-height: 1.4; }
+    .tl-line  { flex: 1; height: 1px; background: var(--border); margin-top: 4px; min-width: 8px; flex-shrink: 1; }
+
+    @media (max-width: 400px) { .content { padding: 28px 18px 72px; } .header { padding: 28px 18px 0; } .ing-val { font-size: 20px; } }
+  </style>
+
+<link rel="stylesheet" href="/static/pages/_theme.css">
+<style id="jf-theme"></style>
+<script>(function(){try{var t=localStorage.getItem("theme")||((window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function() {
+  const { createElement: h, useState, useMemo, useEffect, useRef, Fragment } = React;
+
+  const THICKNESS_FACTOR = { thin: 2.388*0.76, regular: 2.388, thick: 2.388*1.30 };
+  const RECIPES = {
+    classic:    { label:'Classic',     hydration:0.62, salt:0.025, sugar:0.02,  oil:0.033, yeast:0.004 },
+    neapolitan: { label:'Neapolitan',  hydration:0.65, salt:0.025, sugar:0,     oil:0,     yeast:0.002 },
+    glutenFree: { label:'Gluten Free', hydration:0.75, salt:0.02,  sugar:0.01,  oil:0.03,  yeast:0.004 },
+  };
+  const BIGA_BALL_G = 330;
+  const BIGA_BASE = { bigaFlour:600, finalFlour:12, bigaWater:324, finalWater:60, salt:13.5, yeast:0.75 };
+  const BIGA_TOTAL_FLOUR = BIGA_BASE.bigaFlour + BIGA_BASE.finalFlour;
+  const BIGA_PCT = {
+    bigaFlourRatio:  BIGA_BASE.bigaFlour  / BIGA_TOTAL_FLOUR,
+    finalFlourRatio: BIGA_BASE.finalFlour / BIGA_TOTAL_FLOUR,
+    bigaWaterSplit:  BIGA_BASE.bigaWater  / (BIGA_BASE.bigaWater + BIGA_BASE.finalWater),
+    saltRatio:       BIGA_BASE.salt  / BIGA_TOTAL_FLOUR,
+    yeastRatio:      BIGA_BASE.yeast / BIGA_TOTAL_FLOUR,
+  };
+  const HYDRATION_LABELS = {63:'Base',64:'Easy',65:'Medium',66:'Medium',67:'Open',68:'Wet',69:'Wet',70:'Advanced'};
+
+  const fmtG  = g => g >= 5 ? String(Math.round(g)) : String(Math.round(g*10)/10);
+  const fmtOz = g => String(Math.round(g*0.03527*10)/10);
+
+  function useAnimated(value) {
+    const [disp, setDisp] = useState(value);
+    const prev = useRef(value);
+    useEffect(() => {
+      const s = prev.current, e = value;
+      if (s === e) return;
+      const dur = 300, t0 = performance.now();
+      const tick = now => {
+        const t = Math.min((now-t0)/dur, 1);
+        setDisp(s + (e-s)*(1-Math.pow(1-t,3)));
+        if (t < 1) requestAnimationFrame(tick);
+        else { setDisp(e); prev.current = e; }
+      };
+      requestAnimationFrame(tick);
+    }, [value]);
+    return disp;
+  }
+
+  function AnimNum({ value, unit }) {
+    const v = useAnimated(value);
+    return h(Fragment, null, unit==='g' ? fmtG(v)+'g' : fmtOz(v)+'oz');
+  }
+
+  /* ── Shared UI ── */
+  function FieldLabel({ left, right }) {
+    return h('div', { className:'field-label' },
+      h('span', { className:'field-label-text' }, left),
+      right != null && h('span', { className:'field-value' }, right)
+    );
+  }
+
+  function UnitToggle({ unit, setUnit }) {
+    return h('div', { className:'unit-toggle' },
+      ['g','oz'].map(u => h('button', { key:u, className:'unit-btn'+(unit===u?' active':''), onClick:()=>setUnit(u) }, u))
+    );
+  }
+
+  function DoughBallViz({ perBall, count }) {
+    const pct = Math.min(Math.max((perBall-150)/(550-150), 0.05), 1);
+    const d = 20 + pct*28;
+    const show = Math.min(count, 8);
+    return h('div', { className:'dough-viz' },
+      h('div', { style:{ display:'flex', flexWrap:'wrap', gap:6, alignItems:'center', flex:1 } },
+        Array.from({length:show}).map((_,i) =>
+          h('div', { key:i, style:{ width:d, height:d, borderRadius:'50%', flexShrink:0,
+            background:'radial-gradient(circle at 36% 30%, var(--accent), var(--accent-subtle))',
+            boxShadow:'0 2px 6px rgba(0,0,0,0.5)' } })
+        ),
+        count > 8 && h('span', { style:{ fontSize:12, color:'var(--text-tertiary)' } }, '+'+(count-8)+' more')
+      ),
+      h('div', { style:{ textAlign:'right', flexShrink:0 } },
+        h('div', { className:'serif', style:{ fontSize:20, fontWeight:700, color:'var(--accent)', lineHeight:1 } }, Math.round(perBall)+'g'),
+        h('div', { style:{ fontSize:10, color:'var(--text-tertiary)', marginTop:3 } }, 'per ball')
+      )
+    );
+  }
+
+  function HydrationBar({ pct, label }) {
+    return h('div', { className:'hydration-bar-wrap' },
+      h('div', { className:'hydration-bar-track' },
+        h('div', { className:'hydration-bar-fill', style:{ width:pct+'%' } })
+      ),
+      h('div', { className:'hydration-bar-labels' },
+        h('span', { className:'hydration-bar-label' }, 'Hydration'),
+        h('span', { className:'hydration-bar-label', style:{ color:'var(--accent)', fontWeight:700 } }, pct+'% — '+label)
+      )
+    );
+  }
+
+  function FermentTime({ label, time }) {
+    return h('div', { className:'ferment-time' },
+      h('span', { className:'ferment-time-label' }, label),
+      h('span', { className:'ferment-time-val' }, time)
+    );
+  }
+
+  function IngTable({ rows, unit, showPct }) {
+    return h('table', { className:'ing-table' },
+      h('tbody', null,
+        rows.map(({ label, val, pct, isFlour }) =>
+          h('tr', { key:label, className:isFlour?'flour-row':'' },
+            h('td', { className:'ing-label' },
+              label,
+              pct && h('span', { className:'ing-pct'+(showPct?'':' hidden') }, pct)
+            ),
+            h('td', { className:'ing-val' }, h(AnimNum, { value:val, unit }))
+          )
+        )
+      )
+    );
+  }
+
+  function TotalRow({ label, value, unit }) {
+    return h('div', { className:'total-row' },
+      h('span', { style:{ fontSize:11, fontWeight:700, color:'#4a5568', textTransform:'uppercase', letterSpacing:1 } }, label),
+      h('span', { className:'serif', style:{ fontSize:16, fontWeight:700, color:'var(--text-secondary)' } }, h(AnimNum, { value, unit }))
+    );
+  }
+
+  function BigaSectionLabel({ text }) {
+    return h('div', { className:'biga-section-label' },
+      h('div', { className:'biga-section-line' }),
+      h('span', { className:'biga-section-text' }, text),
+      h('div', { className:'biga-section-line' })
+    );
+  }
+
+  function CollapseSection({ title, open, setOpen, children }) {
+    return h('div', null,
+      h('button', { className:'collapse-btn', onClick:()=>setOpen(!open) },
+        h('span', { className:'collapse-title' }, title),
+        h('span', { className:'collapse-label' }, open?'hide':'show')
+      ),
+      open && children
+    );
+  }
+
+  function NotesSection({ notes, open, setOpen }) {
+    return h(CollapseSection, { title:'Notes & Tips', open, setOpen },
+      h('div', { className:'notes-list' },
+        notes.map((note, i) =>
+          h('div', { key:i, className:'note-item' },
+            h('div', { className:'note-dot' }),
+            h('p', { className:'note-text', dangerouslySetInnerHTML:{ __html:note } })
+          )
+        )
+      )
+    );
+  }
+
+  function InstructionsSection({ instructions, open, setOpen }) {
+    return h(CollapseSection, { title:'Instructions', open, setOpen },
+      h('div', { className:'instr-list' },
+        instructions.map(({ text, tip }, i) =>
+          h('div', { key:i },
+            h('div', { className:'instr-item' },
+              h('span', { className:'instr-num' }, (i+1)+'.'),
+              h('span', { className:'instr-text' }, text)
+            ),
+            tip && h('div', { className:'tip-box' }, tip)
+          )
+        )
+      )
+    );
+  }
+
+  /* ── NY Style data ── */
+  const NY_INSTRUCTIONS = {
+    classic: [
+      { text:'Cool water to <60°F.', tip:null },
+      { text:'Mix the water and yeast.', tip:null },
+      { text:'Add flour and Olive Oil and mix for 2 minutes.', tip:null },
+      { text:'Keep mixing on low, then add Sugar and Salt.', tip:null },
+      { text:'Mix for 10 more minutes.', tip:null },
+      { text:'Cover the dough with plastic wrap and rest for 1-3 hours.', tip:null },
+      { text:'Divide the dough into portions.', tip:null },
+      { text:'Shape into balls, sealing the seam.', tip:'Pinch the bottom firmly — a tight seam stops the ball opening during the cold proof.' },
+      { text:'Put the dough in a lightly oiled container.', tip:null },
+      { text:'Cover tightly and refrigerate for 2–4 days. 3 days is ideal.', tip:"Cold fermentation builds flavour slowly. Don't shortcut it." },
+      { text:'Let the dough come to room temperature before using.', tip:null },
+    ],
+    neapolitan: [
+      { text:'Cool water to 65°F.', tip:null },
+      { text:'Dissolve yeast in water, rest 5 min.', tip:null },
+      { text:'Add flour gradually and mix until shaggy.', tip:null },
+      { text:'Add salt. Knead 10–12 min until smooth and elastic.', tip:null },
+      { text:'Bulk ferment at room temp for 2 hours.', tip:null },
+      { text:'Divide, ball tightly, place in oiled containers.', tip:null },
+      { text:'Cold ferment 24–72 hours. 48h is ideal.', tip:null },
+      { text:'Remove from fridge 2–3 hours before use. Hand-stretch only — no rolling pin.', tip:'A rolling pin degasses the dough and ruins the open, airy crust texture.' },
+    ],
+    glutenFree: [
+      { text:'Combine warm water (100°F) with yeast and sugar. Bloom 5 min.', tip:null },
+      { text:'Mix flour with salt. Add wet ingredients and oil.', tip:null },
+      { text:'Mix vigorously 3 minutes — batter will be sticky, not kneadable.', tip:null },
+      { text:'Cover and rest 30–60 min at room temp.', tip:null },
+      { text:'Refrigerate overnight or up to 2 days.', tip:null },
+      { text:'Oil hands and press onto well-oiled pan. Bake immediately.', tip:null },
+    ],
+  };
+
+  const NY_FERMENT_TIMES = {
+    classic: '2–4 days refrigerated',
+    neapolitan: '24–72 hours refrigerated',
+    glutenFree: 'Overnight to 2 days',
+  };
+
+  const NY_NOTES = {
+    classic: [
+      '<strong>Flour:</strong> Bread flour gives more gluten structure than all-purpose, resulting in a chewier, more elastic crust.',
+      '<strong>Cold water</strong> slows yeast activity during mixing, giving you more control and a smoother dough.',
+      '<strong>3 days</strong> in the fridge is the sweet spot — the dough develops flavour without over-fermenting and getting too slack.',
+      '<strong>Room temp before use:</strong> Cold dough tears instead of stretching. Give it at least an hour out of the fridge.',
+    ],
+    neapolitan: [
+      '<strong>No oil or sugar</strong> — Neapolitan rules. This keeps the crust lighter and lets the flour flavour come through.',
+      '<strong>Hand stretching only.</strong> A rolling pin presses out the gas bubbles that make the crust puffy and open.',
+      '<strong>Hot oven:</strong> Neapolitan dough needs high heat. At home, use your highest setting with a baking steel or stone.',
+    ],
+    glutenFree: [
+      '<strong>GF flour blends vary</strong> — some absorb more water than others. Adjust hydration slightly if the batter seems too thick or loose.',
+      '<strong>Do not knead</strong> — GF dough has no gluten to develop. Mixing is just about hydration.',
+      '<strong>Oil the pan generously</strong> before pressing. GF dough sticks easily.',
+    ],
+  };
+
+  function NYCalc() {
+    const [size, setSize] = useState(12);
+    const [count, setCount] = useState(2);
+    const [thickness, setThickness] = useState('regular');
+    const [recipe, setRecipe] = useState('classic');
+    const [showInstr, setShowInstr] = useState(false);
+    const [showNotes, setShowNotes] = useState(false);
+    const [showPct, setShowPct] = useState(false);
+    const [unit, setUnit] = useState('g');
+
+    const calc = useMemo(() => {
+      const area = Math.PI * (size/2)**2;
+      const perBall = area * THICKNESS_FACTOR[thickness];
+      const totalDough = perBall * count;
+      const r = RECIPES[recipe];
+      const flour = totalDough / (1 + r.hydration + r.salt + r.sugar + r.oil + r.yeast);
+      return { flour, water:flour*r.hydration, salt:flour*r.salt, sugar:flour*r.sugar, oil:flour*r.oil, yeast:flour*r.yeast, totalDough, perBall };
+    }, [size, count, thickness, recipe]);
+
+    const r = RECIPES[recipe];
+    const ingredients = [
+      { label:recipe==='glutenFree'?'GF Flour':'Bread Flour', val:calc.flour,  pct:'—',                           isFlour:true  },
+      { label:'Water',     val:calc.water, pct:Math.round(r.hydration*100)+'%',  isFlour:false },
+      { label:'Yeast',     val:calc.yeast, pct:(r.yeast*100).toFixed(1)+'%',     isFlour:false },
+      { label:'Salt',      val:calc.salt,  pct:(r.salt*100).toFixed(1)+'%',      isFlour:false },
+      ...(calc.sugar>0 ? [{ label:'Sugar',     val:calc.sugar, pct:(r.sugar*100).toFixed(1)+'%', isFlour:false }] : []),
+      ...(calc.oil>0   ? [{ label:'Olive Oil', val:calc.oil,   pct:(r.oil*100).toFixed(1)+'%',   isFlour:false }] : []),
+    ];
+
+    return h('div', { className:'tab-panel' },
+      h(FieldLabel, { left:'Style' }),
+      h('div', { className:'pill-group' },
+        Object.entries(RECIPES).map(([k,v]) =>
+          h('button', { key:k, className:'pill'+(recipe===k?' active':''), onClick:()=>setRecipe(k) }, v.label)
+        )
+      ),
+      h(FieldLabel, { left:'Pizza Size', right:size+'"' }),
+      h('div', { className:'size-group' },
+        [8,10,12,14,16,18].map(s =>
+          h('button', { key:s, className:'sizebtn'+(size===s?' active':''), onClick:()=>setSize(s) }, s+'"')
+        )
+      ),
+      h(FieldLabel, { left:'Number of Pizzas', right:count }),
+      h('div', { className:'counter' },
+        h('button', { className:'stepbtn', onClick:()=>setCount(Math.max(1,count-1)) }, '−'),
+        h('span', { className:'counter-val' }, count),
+        h('button', { className:'stepbtn', onClick:()=>setCount(Math.min(20,count+1)) }, '+')
+      ),
+      h(FieldLabel, { left:'Thickness' }),
+      h('div', { className:'pill-group' },
+        ['thin','regular','thick'].map(k =>
+          h('button', { key:k, className:'pill'+(thickness===k?' active':''), onClick:()=>setThickness(k) },
+            k.charAt(0).toUpperCase()+k.slice(1))
+        )
+      ),
+      h(HydrationBar, { pct:Math.round(r.hydration*100), label:r.hydration>=0.70?'Wet':r.hydration>=0.65?'Medium-high':'Medium' }),
+      h(FermentTime, { label:'Ferment time', time:NY_FERMENT_TIMES[recipe] }),
+      h('div', { className:'hairline' }),
+      h(DoughBallViz, { perBall:calc.perBall, count }),
+      h('div', { className:'ing-header' },
+        h('div', { style:{ display:'flex', alignItems:'center', gap:10 } },
+          h('h2', { className:'serif', style:{ fontSize:20, fontWeight:700, letterSpacing:'-0.3px', color:'var(--text-primary)' } }, 'Ingredients'),
+          h('button', { className:'pct-toggle'+(showPct?' on':''), onClick:()=>setShowPct(!showPct) }, showPct ? 'Hide %' : 'Show %')
+        ),
+        h(UnitToggle, { unit, setUnit })
+      ),
+      h('p', { style:{ fontSize:12, color:'var(--text-tertiary)', marginBottom:12 } },
+        count+' × '+size+'" · '+thickness+' crust · '+Math.round(calc.perBall)+'g per ball'
+      ),
+      h(IngTable, { rows:ingredients, unit, showPct }),
+      h(TotalRow, { label:'Total Dough', value:calc.totalDough, unit }),
+      h('div', { className:'hairline' }),
+      h(InstructionsSection, { instructions:NY_INSTRUCTIONS[recipe], open:showInstr, setOpen:setShowInstr }),
+      h('div', { style:{ marginTop:24 } }),
+      h(NotesSection, { notes:NY_NOTES[recipe], open:showNotes, setOpen:setShowNotes })
+    );
+  }
+
+  /* ── Biga data ── */
+  const BIGA_INSTRUCTIONS = [
+    { text:"Mix biga flour, yeast, and room-temp water until just hydrated — start with a fork, finish with your hands. It'll be rough and shaggy.", tip:null },
+    { text:'Tear into golf ball-sized pieces and lay in a single layer inside a large airtight container.', tip:'Tearing creates more surface area, helping fermentation start evenly.' },
+    { text:'Cover and leave on the counter for 16–18 hours until bubbly and alive.', tip:null },
+    { text:'Next day: dissolve the salt in the warm water in a small jug.', tip:null },
+    { text:'Transfer biga to your stand mixer. Pour in the salted water and pinch it in by hand until mostly absorbed.', tip:null },
+    { text:'Attach the dough hook and knead on medium for ~10 minutes until soft and supple.', tip:null },
+    { text:'Add the remaining flour and knead another 5–8 minutes until the dough pulls cleanly from the bowl sides.', tip:'Do the windowpane test: stretch a small piece — it should go thin and translucent without tearing. If it tears, keep kneading.' },
+    { text:'Place in a lightly oiled airtight container. Rest at room temp 1.5 hours, then refrigerate for 1.5 hours.', tip:null },
+    { text:'Turn onto a floured surface, divide into equal portions (~330g each), and shape into tight balls seam-side down.', tip:null },
+    { text:'Dust a proofing box or tray with semolina. Arrange balls with at least 3" spacing, cover, and final-proof for 4 hours.', tip:'Semolina prevents sticking and adds a subtle crunch to the base.' },
+    { text:'Stretch by hand on a semolina-dusted surface. No rolling pin.', tip:null },
+  ];
+
+  const BIGA_NOTES = [
+    "<strong>What is a biga?</strong> An Italian pre-ferment — a stiff mix of flour, water, and a tiny amount of yeast that ferments slowly overnight to build acidity and flavour complexity.",
+    "<strong>Yeast amount:</strong> The tiny yeast quantity (0.12%) is intentional. Low yeast = slow fermentation = better flavour. Don't add more.",
+    "<strong>Windowpane test:</strong> Stretch a small piece of dough — it should go thin enough to see light through without tearing. This confirms gluten is fully developed.",
+    "<strong>Semolina:</strong> Use semolina for dusting, not flour. It doesn't absorb into the dough as quickly and gives the base a pleasant slight crunch.",
+    "<strong>Higher hydration = harder to handle</strong>, but rewards you with a more open crumb. Start at 63% and work up as you get comfortable.",
+  ];
+
+  const BIGA_TIMELINE = [
+    { label:'Evening',   desc:'Mix biga' },
+    { label:'16–18 hrs', desc:'Ferment' },
+    { label:'Morning',   desc:'Season & knead' },
+    { label:'+1.5 hrs',  desc:'Bulk rest' },
+    { label:'+1.5 hrs',  desc:'Cold rest' },
+    { label:'+4 hrs',    desc:'Final proof' },
+  ];
+
+  function BigaCalc() {
+    const [count, setCount] = useState(3);
+    const [hydration, setHydration] = useState(63);
+    const [showInstr, setShowInstr] = useState(false);
+    const [showNotes, setShowNotes] = useState(false);
+    const [showPct, setShowPct] = useState(false);
+    const [unit, setUnit] = useState('g');
+
+    const calc = useMemo(() => {
+      const totalDough = BIGA_BALL_G * count;
+      const wRatio = hydration/100;
+      const divisor = 1 + wRatio + BIGA_PCT.saltRatio + BIGA_PCT.yeastRatio;
+      const totalFlour = totalDough / divisor;
+      const bigaFlour  = totalFlour * BIGA_PCT.bigaFlourRatio;
+      const finalFlour = totalFlour * BIGA_PCT.finalFlourRatio;
+      const totalWater = totalFlour * wRatio;
+      const bigaWater  = totalWater * BIGA_PCT.bigaWaterSplit;
+      const finalWater = totalWater - bigaWater;
+      return { bigaFlour, finalFlour, bigaWater, finalWater, salt:totalFlour*BIGA_PCT.saltRatio, yeast:totalFlour*BIGA_PCT.yeastRatio, totalDough };
+    }, [count, hydration]);
+
+    const bigaRows  = [
+      { label:'Type 00 Flour',     val:calc.bigaFlour,  pct:null,    isFlour:true  },
+      { label:'Water (room temp)', val:calc.bigaWater,  pct:null,    isFlour:false },
+      { label:'Instant Yeast',     val:calc.yeast,      pct:'0.12%', isFlour:false },
+    ];
+    const finalRows = [
+      { label:'Warm Water',    val:calc.finalWater, pct:null,   isFlour:false },
+      { label:'Kosher Salt',   val:calc.salt,       pct:'2.2%', isFlour:false },
+      { label:'Type 00 Flour', val:calc.finalFlour, pct:null,   isFlour:true  },
+    ];
+
+    return h('div', { className:'tab-panel' },
+      h(FieldLabel, { left:'Number of Pizzas', right:count }),
+      h('div', { className:'counter' },
+        h('button', { className:'stepbtn', onClick:()=>setCount(Math.max(1,count-1)) }, '−'),
+        h('span', { className:'counter-val' }, count),
+        h('button', { className:'stepbtn', onClick:()=>setCount(Math.min(12,count+1)) }, '+')
+      ),
+      h(FieldLabel, { left:'Hydration', right:hydration+'% — '+HYDRATION_LABELS[hydration] }),
+      h('input', { type:'range', min:63, max:70, step:1, value:hydration, onChange:e=>setHydration(+e.target.value) }),
+      h('div', { style:{ display:'flex', justifyContent:'space-between', marginBottom:12 } },
+        [63,65,67,70].map(hv =>
+          h('span', { key:hv, onClick:()=>setHydration(hv),
+            style:{ fontSize:11, color:hv===hydration?'var(--accent)':'#4a5568', cursor:'pointer', fontWeight:hv===hydration?700:400 } },
+            hv+'%')
+        )
+      ),
+      h(HydrationBar, { pct:hydration, label:HYDRATION_LABELS[hydration] }),
+      h(FermentTime, { label:'Total time', time:'~24 hours' }),
+      h('div', { className:'hairline' }),
+      h('h2', { className:'serif', style:{ fontSize:20, fontWeight:700, marginBottom:18, letterSpacing:'-0.3px', color:'var(--text-primary)' } }, 'Ferment Timeline'),
+      h('div', { className:'timeline' },
+        BIGA_TIMELINE.map((t,i) =>
+          h(Fragment, { key:i },
+            h('div', { className:'tl-step' },
+              h('div', { className:'tl-dot' }),
+              h('div', { className:'tl-label' }, t.label),
+              h('div', { className:'tl-desc' }, t.desc)
+            ),
+            i < BIGA_TIMELINE.length-1 && h('div', { className:'tl-line' })
+          )
+        )
+      ),
+      h(DoughBallViz, { perBall:BIGA_BALL_G, count }),
+      h('div', { className:'ing-header' },
+        h('div', { style:{ display:'flex', alignItems:'center', gap:10 } },
+          h('h2', { className:'serif', style:{ fontSize:20, fontWeight:700, letterSpacing:'-0.3px', color:'var(--text-primary)' } }, 'Ingredients'),
+          h('button', { className:'pct-toggle'+(showPct?' on':''), onClick:()=>setShowPct(!showPct) }, showPct?'Hide %':'Show %')
+        ),
+        h(UnitToggle, { unit, setUnit })
+      ),
+      h(BigaSectionLabel, { text:'Night before — Biga' }),
+      h(IngTable, { rows:bigaRows, unit, showPct }),
+      h(BigaSectionLabel, { text:'Next day — Final Dough' }),
+      h(IngTable, { rows:finalRows, unit, showPct }),
+      h(TotalRow, { label:'Total · '+count+' × 330g', value:calc.totalDough, unit }),
+      h('div', { className:'hairline' }),
+      h(InstructionsSection, { instructions:BIGA_INSTRUCTIONS, open:showInstr, setOpen:setShowInstr }),
+      h('div', { style:{ marginTop:24 } }),
+      h(NotesSection, { notes:BIGA_NOTES, open:showNotes, setOpen:setShowNotes })
+    );
+  }
+
+  /* ── App ── */
+  function App() {
+    const [tab, setTab] = useState('ny');
+    return h('div', null,
+      h('div', { className:'header' },
+        h('p', { className:'header-eyebrow' }, 'Juzzycooks'),
+        h('h1', { className:'header-title' }, 'Pizza Dough', h('br'), h('span', null, 'Calculator')),
+        h('div', { className:'tabs' },
+          h('button', { className:'tab-btn'+(tab==='ny'?' active':''), onClick:()=>setTab('ny') }, 'New York Style'),
+          h('button', { className:'tab-btn'+(tab==='biga'?' active':''), onClick:()=>setTab('biga') }, 'Biga Neapolitan')
+        )
+      ),
+      h('div', { className:'content' },
+        tab==='ny' ? h(NYCalc, { key:'ny' }) : h(BigaCalc, { key:'biga' })
+      )
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+})();
+</script>
+</body>
+</html>

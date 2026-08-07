@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Import from Mealie - Admin{% endblock %}
+{% block content %}
+<div class="card" style="max-width:600px;margin:0 auto;">
+    <h2 style="font-size:1.15rem;margin-bottom:0.3rem;">Import from Mealie</h2>
+    <p style="color:var(--text-secondary);margin-bottom:1.25rem;font-size:0.88rem;">Connect to your Mealie v4 instance to import all recipes. Categories will be created automatically.</p>
+    <form method="POST">
+        <div class="form-group">
+            <label for="mealie_url">Mealie URL</label>
+            <input type="url" id="mealie_url" name="mealie_url" required placeholder="http://192.168.1.x:9000">
+            <div class="form-hint">The base URL of your Mealie instance (no trailing slash).</div>
+        </div>
+        <div class="form-group">
+            <label for="mealie_email">Mealie Email / Username</label>
+            <input type="text" id="mealie_email" name="mealie_email" required placeholder="admin@example.com">
+        </div>
+        <div class="form-group">
+            <label for="mealie_password">Mealie Password</label>
+            <input type="password" id="mealie_password" name="mealie_password" required placeholder="Your Mealie password">
+        </div>
+        <div class="actions" style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);">
+            <button type="submit" class="btn btn-primary">Start Import</button>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Recipes{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>Recipes</h2>
+    <div style="display:flex;gap:0.4rem;">
+        <a href="{{ url_for('recipes.random_recipe') }}" class="btn btn-secondary" title="What should I cook?">Surprise me</a>
+        <a href="{{ url_for('recipes.import_url') }}" class="btn btn-secondary">Import</a>
+        <a href="{{ url_for('recipes.add') }}" class="btn btn-primary">New recipe</a>
+    </div>
+</div>
+
+<form class="search-bar" method="GET" action="{{ url_for('recipes.index') }}">
+    <input type="text" name="q" placeholder="Search by title..." value="{{ search }}" aria-label="Search recipes" style="flex:2;">
+    <input type="text" name="ingredient" placeholder="Search by ingredient..." value="{{ ingredient_search }}" aria-label="Search by ingredient" style="flex:2;">
+    {% if active_cat %}<input type="hidden" name="cat" value="{{ active_cat }}">{% endif %}
+    {% if active_coll %}<input type="hidden" name="collection" value="{{ active_coll }}">{% endif %}
+    {% if favorites_only %}<input type="hidden" name="favorites" value="1">{% endif %}
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="view" value="{{ view_mode }}">
+    <button type="submit" class="btn btn-secondary">Search</button>
+    {% if search or active_cat or favorites_only or ingredient_search or active_coll %}<a href="{{ url_for('recipes.index') }}" class="btn btn-secondary">Clear</a>{% endif %}
+</form>
+
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;">
+    <div class="filter-chips" style="margin-bottom:0;">
+        <a href="{{ url_for('recipes.index', q=search, cat=active_cat, sort=sort, view=view_mode) }}" class="chip {% if not favorites_only %}active{% endif %}">All</a>
+        <a href="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1, sort=sort, view=view_mode) }}" class="chip {% if favorites_only %}active{% endif %}">Favorites</a>
+        {% if categories %}
+        <span style="width:1px;height:20px;background:var(--border);margin:0 0.25rem;"></span>
+        {% for cat in categories %}
+        <a href="{{ url_for('recipes.index', cat=cat.id, q=search, favorites=1 if favorites_only else None, sort=sort, view=view_mode) }}" class="chip {% if active_cat == cat.id %}active{% endif %}">{{ cat.name }}</a>
+        {% endfor %}
+        {% endif %}
+        {% if collections %}
+        <span style="width:1px;height:20px;background:var(--border);margin:0 0.25rem;"></span>
+        {% for coll in collections %}
+        <a href="{{ url_for('recipes.index', collection=coll.id, q=search, sort=sort, view=view_mode) }}" class="chip {% if active_coll == coll.id %}active{% endif %}">{{ coll.name }}</a>
+        {% endfor %}
+        {% endif %}
+    </div>
+    <div style="display:flex;gap:0.4rem;align-items:center;">
+        <select onchange="window.location=this.value" style="width:auto;padding:0.3rem 0.5rem;font-size:0.78rem;" aria-label="Sort recipes">
+            <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='newest', view=view_mode, collection=active_coll) }}" {% if sort=='newest' %}selected{% endif %}>Newest</option>
+            <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='oldest', view=view_mode, collection=active_coll) }}" {% if sort=='oldest' %}selected{% endif %}>Oldest</option>
+            <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='title_az', view=view_mode, collection=active_coll) }}" {% if sort=='title_az' %}selected{% endif %}>A-Z</option>
+            <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='title_za', view=view_mode, collection=active_coll) }}" {% if sort=='title_za' %}selected{% endif %}>Z-A</option>
+        </select>
+        <a href="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view='grid', collection=active_coll) }}" class="btn btn-sm {% if view_mode=='grid' %}btn-primary{% else %}btn-secondary{% endif %}" title="Grid view">Grid</a>
+        <a href="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view='list', collection=active_coll) }}" class="btn btn-sm {% if view_mode=='list' %}btn-primary{% else %}btn-secondary{% endif %}" title="List view">List</a>
+    </div>
+</div>
+
+{% if recipes %}
+    {% if view_mode == 'list' %}
+    <div class="card" style="padding:0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Rating</th>
+                    <th>Prep</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for recipe in recipes %}
+                <tr style="cursor:pointer;" onclick="window.location='{{ url_for('recipes.view', recipe_id=recipe.id) }}'">
+                    <td style="width:50px;padding:0.3rem;">
+                        {% if recipe.image_url %}
+                        <img src="{{ recipe.image_url|recipe_thumb }}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:4px;" loading="lazy">
+                        {% else %}
+                        <div style="width:44px;height:44px;background:var(--border-light);border-radius:4px;"></div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight:600;">{{ recipe.title }}</span>
+                        {% if recipe.id in user_favs %}<span style="color:var(--accent);margin-left:0.25rem;">★</span>{% endif %}
+                    </td>
+                    <td>
+                        {% for cat in recipe.categories %}<span class="tag">{{ cat.name }}</span> {% endfor %}
+                    </td>
+                    <td>{% if recipe.avg_rating() %}{{ "%.1f"|format(recipe.avg_rating()) }} ★{% endif %}</td>
+                    <td style="font-size:0.82rem;color:var(--text-secondary);">{{ recipe.prep_time or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="recipe-grid">
+        {% for recipe in recipes %}
+        <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" style="text-decoration:none;color:inherit;">
+            <div class="card recipe-card">
+                {% if recipe.image_url %}
+                    <img class="recipe-card-img" src="{{ recipe.image_url|recipe_thumb }}" alt="{{ recipe.title }}" loading="lazy">
+                {% else %}
+                    <div class="recipe-card-placeholder">No image</div>
+                {% endif %}
+                <div class="recipe-card-body">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <h3 style="flex:1;">{{ recipe.title }}</h3>
+                        {% if recipe.id in user_favs %}
+                        <span style="color:var(--accent);font-size:1rem;">★</span>
+                        {% endif %}
+                    </div>
+                    {% if recipe.categories %}
+                    <div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-bottom:0.35rem;">
+                        {% for cat in recipe.categories %}
+                        <span class="tag">{{ cat.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="recipe-meta">
+                        {% if recipe.avg_rating() %}
+                        <span>{{ "%.1f"|format(recipe.avg_rating()) }} ★</span>
+                        {% endif %}
+                        {% if recipe.author and recipe.user_id != current_user.id %}
+                        <span>By {{ recipe.author.username }}</span>
+                        {% endif %}
+                        {% if recipe.prep_time %}<span>{{ recipe.prep_time }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if pagination.pages > 1 %}
+    <div style="display:flex;justify-content:center;gap:0.35rem;margin-top:1.5rem;flex-wrap:wrap;">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('recipes.index', page=pagination.prev_num, q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view=view_mode, collection=active_coll) }}" class="btn btn-secondary btn-sm">Previous</a>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+                <a href="{{ url_for('recipes.index', page=p, q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view=view_mode, collection=active_coll) }}" class="btn btn-sm {% if p == page %}btn-primary{% else %}btn-secondary{% endif %}">{{ p }}</a>
+            {% else %}
+                <span style="padding:0.3rem 0.4rem;color:var(--text-tertiary);">...</span>
+            {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <a href="{{ url_for('recipes.index', page=pagination.next_num, q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view=view_mode, collection=active_coll) }}" class="btn btn-secondary btn-sm">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+{% else %}
+<div class="card empty-state">
+    {% if search or active_cat or favorites_only or ingredient_search or active_coll %}
+        <p>No recipes match your filters.</p>
+        <a href="{{ url_for('recipes.index') }}" class="btn btn-secondary">Clear filters</a>
+    {% else %}
+        <p>No recipes yet. Add your first one to get started.</p>
+        <div style="display:flex;gap:0.4rem;justify-content:center;">
+            <a href="{{ url_for('recipes.add') }}" class="btn btn-primary">New recipe</a>
+            <a href="{{ url_for('recipes.import_url') }}" class="btn btn-secondary">Import from URL</a>
+        </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

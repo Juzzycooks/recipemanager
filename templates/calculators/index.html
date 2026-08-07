@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Calculators{% endblock %}
+{% block content %}
+<div class="page-header">
+<h2>Calculators</h2>
+{% if current_user.is_admin %}
+<a href="{{ url_for('admin.add_calculator') }}" class="btn btn-primary btn-sm">Add calculator</a>
+{% endif %}
+</div>
+{% if calculators %}
+<div class="recipe-grid">
+{% for calc in calculators %}
+<a href="{{ url_for('calculators.view', calc_id=calc.id) }}" style="text-decoration:none;color:inherit;">
+<div class="card recipe-card" style="padding:0;">
+<div class="recipe-card-placeholder" style="height:100px;font-size:2.5rem;">{{ calc.icon }}</div>
+<div class="recipe-card-body">
+<h3>{{ calc.name }}</h3>
+{% if calc.description %}
+<p style="color:var(--text-secondary);font-size:0.82rem;margin-top:0.2rem;">{{ calc.description }}</p>
+{% endif %}
+</div>
+</div>
+</a>
+{% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+<p>No calculators added yet.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Extras{% endblock %}
+{% block content %}
+<div class="page-header">
+<h2>Extras</h2>
+</div>
+<p style="color:var(--text-secondary);font-size:0.85rem;margin:-0.5rem 0 1.25rem;">Recipes, calculators and guides — each opens on its own page.</p>
+{% if pages %}
+<div class="recipe-grid">
+{% for page in pages %}
+<a href="{{ url_for('extras.view', slug=page.slug) }}" style="text-decoration:none;color:inherit;">
+<div class="card recipe-card" style="padding:0;">
+<div class="recipe-card-placeholder" style="height:100px;font-size:2.5rem;">{{ page.icon }}</div>
+<div class="recipe-card-body">
+<h3>{{ page.name }}</h3>
+{% if page.description %}
+<p style="color:var(--text-secondary);font-size:0.82rem;margin-top:0.2rem;">{{ page.description }}</p>
+{% endif %}
+</div>
+</div>
+</a>
+{% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+<p>No extra pages yet.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,28 @@
+services:
+  recipemanager:
+    image: juzzycooks/recipemanager:latest
+    container_name: recipemanager
+    ports:
+      - "8114:5000"
+    environment:
+      # Run as this user inside the container (Unraid default: 99/100)
+      - PUID=99
+      - PGID=100
+      # Secret key auto-generates if not set
+      # - FLASK_SECRET_KEY=your-secret-key
+      # Set to 1 when behind a reverse proxy (enables X-Forwarded-For)
+      # - TRUSTED_PROXY=1
+      # Set to 1 when serving over HTTPS (Secure cookies)
+      # - COOKIE_SECURE=1
+      - SMTP_HOST=
+      - SMTP_PORT=587
+      - SMTP_USER=
+      - SMTP_PASS=
+      - SMTP_FROM=
+      - SMTP_TLS=true
+    volumes:
+      - /mnt/user/appdata/RecipeManager:/app/data
+    network_mode: bridge
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+    <div class="card">
+        <h2>Log in</h2>
+        <p class="auth-subtitle">Sign in to your account</p>
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1.25rem;">Sign in</button>
+        </form>
+        <p class="auth-footer"><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></p>
+        <p class="auth-footer" style="margin-top:0.4rem;">Need an account? Contact your administrator.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if recipe else "New" }} Recipe{% endblock %}
+{% block content %}
+<div style="max-width:720px;margin:0 auto;">
+<div class="page-header">
+    <h2>{{ "Edit recipe" if recipe else "New recipe" }}</h2>
+    <a href="{{ url_for('recipes.index') }}" class="btn btn-secondary btn-sm">Cancel</a>
+</div>
+
+<form method="POST" enctype="multipart/form-data">
+
+<!-- Image preview -->
+<div id="img-preview" class="card" style="padding:0;overflow:hidden;margin-bottom:1.25rem;{% if not (recipe and recipe.image_url) %}display:none;{% endif %}">
+    <img id="img-preview-el" src="{{ (recipe.image_url|recipe_image) if recipe and recipe.image_url else '' }}" alt="Recipe preview"
+         style="width:100%;max-height:240px;object-fit:cover;display:block;">
+</div>
+
+<!-- Basics -->
+<div class="card">
+    <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Basics</p>
+    <div class="form-group" style="margin-top:0;">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" required value="{{ recipe.title if recipe else '' }}" placeholder="e.g. Grandma's Banana Bread">
+    </div>
+    <div class="form-group">
+        <label for="description">Description <span style="font-weight:400;color:var(--text-tertiary);">(optional)</span></label>
+        <textarea id="description" name="description" rows="2" placeholder="A short summary of the recipe...">{{ recipe.description if recipe else '' }}</textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+        <div class="form-group">
+            <label for="prep_time">Prep time</label>
+            <input type="text" id="prep_time" name="prep_time" value="{{ recipe.prep_time if recipe else '' }}" placeholder="e.g. 15 min">
+        </div>
+        <div class="form-group">
+            <label for="cook_time">Cook time</label>
+            <input type="text" id="cook_time" name="cook_time" value="{{ recipe.cook_time if recipe else '' }}" placeholder="e.g. 45 min">
+        </div>
+        <div class="form-group">
+            <label for="servings">Servings</label>
+            <input type="text" id="servings" name="servings" value="{{ recipe.servings if recipe else '' }}" placeholder="e.g. 4">
+        </div>
+    </div>
+    {% if categories %}
+    <div class="form-group">
+        <label>Categories</label>
+        <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.25rem;">
+            {% for cat in categories %}
+            <label style="cursor:pointer;display:inline-flex;align-items:center;gap:0.3rem;padding:0.3rem 0.7rem;border-radius:20px;font-size:0.78rem;font-weight:500;border:1px solid var(--border);color:var(--text-secondary);background:#fff;transition:all 0.15s;">
+                <input type="checkbox" name="categories" value="{{ cat.id }}" style="display:none;" class="cat-check"
+                    {% if recipe and cat in recipe.categories %}checked{% endif %}>
+                {{ cat.name }}
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ingredients & Instructions -->
+<div class="card">
+    <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Recipe details</p>
+    <div class="form-group" style="margin-top:0;">
+        <label for="ingredients">Ingredients</label>
+        <textarea id="ingredients" name="ingredients" required rows="10" placeholder="1 cup flour&#10;2 eggs&#10;1/2 cup sugar&#10;1 tsp vanilla extract">{{ recipe.ingredients if recipe else '' }}</textarea>
+        <div class="form-hint">One ingredient per line. Include quantities and units.</div>
+    </div>
+    <div class="form-group">
+        <label for="instructions">Instructions</label>
+        <textarea id="instructions" name="instructions" required rows="10" placeholder="Preheat oven to 180C&#10;Mix dry ingredients in a bowl&#10;Add wet ingredients and stir&#10;Pour into pan and bake for 45 min">{{ recipe.instructions if recipe else '' }}</textarea>
+        <div class="form-hint">One step per line. They'll be numbered automatically. Start a line with "# " to add a section heading.</div>
+    </div>
+    <div class="form-group">
+        <label for="notes">Notes <span style="font-weight:400;color:var(--text-tertiary);">(optional)</span></label>
+        <textarea id="notes" name="notes" rows="4" placeholder="Tips, substitutions, storage...">{{ recipe.notes if recipe else '' }}</textarea>
+        <div class="form-hint">One note per line.</div>
+    </div>
+</div>
+
+<!-- Image -->
+<div class="card">
+    <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Image <span style="font-weight:400;">(optional)</span></p>
+    <div class="form-group" style="margin-top:0;">
+        <label for="image_file">Upload image</label>
+        <input type="file" id="image_file" name="image_file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="previewUpload(this)">
+        <div class="form-hint">PNG, JPG, GIF, or WebP. Upload takes priority over URL.</div>
+    </div>
+    <div class="form-group">
+        <label for="image_url">Or paste image URL</label>
+        <input type="url" id="image_url" name="image_url" value="{{ recipe.image_url if recipe and recipe.image_url and recipe.image_url.startswith('http') else '' }}" placeholder="https://example.com/photo.jpg" oninput="updatePreview(this.value)">
+    </div>
+    {% if recipe and recipe.image_url %}
+    <p style="font-size:0.78rem;color:var(--text-tertiary);margin-top:0.5rem;">Current image: {{ recipe.image_url[:60] }}{% if recipe.image_url|length > 60 %}...{% endif %}</p>
+    {% endif %}
+</div>
+
+<!-- Links -->
+<div class="card">
+    <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Links <span style="font-weight:400;">(optional)</span></p>
+    <div class="form-group" style="margin-top:0;">
+        <label for="source_url">Source URL</label>
+        <input type="url" id="source_url" name="source_url" value="{{ recipe.source_url if recipe else '' }}" placeholder="https://example.com/recipe">
+        <div class="form-hint">Where you found this recipe.</div>
+    </div>
+</div>
+
+<!-- Submit -->
+<div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-bottom:2rem;">
+    <a href="{{ url_for('recipes.index') }}" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary" style="padding:0.6rem 1.5rem;">{{ "Save changes" if recipe else "Save recipe" }}</button>
+</div>
+
+</form>
+</div>
+
+<script>
+function updatePreview(url) {
+    const wrap = document.getElementById('img-preview');
+    const img = document.getElementById('img-preview-el');
+    if (url && url.match(/^https?:\/\/.+/)) {
+        img.src = url;
+        img.onload = () => { wrap.style.display = ''; };
+        img.onerror = () => { wrap.style.display = 'none'; };
+    } else {
+        wrap.style.display = 'none';
+    }
+}
+function previewUpload(input) {
+    const wrap = document.getElementById('img-preview');
+    const img = document.getElementById('img-preview-el');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            wrap.style.display = '';
+        };
+        reader.readAsDataURL(input.files[0]);
+        // Clear URL field since upload takes priority
+        document.getElementById('image_url').value = '';
+    }
+}
+// Category chip toggle styling
+document.querySelectorAll('.cat-check').forEach(cb => {
+    function update() {
+        const lbl = cb.parentElement;
+        if (cb.checked) {
+            lbl.style.background = 'var(--accent)';
+            lbl.style.color = '#fff';
+            lbl.style.borderColor = 'var(--accent)';
+        } else {
+            lbl.style.background = '#fff';
+            lbl.style.color = 'var(--text-secondary)';
+            lbl.style.borderColor = 'var(--border)';
+        }
+    }
+    cb.addEventListener('change', update);
+    update();
+});
+</script>
+{% endblock %}

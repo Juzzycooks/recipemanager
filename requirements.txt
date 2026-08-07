@@ -1,0 +1,13 @@
+# Bounded ranges: security patches flow in, breaking major bumps don't.
+# For fully reproducible builds, generate a lock with:  pip freeze > requirements.lock
+Flask>=3.1.3,<4
+Flask-Login>=0.6.3,<0.7
+Flask-WTF>=1.2.2,<2
+Flask-SQLAlchemy>=3.1.1,<4
+beautifulsoup4>=4.12.0,<5
+requests>=2.33.0,<3
+urllib3>=2.7.0,<3
+Werkzeug>=3.1.8,<4
+gunicorn>=23.0.0,<24
+pypdf>=6.10.2,<7
+Pillow>=11.0.0,<13

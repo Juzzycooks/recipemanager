@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Forgot Password - Recipe Manager{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+    <h2>Forgot password</h2>
+    <p class="auth-subtitle">We'll email you a reset link.</p>
+    <div class="card">
+        {% if smtp_enabled %}
+        <form method="POST">
+            <div class="form-group">
+                <label for="email" style="margin-top:0;">Email address</label>
+                <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@example.com">
+            </div>
+            <div class="actions" style="margin-top:1.25rem;">
+                <button type="submit" class="btn btn-primary" style="width:100%;">Send reset link</button>
+            </div>
+        </form>
+        {% else %}
+        <p style="font-size:0.88rem;color:var(--text-secondary);">
+            Email isn't configured on this server, so automatic resets aren't available.
+            Ask your administrator to reset your password.
+        </p>
+        {% endif %}
+    </div>
+    <p class="auth-footer"><a href="{{ url_for('auth.login') }}">Back to log in</a></p>
+</div>
+{% endblock %}

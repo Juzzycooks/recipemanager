@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>(function(){try{var k=localStorage.getItem("shish-skin")||"web";document.documentElement.setAttribute("data-skin",k);}catch(e){document.documentElement.setAttribute("data-skin","web");}})();</script>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>Shish Barak</title>
+  <meta name="theme-color" content="#f5f5f7" />
+  <style>
+    :root{
+      --bg:#f2f2f7;
+      --card:rgba(255,255,255,0.82);
+      --card-strong:#ffffff;
+      --text:#111111;
+      --muted:#6e6e73;
+      --line:rgba(60,60,67,.14);
+      --blue:#007aff;
+      --blue-pressed:#0063cc;
+      --green:#34c759;
+      --orange:#ff9f0a;
+      --shadow:0 12px 32px rgba(0,0,0,.08);
+      --radius-xl:28px;
+      --radius-lg:22px;
+      --radius-md:16px;
+      --safe-top:env(safe-area-inset-top, 0px);
+      --safe-bottom:env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    html, body {
+      margin:0;
+      padding:0;
+      background:
+        radial-gradient(circle at top, #ffffff 0%, #f7f7fa 35%, #f2f2f7 100%);
+      color:var(--text);
+      font-family:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+        "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height:100%;
+    }
+
+    body {
+      padding: calc(var(--safe-top) + 10px) 12px calc(var(--safe-bottom) + 28px);
+    }
+
+    .app {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .glass {
+      background: var(--card);
+      backdrop-filter: blur(24px) saturate(1.2);
+      -webkit-backdrop-filter: blur(24px) saturate(1.2);
+      border: 1px solid rgba(255,255,255,.75);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      border-radius: 34px;
+      padding: 18px 18px 16px;
+      position: sticky;
+      top: calc(var(--safe-top) + 8px);
+      z-index: 20;
+      margin-bottom: 12px;
+    }
+
+    .status {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:12px;
+      font-size:13px;
+      color:var(--muted);
+      font-weight:600;
+    }
+
+    .pill {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background: rgba(0,122,255,.09);
+      color: var(--blue);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    h1 {
+      margin: 4px 0 8px;
+      font-size: 34px;
+      line-height: 1.03;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 15px;
+    }
+
+    .hero-grid {
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+    }
+
+    .metric-tile {
+      background: rgba(255,255,255,.72);
+      border:1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px 10px;
+      text-align:center;
+    }
+
+    .metric-tile .label {
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:6px;
+      font-weight:700;
+    }
+
+    .metric-tile .value {
+      display:block;
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:-0.02em;
+    }
+
+    .section {
+      border-radius: var(--radius-xl);
+      margin-top: 12px;
+      overflow:hidden;
+    }
+
+    .section-header {
+      padding: 18px 18px 12px;
+    }
+
+    .section-title {
+      margin:0;
+      font-size: 24px;
+      line-height:1.1;
+      letter-spacing:-0.03em;
+    }
+
+    .section-subtitle {
+      margin: 7px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.4;
+    }
+
+    .slider-wrap {
+      padding: 0 18px 18px;
+    }
+
+    .slider-card {
+      background: var(--card-strong);
+      border:1px solid var(--line);
+      border-radius: 24px;
+      padding: 16px;
+    }
+
+    .slider-row {
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .slider-label {
+      font-size:14px;
+      color:var(--muted);
+      font-weight:600;
+    }
+
+    .slider-value {
+      font-size:32px;
+      font-weight:800;
+      letter-spacing:-0.04em;
+      color:var(--blue);
+      white-space:nowrap;
+    }
+
+    .slider-multiplier {
+      margin-top:8px;
+      font-size:13px;
+      color:var(--muted);
+      font-weight:600;
+    }
+
+    input[type="range"] {
+      width:100%;
+      appearance:none;
+      background:transparent;
+      margin: 10px 0 8px;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent-hover), var(--accent));
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance:none;
+      width:30px;
+      height:30px;
+      border-radius:50%;
+      background:#fff;
+      border:2px solid rgba(0,122,255,.9);
+      box-shadow:0 6px 18px rgba(0,0,0,.16);
+      margin-top:-10px;
+    }
+
+    input[type="range"]::-moz-range-track {
+      height:10px;
+      border-radius:999px;
+      background: linear-gradient(90deg, var(--accent-hover), var(--accent));
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width:30px;
+      height:30px;
+      border-radius:50%;
+      background:#fff;
+      border:2px solid rgba(0,122,255,.9);
+      box-shadow:0 6px 18px rgba(0,0,0,.16);
+    }
+
+    .slider-scale {
+      display:flex;
+      justify-content:space-between;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:600;
+    }
+
+    .group {
+      padding: 0 18px 18px;
+    }
+
+    .group-card {
+      background: var(--card-strong);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      overflow:hidden;
+      margin-top:12px;
+    }
+
+    .group-title {
+      margin:0;
+      padding: 16px 16px 10px;
+      font-size: 18px;
+      letter-spacing:-0.02em;
+    }
+
+    .ingredient-list {
+      list-style:none;
+      margin:0;
+      padding:0;
+    }
+
+    .ingredient-item {
+      display:grid;
+      grid-template-columns: 28px minmax(92px, 120px) 1fr;
+      gap:12px;
+      align-items:start;
+      padding: 14px 16px;
+      border-top:1px solid rgba(60,60,67,.08);
+    }
+
+    .ingredient-item:first-child {
+      border-top:0;
+    }
+
+    .check {
+      width:24px;
+      height:24px;
+      border-radius:50%;
+      border:2px solid rgba(60,60,67,.22);
+      background:#fff;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      margin-top:1px;
+      transition: .18s ease;
+      flex-shrink:0;
+    }
+
+    .check.checked {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+
+    .qty {
+      font-weight:800;
+      color:var(--blue);
+      font-variant-numeric: tabular-nums;
+      line-height:1.35;
+    }
+
+    .ingredient-name {
+      line-height:1.4;
+    }
+
+    .ingredient-name.done,
+    .qty.done {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .toolbar {
+      display:flex;
+      gap:10px;
+      padding: 0 18px 18px;
+      flex-wrap:wrap;
+    }
+
+    button {
+      appearance:none;
+      border:0;
+      cursor:pointer;
+      font: inherit;
+    }
+
+    .btn {
+      border-radius: 16px;
+      padding: 14px 16px;
+      font-size: 15px;
+      font-weight: 700;
+      transition: .15s ease;
+    }
+
+    .btn:active {
+      transform: scale(.98);
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color:#fff;
+      box-shadow: 0 10px 20px rgba(0,122,255,.22);
+    }
+
+    .btn-primary:active {
+      background: var(--blue-pressed);
+    }
+
+    .btn-secondary {
+      background: rgba(0,0,0,.05);
+      color: var(--text);
+      border:1px solid var(--line);
+    }
+
+    .instruction-block {
+      padding: 0 18px 18px;
+    }
+
+    .instruction-box {
+      background: var(--card-strong);
+      border:1px solid var(--line);
+      border-radius: 24px;
+      padding: 6px 0;
+      overflow:hidden;
+    }
+
+    .instruction-row {
+      padding: 16px;
+      border-top:1px solid rgba(60,60,67,.08);
+      line-height:1.55;
+      font-size:15px;
+    }
+
+    .instruction-row:first-child {
+      border-top:0;
+    }
+
+    .cooking-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: rgba(9, 9, 11, .48);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding: 0;
+    }
+
+    .cooking-overlay.open {
+      display:flex;
+    }
+
+    .cooking-shell {
+      width:100%;
+      max-width:560px;
+      min-height:100%;
+      background: rgba(245,245,247,.86);
+      backdrop-filter: blur(28px) saturate(1.3);
+      -webkit-backdrop-filter: blur(28px) saturate(1.3);
+      padding: calc(var(--safe-top) + 12px) 14px calc(var(--safe-bottom) + 18px);
+      display:flex;
+      flex-direction:column;
+    }
+
+    .cook-topbar {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .cook-title {
+      font-size:20px;
+      font-weight:800;
+      letter-spacing:-0.03em;
+    }
+
+    .cook-dismiss {
+      background: rgba(0,0,0,.06);
+      border:1px solid var(--line);
+      color:var(--text);
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-weight:700;
+    }
+
+    .progress-card {
+      border-radius: 24px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .progress-meta {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .progress-label {
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+
+    .progress-value {
+      font-size:14px;
+      font-weight:800;
+    }
+
+    .progress-bar {
+      height: 10px;
+      background: rgba(60,60,67,.10);
+      border-radius: 999px;
+      overflow:hidden;
+    }
+
+    .progress-fill {
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--accent-hover), var(--accent));
+      border-radius:999px;
+      transition: width .25s ease;
+    }
+
+    .step-card {
+      border-radius: 32px;
+      padding: 20px 18px 18px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      flex:1;
+    }
+
+    .step-badge {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:52px;
+      height:52px;
+      border-radius:50%;
+      background: rgba(0,122,255,.1);
+      color:var(--blue);
+      font-size:18px;
+      font-weight:800;
+    }
+
+    .step-heading {
+      margin: 2px 0 0;
+      font-size: 28px;
+      line-height:1.06;
+      letter-spacing:-0.04em;
+      font-weight:800;
+    }
+
+    .step-copy {
+      font-size: 19px;
+      line-height: 1.5;
+      color: var(--text);
+      flex:1;
+    }
+
+    .step-nav {
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:14px;
+    }
+
+    .ghost {
+      opacity:.55;
+      pointer-events:none;
+    }
+
+    .helper {
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.45;
+    }
+
+    @media (max-width: 420px) {
+      h1 { font-size:30px; }
+      .hero-grid { grid-template-columns:1fr; }
+      .ingredient-item { grid-template-columns: 28px 88px 1fr; }
+      .step-heading { font-size:24px; }
+      .step-copy { font-size:18px; }
+      .slider-value { font-size:28px; }
+    }
+  </style>
+
+<link rel="stylesheet" href="/static/pages/_theme.css">
+<style id="jf-theme">:root{--text:var(--text-primary);--muted:var(--text-secondary);--card:var(--surface);--card-strong:var(--surface);--line:var(--border);--blue:var(--accent);--blue-pressed:var(--accent-hover);}.glass{background:var(--surface)!important;border:1px solid var(--border)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:var(--shadow)!important;}</style>
+<script>(function(){try{var t=localStorage.getItem("theme")||((window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+<style id="jf-skin">
+html[data-skin="ios"]{
+  --bg:#f2f2f7 !important; --surface:#ffffff !important; --border:rgba(60,60,67,.14) !important;
+  --text-primary:#111111 !important; --text-secondary:#6e6e73 !important; --text-tertiary:#8a8a8e !important;
+  --accent:#007aff !important; --accent-hover:#0063cc !important; --accent-subtle:#eaf3ff !important;
+  --text:#111111 !important; --muted:#6e6e73 !important; --line:rgba(60,60,67,.14) !important;
+  --card:rgba(255,255,255,.82) !important; --card-strong:#ffffff !important;
+  --blue:#007aff !important; --blue-pressed:#0063cc !important;
+}
+html[data-skin="ios"] body{
+  background: radial-gradient(circle at top,#ffffff 0%,#f7f7fa 35%,#f2f2f7 100%) !important;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;
+  color:#111111 !important;
+}
+html[data-skin="ios"] .glass{
+  background:rgba(255,255,255,.82) !important;
+  -webkit-backdrop-filter:blur(24px) saturate(1.2) !important;
+  backdrop-filter:blur(24px) saturate(1.2) !important;
+  border:1px solid rgba(255,255,255,.75) !important;
+  box-shadow:0 12px 32px rgba(0,0,0,.08) !important;
+}
+#skinToggle:hover{opacity:.82;}
+</style>
+</head>
+<body>
+  <div class="app">
+    <section class="hero glass">
+      <div class="status">
+        <span class="pill">Native iOS style recipe app</span>
+        <span id="checkedCount">0 checked</span>
+      </div>
+
+      <h1>Shish Barak</h1>
+      <p class="subtitle">
+        Live metric scaling, ingredient checklist, and step-by-step cooking mode in a single HTML file.
+      </p>
+
+      <div class="hero-grid">
+        <div class="metric-tile">
+          <span class="label">Base recipe</span>
+          <span class="value">225 g beef</span>
+        </div>
+        <div class="metric-tile">
+          <span class="label">Bake</span>
+          <span class="value">400°F</span>
+        </div>
+        <button class="metric-tile" id="skinToggle" type="button" aria-label="Toggle appearance between iOS and Web"
+                style="cursor:pointer;border:none;background:inherit;font:inherit;text-align:left;width:100%;">
+          <span class="label">Mode &#8646;</span>
+          <span class="value" id="skinValue">Web</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="section glass">
+      <div class="section-header">
+        <h2 class="section-title">Live metric scaling</h2>
+        <p class="section-subtitle">
+          Scale the full recipe by beef weight. Dough, filling, sauce, and garnish all scale together.
+        </p>
+      </div>
+
+      <div class="slider-wrap">
+        <div class="slider-card">
+          <div class="slider-row">
+            <div class="slider-label">Ground beef amount</div>
+            <div class="slider-value" id="beefValue">225 g</div>
+          </div>
+
+          <input id="beefSlider" type="range" min="225" max="2000" step="25" value="225" />
+
+          <div class="slider-scale">
+            <span>225 g</span>
+            <span>2 kg</span>
+          </div>
+
+          <div class="slider-multiplier">
+            Multiplier: <span id="multiplierValue">1.00×</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section glass">
+      <div class="section-header">
+        <h2 class="section-title">Ingredients checklist</h2>
+        <p class="section-subtitle">
+          Tap ingredients to check them off. Metric values update automatically.
+        </p>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn btn-primary" id="startCookingBtn">Start cooking mode</button>
+        <button class="btn btn-secondary" id="resetChecklistBtn">Reset checklist</button>
+      </div>
+
+      <div class="group">
+        <div class="group-card">
+          <h3 class="group-title">Dough</h3>
+          <ul class="ingredient-list">
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="375" data-unit="g">375 g</div>
+              <div class="ingredient-name">All purpose flour</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="8" data-unit="g">8 g</div>
+              <div class="ingredient-name">Milk powder <span style="color:#6e6e73;">optional</span></div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="12" data-unit="g">12 g</div>
+              <div class="ingredient-name">Granulated sugar</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="6" data-unit="g">6 g</div>
+              <div class="ingredient-name">Salt</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="80" data-unit="ml">80 ml</div>
+              <div class="ingredient-name">Vegetable oil</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="240" data-unit="ml">240 ml</div>
+              <div class="ingredient-name">Water</div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="group-card">
+          <h3 class="group-title">Filling</h3>
+          <ul class="ingredient-list">
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="225" data-unit="g">225 g</div>
+              <div class="ingredient-name">Ground beef <span style="color:#6e6e73;">ground lamb can be used or a mixture of both</span></div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="25" data-unit="g">25 g</div>
+              <div class="ingredient-name">Pine nuts <span style="color:#6e6e73;">toasted in olive oil</span></div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="70" data-unit="g">70 g</div>
+              <div class="ingredient-name">Small onion</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="15" data-unit="g">15 g</div>
+              <div class="ingredient-name">Handful of parsley</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="9" data-unit="g">9 g</div>
+              <div class="ingredient-name">3 garlic cloves</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="4" data-unit="g">4 g</div>
+              <div class="ingredient-name">Smoked paprika</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="7" data-unit="g">7 g</div>
+              <div class="ingredient-name">Seven spice or allspice</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty static">to taste</div>
+              <div class="ingredient-name">Salt &amp; pepper</div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="group-card">
+          <h3 class="group-title">Yogurt Sauce</h3>
+          <ul class="ingredient-list">
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="900" data-unit="g">900 g</div>
+              <div class="ingredient-name">Plain yogurt <span style="color:#6e6e73;">do not use greek yogurt.</span></div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="9" data-unit="g">9 g</div>
+              <div class="ingredient-name">Salt</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="16" data-unit="g">16 g</div>
+              <div class="ingredient-name">Corn starch</div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="480" data-unit="ml">480 ml</div>
+              <div class="ingredient-name">Water <span style="color:#6e6e73;">may need more</span></div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="group-card">
+          <h3 class="group-title">Garnish</h3>
+          <ul class="ingredient-list">
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="40" data-unit="g">40 g</div>
+              <div class="ingredient-name">1 head garlic <span style="color:#6e6e73;">crushed</span></div>
+            </li>
+            <li class="ingredient-item">
+              <button class="check" type="button" aria-label="Check ingredient"></button>
+              <div class="qty dynamic" data-base="6" data-unit="g">6 g</div>
+              <div class="ingredient-name">Dried mint <span style="color:#6e6e73;">crushed</span></div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section glass">
+      <div class="section-header">
+        <h2 class="section-title">Instructions</h2>
+        <p class="section-subtitle">
+          Original instructions preserved, plus a guided step-by-step cooking mode.
+        </p>
+      </div>
+
+      <div class="instruction-block">
+        <div class="instruction-box">
+          <div class="instruction-row">
+            First, prepare the dough by combining all the ingredients together with a kitchenaid with the paddle attachment or by hand. Initially pour the cup of water a little at a time. Cover and let it rest for 30 min as you prepare the filling.
+          </div>
+          <div class="instruction-row">
+            In a food processor, add the onion, garlic, and parsely from the meat filling and pulse. Add this mixture to the beef and saute in a pan with the seasonings. Cook till browned well. Add toasted pine nuts to the filling as well. Set aside.
+          </div>
+          <div class="instruction-row">
+            Once the dough is ready, cut the ball in half and roll out each half thinly. About 1/8 of an inch thick. Cut small circles into the dough using a cookie cutter or a small coffee cup. Spread out each circle and add 1 tsp of beef filling onto one side of the circle. Shape like an empanada pinching at the seams. Then pinch the ends of the dumpling together or overlap them to look like tortellini. Repeat this step until all the dough is done.
+          </div>
+          <div class="instruction-row">
+            Place the dumplings onto a nonstick pan sprayed with olive oil. Bake in a 400 F oven for about 10 minutes until lightly browned. Feel free to broil for a minute for more color.
+          </div>
+          <div class="instruction-row">
+            At this point, once the dumplings are cooled you can place them in a ziplock and freeze them for another meal.
+          </div>
+          <div class="instruction-row">
+            Let's work on the yogurt sauce. Add the yogurt, corn starch, salt, and water to a blender.
+          </div>
+          <div class="instruction-row">
+            Add this mixture to a pot and place on medium heat. Keep mixing until the sauce starts to thicken about 10-15 min until it boils. If you want it thickened more, add a ladle of the yogurt sauce into a bowl and add more corn starch to it and stir. Place back into the pot to thicken it. I like my yogurt thick enough to coat a spoon.
+          </div>
+          <div class="instruction-row">
+            Once at the consistency you prefer, add the dumplings and cook for 10 minutes together. They should be floating to thr top.
+          </div>
+          <div class="instruction-row">
+            In a pan, saute the garlic in olive oil until crisp. Add this to the yogurt sauce and garnish with dried mint as well. Enjoy warm!
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="cooking-overlay" id="cookingOverlay" aria-hidden="true">
+    <div class="cooking-shell">
+      <div class="cook-topbar">
+        <div class="cook-title">Cooking Mode</div>
+        <button class="cook-dismiss" id="closeCookingBtn" type="button">Done</button>
+      </div>
+
+      <div class="progress-card glass">
+        <div class="progress-meta">
+          <div>
+            <div class="progress-label">Progress</div>
+            <div class="progress-value"><span id="progressStep">1</span> / <span id="progressTotal">9</span></div>
+          </div>
+          <div class="helper">Swipe mentally, tap physically</div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="step-card glass">
+        <div class="step-badge" id="stepBadge">1</div>
+        <div class="step-heading" id="stepHeading">Step 1</div>
+        <div class="step-copy" id="stepCopy"></div>
+
+        <div class="step-nav">
+          <button class="btn btn-secondary" id="prevStepBtn" type="button">Previous</button>
+          <button class="btn btn-primary" id="nextStepBtn" type="button">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const baseBeef = 225;
+    const slider = document.getElementById("beefSlider");
+    const beefValue = document.getElementById("beefValue");
+    const multiplierValue = document.getElementById("multiplierValue");
+    const dynamicQuantities = document.querySelectorAll(".qty.dynamic");
+
+    const checks = Array.from(document.querySelectorAll(".check"));
+    const checkedCount = document.getElementById("checkedCount");
+    const resetChecklistBtn = document.getElementById("resetChecklistBtn");
+
+    const startCookingBtn = document.getElementById("startCookingBtn");
+    const cookingOverlay = document.getElementById("cookingOverlay");
+    const closeCookingBtn = document.getElementById("closeCookingBtn");
+    const prevStepBtn = document.getElementById("prevStepBtn");
+    const nextStepBtn = document.getElementById("nextStepBtn");
+    const stepBadge = document.getElementById("stepBadge");
+    const stepHeading = document.getElementById("stepHeading");
+    const stepCopy = document.getElementById("stepCopy");
+    const progressStep = document.getElementById("progressStep");
+    const progressTotal = document.getElementById("progressTotal");
+    const progressFill = document.getElementById("progressFill");
+
+    const steps = [
+      "First, prepare the dough by combining all the ingredients together with a kitchenaid with the paddle attachment or by hand. Initially pour the cup of water a little at a time. Cover and let it rest for 30 min as you prepare the filling.",
+      "In a food processor, add the onion, garlic, and parsely from the meat filling and pulse. Add this mixture to the beef and saute in a pan with the seasonings. Cook till browned well. Add toasted pine nuts to the filling as well. Set aside.",
+      "Once the dough is ready, cut the ball in half and roll out each half thinly. About 1/8 of an inch thick. Cut small circles into the dough using a cookie cutter or a small coffee cup. Spread out each circle and add 1 tsp of beef filling onto one side of the circle. Shape like an empanada pinching at the seams. Then pinch the ends of the dumpling together or overlap them to look like tortellini. Repeat this step until all the dough is done.",
+      "Place the dumplings onto a nonstick pan sprayed with olive oil. Bake in a 400 F oven for about 10 minutes until lightly browned. Feel free to broil for a minute for more color.",
+      "At this point, once the dumplings are cooled you can place them in a ziplock and freeze them for another meal.",
+      "Let's work on the yogurt sauce. Add the yogurt, corn starch, salt, and water to a blender.",
+      "Add this mixture to a pot and place on medium heat. Keep mixing until the sauce starts to thicken about 10-15 min until it boils. If you want it thickened more, add a ladle of the yogurt sauce into a bowl and add more corn starch to it and stir. Place back into the pot to thicken it. I like my yogurt thick enough to coat a spoon.",
+      "Once at the consistency you prefer, add the dumplings and cook for 10 minutes together. They should be floating to thr top.",
+      "In a pan, saute the garlic in olive oil until crisp. Add this to the yogurt sauce and garnish with dried mint as well. Enjoy warm!"
+    ];
+
+    let currentStep = 0;
+
+    function cleanNumber(num) {
+      return num.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+    }
+
+    function formatMetric(value, unit) {
+      if (unit === "g" && value >= 1000) {
+        return cleanNumber(value / 1000) + " kg";
+      }
+      if (unit === "ml" && value >= 1000) {
+        return cleanNumber(value / 1000) + " L";
+      }
+      if (value < 10) {
+        return cleanNumber(value) + " " + unit;
+      }
+      return Math.round(value) + " " + unit;
+    }
+
+    function formatBeefDisplay(value) {
+      if (value >= 1000) return cleanNumber(value / 1000) + " kg";
+      return Math.round(value) + " g";
+    }
+
+    function updateScaling() {
+      const currentBeef = Number(slider.value);
+      const factor = currentBeef / baseBeef;
+
+      beefValue.textContent = formatBeefDisplay(currentBeef);
+      multiplierValue.textContent = cleanNumber(factor) + "×";
+
+      dynamicQuantities.forEach((el) => {
+        const base = Number(el.dataset.base);
+        const unit = el.dataset.unit;
+        const scaled = base * factor;
+        el.textContent = formatMetric(scaled, unit);
+      });
+    }
+
+    function updateCheckedCount() {
+      const count = document.querySelectorAll(".check.checked").length;
+      checkedCount.textContent = count + " checked";
+    }
+
+    function toggleIngredientCheck(button) {
+      button.classList.toggle("checked");
+      button.innerHTML = button.classList.contains("checked") ? "✓" : "";
+
+      const item = button.closest(".ingredient-item");
+      const qty = item.querySelector(".qty");
+      const name = item.querySelector(".ingredient-name");
+
+      qty.classList.toggle("done");
+      name.classList.toggle("done");
+
+      updateCheckedCount();
+    }
+
+    checks.forEach((button) => {
+      button.addEventListener("click", () => toggleIngredientCheck(button));
+    });
+
+    resetChecklistBtn.addEventListener("click", () => {
+      checks.forEach((button) => {
+        button.classList.remove("checked");
+        button.innerHTML = "";
+        const item = button.closest(".ingredient-item");
+        item.querySelector(".qty").classList.remove("done");
+        item.querySelector(".ingredient-name").classList.remove("done");
+      });
+      updateCheckedCount();
+    });
+
+    function renderStep() {
+      stepBadge.textContent = currentStep + 1;
+      stepHeading.textContent = "Step " + (currentStep + 1);
+      stepCopy.textContent = steps[currentStep];
+      progressStep.textContent = currentStep + 1;
+      progressTotal.textContent = steps.length;
+      progressFill.style.width = (((currentStep + 1) / steps.length) * 100) + "%";
+
+      prevStepBtn.classList.toggle("ghost", currentStep === 0);
+      nextStepBtn.textContent = currentStep === steps.length - 1 ? "Finish" : "Next";
+    }
+
+    function openCookingMode() {
+      cookingOverlay.classList.add("open");
+      cookingOverlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      renderStep();
+    }
+
+    function closeCookingMode() {
+      cookingOverlay.classList.remove("open");
+      cookingOverlay.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    startCookingBtn.addEventListener("click", openCookingMode);
+    closeCookingBtn.addEventListener("click", closeCookingMode);
+
+    prevStepBtn.addEventListener("click", () => {
+      if (currentStep > 0) {
+        currentStep -= 1;
+        renderStep();
+      }
+    });
+
+    nextStepBtn.addEventListener("click", () => {
+      if (currentStep < steps.length - 1) {
+        currentStep += 1;
+        renderStep();
+      } else {
+        closeCookingMode();
+      }
+    });
+
+    cookingOverlay.addEventListener("click", (e) => {
+      if (e.target === cookingOverlay) closeCookingMode();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (!cookingOverlay.classList.contains("open")) return;
+
+      if (e.key === "Escape") closeCookingMode();
+      if (e.key === "ArrowRight" && currentStep < steps.length - 1) {
+        currentStep += 1;
+        renderStep();
+      }
+      if (e.key === "ArrowLeft" && currentStep > 0) {
+        currentStep -= 1;
+        renderStep();
+      }
+    });
+
+    slider.addEventListener("input", updateScaling);
+
+    updateScaling();
+    updateCheckedCount();
+    renderStep();
+  </script>
+<script>(function(){
+  function lbl(){var v=document.getElementById("skinValue");if(v)v.textContent=(document.documentElement.getAttribute("data-skin")==="ios"?"iOS":"Web");}
+  var b=document.getElementById("skinToggle");
+  if(b)b.addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-skin")==="ios"?"ios":"web";
+    var nx=cur==="ios"?"web":"ios";
+    document.documentElement.setAttribute("data-skin",nx);
+    try{localStorage.setItem("shish-skin",nx);}catch(e){}
+    lbl();
+  });
+  lbl();
+})();</script>
+</body>
+</html>

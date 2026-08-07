@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Meal Plan{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>Meal Plan</h2>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+        <a href="{{ url_for('mealplan.index', week=offset-1) }}" class="btn btn-secondary btn-sm">← Previous</a>
+        {% if offset != 0 %}
+        <a href="{{ url_for('mealplan.index') }}" class="btn btn-secondary btn-sm">Today</a>
+        {% endif %}
+        <a href="{{ url_for('mealplan.index', week=offset+1) }}" class="btn btn-secondary btn-sm">Next →</a>
+    </div>
+</div>
+
+<div class="card" style="padding:0.75rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+        <span style="font-size:0.88rem;color:var(--text-secondary);">
+            {{ week_dates[0].strftime('%b %d') }} - {{ week_dates[-1].strftime('%b %d, %Y') }}
+        </span>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+            <button onclick="document.getElementById('auto-modal').style.display='flex'" class="btn btn-secondary btn-sm">Auto-generate</button>
+            <form method="POST" action="{{ url_for('mealplan.generate_shopping_list') }}" style="display:inline;">
+                <input type="hidden" name="week" value="{{ offset }}">
+                <button type="submit" class="btn btn-primary btn-sm">Generate Shopping List</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="mp-grid" style="display:grid;grid-template-columns:repeat(7, 1fr);gap:0.5rem;margin-top:1rem;">
+    {% for d in week_dates %}
+    <div class="card mp-day" style="padding:0.75rem;{% if d == today %}border-color:var(--accent);{% endif %}">
+        <div style="font-size:0.7rem;text-transform:uppercase;color:var(--text-tertiary);font-weight:600;">
+            {{ d.strftime('%a') }}
+        </div>
+        <div style="font-size:1.1rem;font-weight:700;{% if d == today %}color:var(--accent);{% endif %}">
+            {{ d.day }}
+        </div>
+        
+        {% for meal_type in ['breakfast', 'lunch', 'dinner', 'snack'] %}
+        <div class="mp-slot" data-date="{{ d.isoformat() }}" data-meal="{{ meal_type }}"
+             ondragover="event.preventDefault();this.style.background='var(--accent-subtle)'"
+             ondragleave="this.style.background=''"
+             ondrop="handleDrop(event, this)"
+             style="margin-top:0.5rem;min-height:24px;border-radius:4px;transition:background 0.15s;">
+            {% if plan_map[d][meal_type] %}
+            <div style="font-size:0.65rem;text-transform:uppercase;color:var(--text-tertiary);">{{ meal_type }}</div>
+            {% for plan in plan_map[d][meal_type] %}
+            <div class="mp-item" draggable="true" data-plan-id="{{ plan.id }}"
+                 ondragstart="handleDragStart(event, {{ plan.id }})"
+                 style="font-size:0.78rem;padding:0.25rem 0.3rem;display:flex;justify-content:space-between;align-items:center;cursor:grab;border-radius:4px;margin:2px 0;">
+                <a href="{{ url_for('recipes.view', recipe_id=plan.recipe_id) }}" style="color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;" onclick="event.stopPropagation()">
+                    {{ plan.recipe.title|truncate(15) }}
+                </a>
+                <form method="POST" action="{{ url_for('mealplan.remove', plan_id=plan.id) }}" style="display:inline;" onclick="event.stopPropagation()">
+                    <button type="submit" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:0.75rem;padding:0 0 0 0.25rem;">&times;</button>
+                </form>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+        {% endfor %}
+        
+        <button onclick="openAddModal('{{ d.isoformat() }}')" 
+                style="width:100%;margin-top:0.5rem;padding:0.25rem;font-size:0.75rem;background:var(--border-light);border:1px dashed var(--border);border-radius:4px;cursor:pointer;color:var(--text-tertiary);">
+            + Add
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Meal Modal -->
+<div id="add-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
+    <div class="card" style="width:90%;max-width:400px;">
+        <h3 style="font-size:1rem;margin-bottom:1rem;">Add to Meal Plan</h3>
+        <form method="POST" action="{{ url_for('mealplan.add') }}">
+            <input type="hidden" name="date" id="modal-date">
+            <label style="margin-top:0;">Recipe</label>
+            <select name="recipe_id" required>
+                <option value="">Select a recipe...</option>
+                {% for r in recipes %}
+                <option value="{{ r.id }}">{{ r.title }}</option>
+                {% endfor %}
+            </select>
+            <label>Meal</label>
+            <select name="meal_type">
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner" selected>Dinner</option>
+                <option value="snack">Snack</option>
+            </select>
+            <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+                <button type="button" onclick="closeAddModal()" class="btn btn-secondary" style="flex:1;">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Auto-Generate Modal -->
+<div id="auto-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
+    <div class="card" style="width:90%;max-width:400px;">
+        <h3 style="font-size:1rem;margin-bottom:0.5rem;">Auto-Generate Meals</h3>
+        <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:1rem;">
+            Randomly fills empty slots for the week. Prefers your favorites if you have 7+.
+        </p>
+        <form method="POST" action="{{ url_for('mealplan.auto_generate') }}">
+            <input type="hidden" name="week" value="{{ offset }}">
+            <label style="margin-top:0;">Which meals to fill?</label>
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.35rem;">
+                <label style="display:flex;align-items:center;gap:0.3rem;font-weight:400;font-size:0.85rem;margin:0;">
+                    <input type="checkbox" name="meal_types" value="breakfast" style="width:auto;"> Breakfast
+                </label>
+                <label style="display:flex;align-items:center;gap:0.3rem;font-weight:400;font-size:0.85rem;margin:0;">
+                    <input type="checkbox" name="meal_types" value="lunch" style="width:auto;"> Lunch
+                </label>
+                <label style="display:flex;align-items:center;gap:0.3rem;font-weight:400;font-size:0.85rem;margin:0;">
+                    <input type="checkbox" name="meal_types" value="dinner" style="width:auto;" checked> Dinner
+                </label>
+                <label style="display:flex;align-items:center;gap:0.3rem;font-weight:400;font-size:0.85rem;margin:0;">
+                    <input type="checkbox" name="meal_types" value="snack" style="width:auto;"> Snack
+                </label>
+            </div>
+            <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+                <button type="button" onclick="document.getElementById('auto-modal').style.display='none'" class="btn btn-secondary" style="flex:1;">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;">Generate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let dragPlanId = null;
+
+function handleDragStart(e, planId) {
+    dragPlanId = planId;
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.style.opacity = '0.5';
+    setTimeout(() => { e.target.style.opacity = '1'; }, 0);
+}
+
+function handleDrop(e, slot) {
+    e.preventDefault();
+    slot.style.background = '';
+    if (!dragPlanId) return;
+    
+    const newDate = slot.dataset.date;
+    const newMeal = slot.dataset.meal;
+    const csrfToken = document.querySelector('meta[name=csrf-token]').content;
+    
+    fetch('/mealplan/move/' + dragPlanId, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+        body: JSON.stringify({date: newDate, meal_type: newMeal})
+    }).then(r => {
+        if (r.ok) location.reload();
+    });
+    dragPlanId = null;
+}
+
+function openAddModal(date) {
+    document.getElementById('modal-date').value = date;
+    document.getElementById('add-modal').style.display = 'flex';
+}
+function closeAddModal() {
+    document.getElementById('add-modal').style.display = 'none';
+}
+document.getElementById('add-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddModal();
+});
+document.getElementById('auto-modal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+</script>
+
+<style>
+.mp-item:hover { background: var(--border-light); }
+.mp-item:active { cursor: grabbing; }
+@media (max-width: 900px) {
+    .mp-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 500px) {
+    .mp-grid { grid-template-columns: 1fr !important; }
+}
+</style>
+{% endblock %}

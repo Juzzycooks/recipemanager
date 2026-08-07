@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Unit Converter{% endblock %}
+{% block content %}
+<div style="max-width:560px;margin:0 auto;">
+    <div class="page-header">
+        <h2>Unit Converter</h2>
+    </div>
+
+    <div class="card">
+        <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Volume</p>
+        <div style="display:flex;gap:0.5rem;align-items:end;margin-bottom:0.75rem;">
+            <div style="flex:1;">
+                <label for="vol-val" style="margin-top:0;">Amount</label>
+                <input type="number" id="vol-val" value="1" step="any" min="0" oninput="convertVol()">
+            </div>
+            <div style="flex:1;">
+                <label for="vol-from" style="margin-top:0;">From</label>
+                <select id="vol-from" onchange="convertVol()">
+                    <option value="cup">Cups</option>
+                    <option value="tbsp">Tablespoons</option>
+                    <option value="tsp">Teaspoons</option>
+                    <option value="ml">Millilitres</option>
+                    <option value="l">Litres</option>
+                    <option value="floz">Fluid oz</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label for="vol-to" style="margin-top:0;">To</label>
+                <select id="vol-to" onchange="convertVol()">
+                    <option value="ml" selected>Millilitres</option>
+                    <option value="cup">Cups</option>
+                    <option value="tbsp">Tablespoons</option>
+                    <option value="tsp">Teaspoons</option>
+                    <option value="l">Litres</option>
+                    <option value="floz">Fluid oz</option>
+                </select>
+            </div>
+        </div>
+        <div id="vol-result" style="font-size:1.25rem;font-weight:700;color:var(--accent);padding:0.5rem 0;"></div>
+    </div>
+
+    <div class="card">
+        <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Weight</p>
+        <div style="display:flex;gap:0.5rem;align-items:end;margin-bottom:0.75rem;">
+            <div style="flex:1;">
+                <label for="wt-val" style="margin-top:0;">Amount</label>
+                <input type="number" id="wt-val" value="1" step="any" min="0" oninput="convertWt()">
+            </div>
+            <div style="flex:1;">
+                <label for="wt-from" style="margin-top:0;">From</label>
+                <select id="wt-from" onchange="convertWt()">
+                    <option value="g">Grams</option>
+                    <option value="kg">Kilograms</option>
+                    <option value="oz">Ounces</option>
+                    <option value="lb">Pounds</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label for="wt-to" style="margin-top:0;">To</label>
+                <select id="wt-to" onchange="convertWt()">
+                    <option value="oz" selected>Ounces</option>
+                    <option value="g">Grams</option>
+                    <option value="kg">Kilograms</option>
+                    <option value="lb">Pounds</option>
+                </select>
+            </div>
+        </div>
+        <div id="wt-result" style="font-size:1.25rem;font-weight:700;color:var(--accent);padding:0.5rem 0;"></div>
+    </div>
+
+    <div class="card">
+        <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Temperature</p>
+        <div style="display:flex;gap:0.5rem;align-items:end;margin-bottom:0.75rem;">
+            <div style="flex:1;">
+                <label for="temp-val" style="margin-top:0;">Amount</label>
+                <input type="number" id="temp-val" value="180" step="any" oninput="convertTemp()">
+            </div>
+            <div style="flex:1;">
+                <label for="temp-from" style="margin-top:0;">From</label>
+                <select id="temp-from" onchange="convertTemp()">
+                    <option value="c">Celsius</option>
+                    <option value="f">Fahrenheit</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label for="temp-to" style="margin-top:0;">To</label>
+                <select id="temp-to" onchange="convertTemp()">
+                    <option value="f" selected>Fahrenheit</option>
+                    <option value="c">Celsius</option>
+                </select>
+            </div>
+        </div>
+        <div id="temp-result" style="font-size:1.25rem;font-weight:700;color:var(--accent);padding:0.5rem 0;"></div>
+    </div>
+
+    <div class="card">
+        <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Common Conversions</p>
+        <table class="table">
+            <thead><tr><th>Ingredient</th><th>1 Cup</th></tr></thead>
+            <tbody>
+                <tr><td>All-purpose flour</td><td>125 g</td></tr>
+                <tr><td>Granulated sugar</td><td>200 g</td></tr>
+                <tr><td>Brown sugar (packed)</td><td>220 g</td></tr>
+                <tr><td>Butter</td><td>227 g</td></tr>
+                <tr><td>Milk / Water</td><td>240 ml</td></tr>
+                <tr><td>Honey / Syrup</td><td>340 g</td></tr>
+                <tr><td>Rice (uncooked)</td><td>185 g</td></tr>
+                <tr><td>Oats</td><td>90 g</td></tr>
+                <tr><td>Cocoa powder</td><td>85 g</td></tr>
+                <tr><td>Cream cheese</td><td>230 g</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const volToMl = {cup:236.588,tbsp:14.787,tsp:4.929,ml:1,l:1000,floz:29.574};
+const wtToG = {g:1,kg:1000,oz:28.3495,lb:453.592};
+
+function convertVol(){
+    const v=parseFloat(document.getElementById('vol-val').value)||0;
+    const f=document.getElementById('vol-from').value;
+    const t=document.getElementById('vol-to').value;
+    const ml=v*volToMl[f];
+    const r=ml/volToMl[t];
+    document.getElementById('vol-result').textContent=v+' '+f+' = '+r.toFixed(2)+' '+t;
+}
+function convertWt(){
+    const v=parseFloat(document.getElementById('wt-val').value)||0;
+    const f=document.getElementById('wt-from').value;
+    const t=document.getElementById('wt-to').value;
+    const g=v*wtToG[f];
+    const r=g/wtToG[t];
+    document.getElementById('wt-result').textContent=v+' '+f+' = '+r.toFixed(2)+' '+t;
+}
+function convertTemp(){
+    const v=parseFloat(document.getElementById('temp-val').value)||0;
+    const f=document.getElementById('temp-from').value;
+    const t=document.getElementById('temp-to').value;
+    let r;
+    if(f===t) r=v;
+    else if(f==='c') r=v*9/5+32;
+    else r=(v-32)*5/9;
+    document.getElementById('temp-result').textContent=v+'° '+f.toUpperCase()+' = '+r.toFixed(1)+'° '+t.toUpperCase();
+}
+convertVol();convertWt();convertTemp();
+</script>
+{% endblock %}

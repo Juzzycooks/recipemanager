@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}{{ recipe.title }} - Recipe Manager{% endblock %}
+{% block content %}
+{% if recipe.image_url %}
+    {% if recipe.image_url.startswith('http') %}
+        {% if '/api/media/recipes/' not in recipe.image_url %}
+        <img class="detail-hero" src="{{ recipe.image_url }}" alt="{{ recipe.title }}">
+        {% endif %}
+    {% else %}
+        <img class="detail-hero" src="/admin/uploads/{{ recipe.image_url }}" alt="{{ recipe.title }}">
+    {% endif %}
+{% endif %}
+
+<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;">
+        <div>
+            <h2 style="font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;">{{ recipe.title }}</h2>
+            {% if recipe.categories %}
+            <div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.4rem;">
+                {% for cat in recipe.categories %}<span class="tag">{{ cat.name }}</span>{% endfor %}
+            </div>
+            {% endif %}
+            {% if recipe.description %}
+            <p style="color:var(--text-secondary);margin-top:0.4rem;font-size:0.92rem;">{{ recipe.description }}</p>
+            {% endif %}
+            {% if recipe.author and recipe.user_id != current_user.id %}
+            <p style="color:var(--text-tertiary);font-size:0.8rem;margin-top:0.3rem;">By {{ recipe.author.username }}</p>
+            {% endif %}
+        </div>
+        {% if recipe.source_url %}
+        <a href="{{ recipe.source_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Source</a>
+        {% endif %}
+    </div>
+
+    {% if recipe.prep_time or recipe.cook_time or recipe.servings %}
+    <div class="detail-meta">
+        {% if recipe.prep_time %}
+        <div class="detail-meta-item">
+            <div class="meta-label">Prep Time</div>
+            <div class="meta-value">{{ recipe.prep_time }}</div>
+        </div>
+        {% endif %}
+        {% if recipe.cook_time %}
+        <div class="detail-meta-item">
+            <div class="meta-label">Cook Time</div>
+            <div class="meta-value">{{ recipe.cook_time }}</div>
+        </div>
+        {% endif %}
+        {% if recipe.servings %}
+        <div class="detail-meta-item">
+            <div class="meta-label">Servings</div>
+            <div class="meta-value">{{ recipe.servings }}</div>
+        </div>
+        {% endif %}
+        {% if made_count %}
+        <div class="detail-meta-item">
+            <div class="meta-label">Made It</div>
+            <div class="meta-value">{{ made_count }}x</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="detail-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.75rem;">
+            <h3 style="margin-bottom:0;">Ingredients</h3>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <div style="display:flex;gap:0.25rem;align-items:center;" aria-label="Scale recipe">
+                    <span style="font-size:0.75rem;color:var(--text-tertiary);font-weight:600;margin-right:0.25rem;">Scale</span>
+                    <button type="button" class="btn btn-secondary btn-sm scale-btn" data-scale="0.5">&half;&times;</button>
+                    <button type="button" class="btn btn-secondary btn-sm scale-btn active" data-scale="1">1&times;</button>
+                    <button type="button" class="btn btn-secondary btn-sm scale-btn" data-scale="2">2&times;</button>
+                    <button type="button" class="btn btn-secondary btn-sm scale-btn" data-scale="3">3&times;</button>
+                </div>
+            </div>
+        </div>
+        <ul class="ingredient-list" id="ingredient-list">
+            {% for line in recipe.ingredients.split('\n') %}
+                {% if line.strip().startswith('# ') %}<li class="list-section">{{ line.strip()[2:] }}</li>
+                {% elif line.strip() %}<li data-original="{{ line.strip() }}">{{ line.strip() }}</li>{% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="detail-section">
+        <h3>Instructions</h3>
+        <ol class="instruction-list">
+            {% for line in recipe.instructions.split('\n') %}
+                {% if line.strip().startswith('# ') %}<li class="list-section">{{ line.strip()[2:] }}</li>
+                {% elif line.strip() %}<li><span>{{ line.strip() }}</span></li>{% endif %}
+            {% endfor %}
+        </ol>
+    </div>
+
+    {% if recipe.notes %}
+    <div class="detail-section">
+        <h3>Notes</h3>
+        <ul class="ingredient-list">
+            {% for line in recipe.notes.split('\n') %}
+                {% if line.strip() %}<li>{{ line.strip() }}</li>{% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if nutrition %}
+    <div class="detail-section">
+        <h3>Nutrition <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-tertiary);">(rough estimate)</span></h3>
+        <div class="detail-meta" style="margin:0.5rem 0 0.25rem;">
+            {% set n = nutrition.per_serving or nutrition %}
+            <div class="detail-meta-item">
+                <div class="meta-label">Calories</div>
+                <div class="meta-value">{{ n.kcal }} kcal</div>
+            </div>
+            <div class="detail-meta-item">
+                <div class="meta-label">Protein</div>
+                <div class="meta-value">{{ n.protein }} g</div>
+            </div>
+            <div class="detail-meta-item">
+                <div class="meta-label">Fat</div>
+                <div class="meta-value">{{ n.fat }} g</div>
+            </div>
+            <div class="detail-meta-item">
+                <div class="meta-label">Carbs</div>
+                <div class="meta-value">{{ n.carbs }} g</div>
+            </div>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text-tertiary);">
+            {% if nutrition.per_serving %}Per serving ({{ nutrition.servings }} servings).{% else %}Whole recipe.{% endif %}
+            Estimated from {{ nutrition.matched }} of {{ nutrition.total_lines }} ingredients — a ballpark guide only, not dietary advice.
+        </p>
+    </div>
+    {% endif %}
+
+    <div class="actions" style="margin-top:2rem;padding-top:1.25rem;border-top:1px solid var(--border);">
+        <form method="POST" action="{{ url_for('shopping.add_recipe_to_list', recipe_id=recipe.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-primary">Add to shopping list</button>
+        </form>
+        <a href="{{ url_for('recipes.cook_mode', recipe_id=recipe.id) }}" class="btn btn-secondary">Cook mode</a>
+        <form method="POST" action="{{ url_for('recipes.made_it', recipe_id=recipe.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-secondary">Made it</button>
+        </form>
+        {% if made_count %}
+        <a href="{{ url_for('recipes.cook_history', recipe_id=recipe.id) }}" class="btn btn-secondary btn-sm">History ({{ made_count }})</a>
+        {% endif %}
+    </div>
+
+    <div class="actions" style="margin-top:0.5rem;">
+        <a href="{{ url_for('recipes.print_view', recipe_id=recipe.id) }}" class="btn btn-secondary btn-sm" target="_blank">Print</a>
+        <a href="{{ url_for('recipes.export', recipe_id=recipe.id) }}" class="btn btn-secondary btn-sm">Export</a>
+        <form method="POST" action="{{ url_for('recipes.duplicate', recipe_id=recipe.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-secondary btn-sm">Duplicate</button>
+        </form>
+        {% if recipe.user_id == current_user.id or current_user.is_admin %}
+        <a href="{{ url_for('recipes.edit', recipe_id=recipe.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+        <form method="POST" action="{{ url_for('recipes.delete', recipe_id=recipe.id) }}" onsubmit="return confirm('Delete this recipe?');" style="display:inline;">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('recipes.index') }}" class="btn btn-secondary btn-sm" style="margin-left:auto;">Back</a>
+    </div>
+
+    <!-- Share externally -->
+    {% if recipe.user_id == current_user.id or current_user.is_admin %}
+    <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);">
+        <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.5rem;">Share externally</p>
+        {% if recipe.share_token %}
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="share-url" value="{{ url_for('recipes.view_shared', token=recipe.share_token, _external=True) }}" readonly style="flex:1;min-width:200px;font-size:0.85rem;background:var(--bg);cursor:text;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="copyShareLink()">Copy link</button>
+            <form method="POST" action="{{ url_for('recipes.remove_share_link', recipe_id=recipe.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm">Remove link</button>
+            </form>
+        </div>
+        <p style="font-size:0.78rem;color:var(--text-tertiary);margin-top:0.4rem;">Anyone with this link can view this recipe without logging in.</p>
+        {% else %}
+        <form method="POST" action="{{ url_for('recipes.create_share_link', recipe_id=recipe.id) }}">
+            <button type="submit" class="btn btn-secondary">Generate public link</button>
+        </form>
+        <p style="font-size:0.78rem;color:var(--text-tertiary);margin-top:0.4rem;">Create a link anyone can use to view this recipe without an account.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Email recipe -->
+    <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);">
+        <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.5rem;">Email this recipe</p>
+        <form method="POST" action="{{ url_for('recipes.email_recipe', recipe_id=recipe.id) }}" style="display:flex;gap:0.5rem;">
+            <input type="email" name="email" placeholder="someone@example.com" required style="flex:1;">
+            <button type="submit" class="btn btn-secondary">Send</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function copyShareLink() {
+    const input = document.getElementById('share-url');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+        const btn = input.nextElementSibling;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy link'; }, 2000);
+    });
+}
+
+// Recipe scaling + unit conversion (shared engine)
+</script>
+<script src="/static/units.js"></script>
+<script>
+RecipeUnits.attach({ items: '#ingredient-list li:not(.list-section)', scaleBtns: '.scale-btn' });
+</script>
+<style>
+.scale-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+{% endblock %}

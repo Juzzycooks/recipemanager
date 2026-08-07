@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>Site Settings</h2>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary btn-sm">Back to Admin</a>
+</div>
+
+<div class="card">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group" style="margin-top:0;">
+            <label for="site_name">Site Name</label>
+            <input type="text" id="site_name" name="site_name" value="{{ site_name }}" placeholder="Recipe Manager">
+            <div class="form-hint">Displayed in the navigation bar. Leave blank for default.</div>
+        </div>
+        
+        <div class="form-group">
+            <label>Logo</label>
+            {% if logo_file %}
+            <div style="margin-bottom:0.75rem;display:flex;align-items:center;gap:1rem;">
+                <img src="{{ url_for('admin.uploaded_file', filename=logo_file) }}" alt="Current logo" style="max-height:40px;border-radius:4px;">
+                <label style="margin:0;display:flex;align-items:center;gap:0.5rem;font-weight:normal;font-size:0.85rem;">
+                    <input type="checkbox" name="remove_logo" value="1">
+                    Remove logo
+                </label>
+            </div>
+            {% endif %}
+            <input type="file" id="logo_file" name="logo_file" accept="image/*" style="padding:0.4rem;">
+            <div class="form-hint">Upload a logo image (PNG, JPG, SVG, WebP). Displayed in the top-right corner.</div>
+        </div>
+        
+        <div style="margin-top:1.5rem;">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

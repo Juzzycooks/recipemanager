@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Spoonmate — Pastéis de Nata (Metric)</title>
+<meta name="description" content="Spoonmate recipe — Pastéis de Nata (Portuguese egg tarts), metric with scaling, checklists, and print." />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0b0f17;
+    --text:#e6eef6;
+    --muted:#9aa6b2;
+    --accent:#f6ad55;
+    --border:rgba(255,255,255,0.06);
+    --panel:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    --shadow: 0 10px 28px rgba(2,6,12,0.62);
+    --radius:14px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: radial-gradient(900px 600px at 18% -10%, rgba(246,173,85,0.10), transparent 60%),
+                radial-gradient(900px 600px at 98% 0%, rgba(99,102,241,0.08), transparent 55%),
+                linear-gradient(180deg, #071018 0%, var(--bg) 100%);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    padding:26px;
+    line-height:1.5;
+  }
+
+  .container{
+    max-width:1100px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns: 1fr 390px;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:980px){
+    .container{grid-template-columns: 1fr; padding:0 16px}
+  }
+
+  header.site-header{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom:18px;
+    max-width:1100px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+
+  .brand{
+    display:flex;
+    gap:14px;
+    align-items:center;
+    min-width:0;
+  }
+  .logo{
+    width:56px;
+    height:56px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: linear-gradient(135deg, rgba(246,173,85,0.18), rgba(246,173,85,0.06));
+    border:1px solid rgba(255,255,255,0.06);
+    color: var(--accent);
+    font-weight:900;
+    letter-spacing:-0.03em;
+    font-size:18px;
+  }
+  .brandline{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+  .brandline h1{
+    margin:0;
+    font-size:15px;
+    font-weight:900;
+    letter-spacing:-0.02em;
+    color:var(--text);
+  }
+  .brandline .subtitle{
+    color:var(--muted);
+    font-size:13px;
+    margin-top:3px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width: 76ch;
+  }
+
+  .card{
+    background: var(--panel);
+    border-radius: var(--radius);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .pad{ padding:16px; }
+
+  .btn{
+    border:0;
+    padding:10px 12px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:800;
+    background: rgba(255,255,255,0.04);
+    color:var(--text);
+    min-width:110px;
+  }
+  .btn:hover{ background: rgba(255,255,255,0.06); }
+  .btn.ghost{
+    background:transparent;
+    border:1px solid rgba(255,255,255,0.06);
+    color:var(--muted);
+    font-weight:750;
+    min-width:160px;
+  }
+  .btn.primary{
+    background: linear-gradient(90deg,var(--accent), var(--accent-hover));
+    color:#0b0b0b;
+    box-shadow: 0 10px 24px rgba(246,173,85,0.14);
+  }
+
+  .hero{
+    display:flex;
+    gap:16px;
+    align-items:center;
+  }
+  .hero .meta{ flex:1; min-width:0; }
+  .eyebrow{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+
+  .photo{
+    width:240px;
+    height:150px;
+    border-radius:14px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.01);
+    flex-shrink:0;
+  }
+  .photo img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    filter: saturate(1.06) contrast(1.02);
+  }
+
+  .controls{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+  .scale { display:flex; gap:10px; align-items:center; }
+  .scale input[type="number"]{
+    width:92px;
+    padding:8px 10px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.02);
+    color:var(--text);
+    font-weight:900;
+    text-align:center;
+    outline:none;
+  }
+
+  .note{
+    font-size:13px;
+    color:var(--muted);
+    background: rgba(255,255,255,0.015);
+    padding:8px 10px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.06);
+  }
+
+  .grid-two{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px;
+    margin-top:14px;
+  }
+  @media (max-width:640px){ .grid-two{ grid-template-columns:1fr } }
+
+  .section-title{
+    font-weight:900;
+    font-size:13px;
+    margin-bottom:8px;
+    letter-spacing:-0.01em;
+    text-transform: uppercase;
+    opacity:0.92;
+  }
+
+  ul.ingredients{
+    list-style:none;
+    padding:0;
+    margin:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  ul.ingredients li{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:center;
+    padding:10px;
+    border-radius:12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.008));
+    border:1px solid rgba(255,255,255,0.06);
+    font-weight:650;
+    color:var(--text);
+    font-size:14px;
+  }
+  .muted-small{ color:var(--muted); font-weight:450; font-size:13px; }
+
+  ol.steps{
+    margin:12px 0 0 18px;
+    color:var(--text);
+    line-height:1.55;
+    padding-right:6px;
+  }
+  ol.steps li{ margin:12px 0; font-size:15px; }
+
+  .actions-row{
+    display:flex;
+    gap:8px;
+    justify-content:flex-end;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+
+  aside.info{
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .meta-block{
+    padding:12px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.006));
+  }
+  .meta-block .row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:8px 0;
+    font-weight:900;
+  }
+  .meta-block small{
+    color:var(--muted);
+    font-weight:500;
+  }
+
+  footer.page-footer{
+    margin-top:18px;
+    text-align:center;
+    color:var(--muted);
+    font-size:12.5px;
+    line-height:1.7;
+    max-width:1100px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  footer.page-footer a{ color:inherit; }
+  .kbd{
+    font-family: var(--mono);
+    font-size:12px;
+    color:var(--muted);
+    border:1px solid rgba(255,255,255,0.08);
+    padding:3px 6px;
+    border-radius:10px;
+    background: rgba(255,255,255,0.02);
+  }
+
+  @media print{
+    body{background:#fff;color:#000}
+    .btn, .actions-row, .controls .note, header.site-header { display:none !important; }
+    .card{ box-shadow:none; border:none }
+    footer.page-footer{ color:#333; }
+  }
+</style>
+
+<link rel="stylesheet" href="/static/pages/_theme.css">
+<style id="jf-theme">:root{--text:var(--text-primary);--muted:var(--text-secondary);--panel:var(--surface);--shadow:var(--shadow-md);}.logo{background:var(--accent-subtle)!important;border:1px solid var(--border)!important;color:var(--accent)!important;}</style>
+<script>(function(){try{var t=localStorage.getItem("theme")||((window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="brand">
+    <div class="logo">JF</div>
+    <div class="brandline">
+      <h1>Spoonmate <span style="opacity:.55">/</span> recipes <span style="opacity:.55">/</span> pasteis-de-nata</h1>
+      <div class="subtitle">Tasting Table method • metric conversion • scaling + checklists</div>
+    </div>
+  </div>
+
+  <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+    <button class="btn" onclick="window.print()">Print</button>
+    <button class="btn ghost" id="toggleCheckboxesBtn" onclick="toggleChecks()">Toggle checkboxes</button>
+  </div>
+</header>
+
+<main class="container" role="main">
+  <!-- LEFT: recipe -->
+  <section class="card" aria-labelledby="recipe-title">
+    <div class="pad">
+      <div class="hero">
+        <div class="meta">
+          <div class="eyebrow">Spoonmate recipe • Pastéis de Nata</div>
+          <div style="display:flex; align-items:flex-end; gap:12px; justify-content:space-between; flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:950; font-size:18px; letter-spacing:-0.02em">
+                Makes <span id="makesCount">30</span> tarts
+              </div>
+              <div class="muted-small" style="margin-top:6px">
+                Prep 45–60 min • Chill 2+ hrs • Bake 15–20 min • Oven 260°C
+              </div>
+            </div>
+            <div class="note">Oven: <strong style="color:var(--text)">260°C</strong> (500°F)</div>
+          </div>
+        </div>
+
+        <!-- Image provided by user -->
+        <div class="photo" title="Portuguese egg tarts (Pastéis de Nata)">
+          <img
+            alt="Portuguese egg tarts with caramelized tops"
+            src="https://www.tastingtable.com/img/gallery/portuguese-egg-tart-recipe-pastry/intro-1641242937.jpg"
+            loading="lazy"
+          />
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="scale">
+          <label class="muted-small" for="scaleInput" style="font-weight:900">Scale to</label>
+          <input id="scaleInput" type="number" value="30" min="1" step="1" aria-label="Number of tarts">
+          <div class="muted-small">tarts</div>
+        </div>
+
+        <div class="note muted-small">
+          Round quantities:
+          <input id="autoRound" type="checkbox" checked style="margin-left:8px; vertical-align:middle">
+        </div>
+      </div>
+
+      <div class="grid-two">
+        <div>
+          <div class="section-title">Puff pastry</div>
+          <ul class="ingredients" id="ingredients-pastry" aria-live="polite"></ul>
+        </div>
+
+        <div>
+          <div class="section-title">Filling & garnish</div>
+          <ul class="ingredients" id="ingredients-filling" aria-live="polite"></ul>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <div class="section-title">Special equipment</div>
+        <div class="muted-small">Egg tart molds (or a standard muffin tin).</div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <div class="section-title">Directions</div>
+
+        <!-- Tasting Table method (verbatim content reflowed only; quantities metric) -->
+        <ol class="steps" id="stepsList">
+          <li><strong>Make the puff pastry:</strong> In a small bowl, whisk the butter until it is the consistency of sour cream. In the bowl of a stand mixer fitted with the dough hook, combine the flour, water and salt. Mix on low speed, scraping the bowl down occasionally, until the mixture comes together and has a tacky consistency.</li>
+
+          <li>Transfer to a well-floured work surface and form into a 1-inch (≈2.5 cm) rectangle. Using a floured rolling pin, roll the dough into a ½-inch-thick (≈1.3 cm) rectangle, about 25 cm long. Cover with plastic wrap and let it rest for 15 minutes.</li>
+
+          <li>Remove the plastic wrap and roll the dough into a 38 cm square, dusting with more flour as needed. Spread a third of the butter on the bottom half of the dough, leaving a 2.5 cm rim. Using a bench scraper, fold the top half of the dough over the butter. Press the edges to seal and pat the dough with the rolling pin. Roll the dough into another 38 cm square. Spread half of the remaining butter on the bottom half of the dough, leaving a 2.5 cm rim. Using the bench scraper, fold the top half of the dough over the butter. Press the edges to seal. Pat the dough with the rolling pin and rotate the dough so that the seam is facing you. Now, roll into an 46 cm square.</li>
+
+          <li>Spread the remaining butter all over the dough, leaving a 2.5 cm rim. Starting with the edge closest to you, roll the dough into a tight log. Wrap in plastic wrap and refrigerate until very firm, at least 2 hours, preferably overnight.</li>
+
+          <li><strong>Make the filling:</strong> Preheat the oven to 260°C (500°F). In a medium saucepan, combine the sugar, water and cinnamon stick over high heat. Bring to a boil and cook for 1 minute, then remove from the heat and let sit until ready to use.</li>
+
+          <li>On a lightly floured surface, trim the ends of the dough to make sure they're even, then cut the log into thirty ½-inch (≈1.3 cm) slices (scale this count if you change the yield). Place each slice into the cavity of an egg tart mold or muffin tin, with the cut side of the spiral facing up. Use your thumb to press the center of the spiral into the bottom of the pan and continue pressing to evenly flatten the dough against the bottom and sides of the cavity, extending about 1–2 mm above the rim of the tart molds (or about 2 cm up the sides of the muffin tin). Repeat with the remaining dough. Refrigerate until firm, 10 minutes.</li>
+
+          <li>Meanwhile, in a small saucepan, heat 1 cup + 1 tablespoon of the milk over medium heat until bubbles begin to form around the edges, 4 to 5 minutes. In a large bowl, whisk the flour with the remaining 5 tablespoons of milk. Continue whisking while adding the hot milk in a slow, steady stream. Discard the cinnamon stick from the sugar syrup and whisk the syrup into the milk mixture in a steady stream. Return to the saucepan and cook over low heat, whisking constantly, until thickened 10 to 12 minutes.</li>
+
+          <li>Add the yolks to the mixture and whisk until well combined, then strain through a fine-mesh sieve. Pour 1½ tablespoons of the warm filling into each pastry shell.</li>
+
+          <li>Bake until the shells are golden brown and crisp, the custards are set, and the tops are blackened in spots, 15 to 20 minutes. Let cool in the pans on wire racks for 5 minutes. Then, remove the molds, transfer the tarts to the wire racks and sprinkle with cinnamon. Serve warm.</li>
+        </ol>
+
+        <div class="note" style="margin-top:12px;">
+          Metric notes: milk total is shown in the ingredients as ml; the method keeps the original split (1 cup + 1 tbsp heated, 5 tbsp cold mix).
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn ghost" onclick="window.print()">Print</button>
+        <button class="btn primary" id="shareBtn" onclick="copyFileName()">Copy file name</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIGHT: aside -->
+  <aside class="card info" aria-label="Recipe info">
+    <div class="meta-block">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-weight:950; font-size:16px">Recipe (Metric)</div>
+        <div class="muted-small" style="font-weight:900; opacity:.85;">Spoonmate</div>
+      </div>
+
+      <div style="height:10px"></div>
+      <div class="row"><div>Yield</div><small id="yieldSmall">30 tarts</small></div>
+      <div class="row"><div>Oven</div><small>260°C (very hot)</small></div>
+      <div class="row"><div>Chill</div><small>2+ hours (firm)</small></div>
+    </div>
+
+    <div class="meta-block">
+      <div style="font-weight:900; margin-bottom:8px">Conversions used</div>
+      <div class="muted-small">
+        <ul style="margin:0 0 0 18px; padding:0;">
+          <li>1 cup all-purpose flour ≈ 120 g</li>
+          <li>1 cup granulated sugar ≈ 200 g</li>
+          <li>1 cup milk ≈ 240 ml</li>
+          <li>1 tbsp ≈ 15 ml</li>
+          <li>1 stick butter ≈ 113 g</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="meta-block">
+      <div style="font-weight:900; margin-bottom:8px">Checklist tip</div>
+      <div class="muted-small">Use <span class="kbd">Toggle checkboxes</span> to track ingredients + steps.</div>
+    </div>
+
+    <div class="meta-block">
+      <div style="font-weight:900; margin-bottom:8px">Source</div>
+      <div class="muted-small">
+        Tasting Table recipe & image.<br/>
+        <span style="opacity:.9">Self-host note: this page hotlinks the image URL you provided.</span>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer class="page-footer">
+  Spoonmate • Pastéis de Nata (metric conversion + UI).<br/>
+  Recipe + image source: Tasting Table.
+</footer>
+
+<script>
+  // Base = 30 tarts.
+  // Ingredient scaling is proportional. Notes keep the original method’s milk split.
+  const baseMakes = 30;
+
+  // Metric conversions (approx):
+  // Butter 1.5 sticks ~ 170 g
+  // Flour 1.75 cups ~ 210 g (1 cup ~ 120 g)
+  // Water 2/3 cup ~ 160 ml
+  // Salt 1/4 tsp kosher ~ 1.5 g (approx)
+  // Sugar 1 cup ~ 200 g
+  // Water 2/3 cup ~ 160 ml
+  // Milk 1 cup + 6 tbsp ~ 240 + 90 = 330 ml
+  // Flour 1/2 cup ~ 60 g
+  const ingredientsPastry = [
+    {name: "Unsalted butter, softened", qty: 170, unit: "g", note: "(1½ sticks)"},
+    {name: "All-purpose flour, plus extra for dusting", qty: 210, unit: "g"},
+    {name: "Water", qty: 160, unit: "ml"},
+    {name: "Kosher salt", qty: 1.5, unit: "g"}
+  ];
+
+  const ingredientsFilling = [
+    {name: "Granulated sugar", qty: 200, unit: "g"},
+    {name: "Water (for syrup)", qty: 160, unit: "ml"},
+    {name: "Cinnamon stick", qty: 1, unit: "ea"},
+    {name: "Whole milk (total)", qty: 330, unit: "ml", note: "(heat 255 ml + mix 75 ml)"},
+    {name: "All-purpose flour", qty: 60, unit: "g"},
+    {name: "Egg yolks", qty: 6, unit: "ea"},
+    {name: "Ground cinnamon (garnish)", qty: 0.5, unit: "g", note: "to taste"}
+  ];
+
+  const ingPastryList = document.getElementById('ingredients-pastry');
+  const ingFillingList = document.getElementById('ingredients-filling');
+  const scaleInput = document.getElementById('scaleInput');
+  const makesCount = document.getElementById('makesCount');
+  const yieldSmall = document.getElementById('yieldSmall');
+  const autoRoundCheckbox = document.getElementById('autoRound');
+
+  function formatQty(q, unit){
+    if(unit === 'g' || unit === 'ml'){
+      const absq = Math.abs(q);
+      if(absq >= 10) return Math.round(q) + ' ' + unit;
+      if(absq >= 1) return (Math.round(q*2)/2) + ' ' + unit; // halves
+      return Number(q.toFixed(2)) + ' ' + unit;
+    }
+    if(unit === 'ea'){
+      // Allow halves if scaling yields non-integers
+      if(Math.abs(q - Math.round(q)) < 0.001) return Math.round(q) + ' each';
+      return (Math.round(q*2)/2) + ' each';
+    }
+    return q + ' ' + unit;
+  }
+
+  function renderIngredients(targetMakes){
+    ingPastryList.innerHTML = '';
+    ingFillingList.innerHTML = '';
+
+    const scale = targetMakes / baseMakes;
+    makesCount.textContent = targetMakes;
+    yieldSmall.textContent = `${targetMakes} tarts`;
+
+    const roundPref = autoRoundCheckbox.checked;
+
+    function renderList(list, container){
+      list.forEach(ing => {
+        const scaled = ing.qty * scale;
+        const display = roundPref ? formatQty(scaled, ing.unit) : (scaled.toFixed(2) + ' ' + ing.unit);
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <div style="max-width:70%">
+            ${ing.name}
+            ${ing.note ? `<span class="muted-small"> ${ing.note}</span>` : ``}
+          </div>
+          <div style="text-align:right">${display}</div>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    renderList(ingredientsPastry, ingPastryList);
+    renderList(ingredientsFilling, ingFillingList);
+  }
+
+  renderIngredients(baseMakes);
+
+  scaleInput.addEventListener('input', (e)=>{
+    let v = parseInt(e.target.value) || 1;
+    if(v < 1) v = 1;
+    e.target.value = v;
+    renderIngredients(v);
+  });
+
+  autoRoundCheckbox.addEventListener('change', ()=> {
+    const v = parseInt(scaleInput.value) || baseMakes;
+    renderIngredients(v);
+  });
+
+  // Toggle checkboxes for steps + ingredients
+  let checksOn = false;
+  function toggleChecks(){
+    checksOn = !checksOn;
+
+    const lists = [ingPastryList, ingFillingList];
+    lists.forEach(ul => {
+      [...ul.children].forEach(item => {
+        if(checksOn){
+          if(item.querySelector('input')) return;
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.style.marginRight = '10px';
+          cb.style.marginTop = '2px';
+          cb.setAttribute('aria-label','Toggle ingredient');
+          item.prepend(cb);
+        } else {
+          const cb = item.querySelector('input[type="checkbox"]');
+          if(cb) cb.remove();
+        }
+      });
+    });
+
+    const steps = document.getElementById('stepsList');
+    [...steps.children].forEach(li => {
+      if(checksOn){
+        if(li.querySelector('input')) return;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.style.marginRight = '10px';
+        cb.style.verticalAlign = 'middle';
+        li.prepend(cb);
+      } else {
+        const cb = li.querySelector('input[type="checkbox"]');
+        if(cb) cb.remove();
+      }
+    });
+
+    const btn = document.getElementById('toggleCheckboxesBtn');
+    if(btn) btn.textContent = checksOn ? 'Hide checkboxes' : 'Toggle checkboxes';
+  }
+  window.toggleChecks = toggleChecks;
+
+  function copyFileName(){
+    const text = 'index.html';
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(text).then(()=> {
+        const btn = document.getElementById('shareBtn');
+        const old = btn.textContent;
+        btn.textContent = 'Copied';
+        setTimeout(()=> btn.textContent = old, 1400);
+      }).catch(()=> alert('Copy not supported'));
+    } else {
+      alert('Copy not supported in this browser.');
+    }
+  }
+</script>
+
+</body>
+</html>

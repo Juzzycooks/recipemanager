@@ -1,0 +1,14 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+*.db
+.secret_key
+build/
+dist/
+*.spec
+docker-compose*.yml
+*.md
+.dockerignore
+.env

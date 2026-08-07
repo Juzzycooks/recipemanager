@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ recipe.title }} - Cook Mode</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #1a1a1a; color: #fff;
+               overflow-x: hidden; }
+        .header { position: sticky; top: 0; z-index: 10; padding: 1rem; background: #111;
+                  display: flex; justify-content: space-between; align-items: center;
+                  border-bottom: 1px solid #333; gap: 0.75rem; }
+        .header h1 { font-size: 1.1rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis;
+                     white-space: nowrap; min-width: 0; }
+        .close-btn { background: #333; color: #fff; border: none; padding: 0.5rem 1rem;
+                     border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-decoration: none;
+                     flex-shrink: 0; }
+        .tabs { position: sticky; top: 54px; z-index: 10; display: flex; background: #111;
+                border-bottom: 1px solid #333; }
+        .tab { flex: 1; padding: 0.85rem 0.5rem; text-align: center; cursor: pointer; font-weight: 500;
+               color: #888; border-bottom: 2px solid transparent; font-size: 0.9rem; }
+        .tab.active { color: #fff; border-bottom-color: #e85a24; }
+        .progress { position: sticky; top: 98px; z-index: 10; height: 4px; background: #333; }
+        .progress-bar { height: 100%; background: #e85a24; transition: width 0.3s; }
+        .content { padding: 1rem; padding-bottom: 90px; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .ingredient-item { padding: 0.85rem 0; border-bottom: 1px solid #333; font-size: 1.1rem;
+                           display: flex; align-items: flex-start; gap: 0.75rem; line-height: 1.4; }
+        .ingredient-item input[type="checkbox"] { width: 22px; height: 22px; accent-color: #e85a24;
+                                                   flex-shrink: 0; margin-top: 2px; }
+        .ingredient-item.checked { color: #666; text-decoration: line-through; }
+        .instruction-step { margin-bottom: 1.5rem; }
+        .step-number { font-size: 2rem; font-weight: 700; color: #e85a24; margin-bottom: 0.25rem; }
+        .step-text { font-size: 1.15rem; line-height: 1.6; word-wrap: break-word; }
+        .nav-buttons { position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+                       display: none; gap: 0.75rem; padding: 1rem;
+                       background: #111; border-top: 1px solid #333; }
+        .nav-btn { flex: 1; padding: 0.85rem; font-size: 1rem; font-weight: 600; border: none;
+                   border-radius: 8px; cursor: pointer; min-height: 48px; }
+        .nav-btn.prev { background: #333; color: #fff; }
+        .nav-btn.next { background: #e85a24; color: #fff; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .ctrl-btn { padding: 0.3rem 0.65rem; border-radius: 6px; border: 1px solid #444;
+                    background: #333; color: #fff; font-size: 0.8rem; font-weight: 600;
+                    cursor: pointer; font-family: inherit; min-height: 36px; }
+        .ctrl-btn.active { background: #e85a24; border-color: #e85a24; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ recipe.title }}</h1>
+        <a href="{{ url_for('collections.view_shared_recipe', token=collection.public_url_token, recipe_id=recipe.id) }}" class="close-btn">Exit</a>
+    </div>
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('ingredients')">Ingredients</div>
+        <div class="tab" onclick="showTab('instructions')">Instructions</div>
+    </div>
+    <div class="progress"><div class="progress-bar" id="progress" style="width:0%"></div></div>
+    <div class="content">
+        <div class="step active" id="ingredients-tab">
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;padding:0.25rem 0 0.75rem;border-bottom:1px solid #333;">
+                <span style="font-size:0.72rem;color:#888;font-weight:600;text-transform:uppercase;">Scale</span>
+                <button type="button" class="ctrl-btn scale-btn" data-scale="0.5">&half;&times;</button>
+                <button type="button" class="ctrl-btn scale-btn active" data-scale="1">1&times;</button>
+                <button type="button" class="ctrl-btn scale-btn" data-scale="2">2&times;</button>
+            </div>
+            {% for line in recipe.ingredients.split('\n') %}
+            {% if line.strip().startswith('# ') %}
+            <div class="cook-section">{{ line.strip()[2:] }}</div>
+            {% elif line.strip() %}
+            <label class="ingredient-item">
+                <input type="checkbox" onchange="this.parentElement.classList.toggle('checked', this.checked)">
+                <span class="ing-text">{{ line.strip() }}</span>
+            </label>
+            {% endif %}
+            {% endfor %}
+        </div>
+        <div class="step" id="instructions-tab">
+            {% set steps = recipe.instructions.split('\n')|select|list %}
+            {% set ns = namespace(n=0) %}
+            {% for line in steps %}
+            {% if line.strip() and not line.strip().startswith('# ') %}
+            {% set ns.n = ns.n + 1 %}
+            <div class="instruction-step" data-step="{{ ns.n }}">
+                <div class="step-number">{{ ns.n }}</div>
+                <div class="step-text">{{ line.strip() }}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    <div class="nav-buttons" id="step-nav">
+        <button class="nav-btn prev" onclick="prevStep()">Previous</button>
+        <button class="nav-btn next" onclick="nextStep()">Next</button>
+    </div>
+    <script>
+    let currentStep=1;
+    const totalSteps=document.querySelectorAll('.instruction-step').length;
+    function showTab(tab){
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+        if(tab==='ingredients'){document.querySelector('.tab:first-child').classList.add('active');document.getElementById('ingredients-tab').classList.add('active');document.getElementById('step-nav').style.display='none';}
+        else{document.querySelector('.tab:last-child').classList.add('active');document.getElementById('instructions-tab').classList.add('active');document.getElementById('step-nav').style.display='flex';showStep(currentStep);}
+    }
+    function showStep(n){
+        currentStep=Math.max(1,Math.min(n,totalSteps));
+        document.querySelectorAll('.instruction-step').forEach(s=>{s.style.display=s.dataset.step==currentStep?'block':'none';});
+        document.getElementById('progress').style.width=((currentStep/totalSteps)*100)+'%';
+        document.querySelector('.nav-btn.prev').disabled=currentStep===1;
+        document.querySelector('.nav-btn.next').disabled=currentStep===totalSteps;
+        window.scrollTo(0,0);
+    }
+    function prevStep(){showStep(currentStep-1);}
+    function nextStep(){showStep(currentStep+1);}
+    if('wakeLock' in navigator)navigator.wakeLock.request('screen').catch(()=>{});
+    </script>
+    <style>
+    .cook-section { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+        font-size: 0.78rem; color: #e85a24; padding: 0.85rem 0 0.25rem; }
+    </style>
+    <script src="/static/units.js"></script>
+    <script>
+    RecipeUnits.attach({ items: '.ingredient-item .ing-text', scaleBtns: '.scale-btn' });
+    </script>
+</body>
+</html>

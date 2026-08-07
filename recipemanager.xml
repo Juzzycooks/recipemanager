@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>RecipeManager</Name>
+  <Repository>juzzycooks/recipemanager:latest</Repository>
+  <Registry>https://hub.docker.com/r/juzzycooks/recipemanager</Registry>
+  <Branch>
+    <Tag>latest</Tag>
+    <TagDescription>Latest stable release</TagDescription>
+  </Branch>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support/>
+  <Overview>A self-hosted recipe manager with URL importing, Mealie migration, shopping lists with Woolworths price lookup, calculators, user management, and SMTP notifications.</Overview>
+  <Category>Productivity: HomeAutomation:</Category>
+  <WebUI>http://[IP]:[PORT:8114]</WebUI>
+  <Icon>https://raw.githubusercontent.com/Spoonmate/recipemanager/main/icon.png</Icon>
+  <ExtraParams>--restart=unless-stopped</ExtraParams>
+  <DateInstalled/>
+  <Description>A self-hosted recipe manager with URL importing, Mealie migration, shopping lists with Woolworths price lookup, calculators, user management, and SMTP notifications. On first launch visit the web UI to create your admin account.</Description>
+  <templatePath>/tmp/GitHub/Templates/RecipeManager.xml</templatePath>
+
+  <Config Name="Web UI Port" Target="5000" Default="8114" Mode="tcp" Description="Port for the web interface" Type="Port" Display="always" Required="true" Mask="false">8114</Config>
+
+  <Config Name="Data Path" Target="/app/data" Default="/mnt/user/appdata/RecipeManager" Mode="rw" Description="Path to store database and config" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/RecipeManager</Config>
+
+  <Config Name="SMTP Host" Target="SMTP_HOST" Default="" Mode="" Description="SMTP server hostname (e.g. smtp.gmail.com). Leave blank to disable email." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+
+  <Config Name="SMTP Port" Target="SMTP_PORT" Default="587" Mode="" Description="SMTP port. Use 465 for SSL or 587 for STARTTLS." Type="Variable" Display="always" Required="false" Mask="false">587</Config>
+
+  <Config Name="SMTP Username" Target="SMTP_USER" Default="" Mode="" Description="SMTP login username / email address" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+
+  <Config Name="SMTP Password" Target="SMTP_PASS" Default="" Mode="" Description="SMTP login password or app password" Type="Variable" Display="always" Required="false" Mask="true"></Config>
+
+  <Config Name="SMTP From Name" Target="SMTP_FROM" Default="" Mode="" Description="Display name for outgoing emails" Type="Variable" Display="always" Required="false" Mask="false"></Config>
+
+  <Config Name="SMTP TLS" Target="SMTP_TLS" Default="true" Mode="" Description="Enable TLS for SMTP connection" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+
+  <Config Name="Secret Key" Target="FLASK_SECRET_KEY" Default="" Mode="" Description="Session encryption key. Leave blank to auto-generate." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID to run as (Unraid default 99 = nobody)" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID to run as (Unraid default 100 = users)" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+
+  <Config Name="Trusted Proxy" Target="TRUSTED_PROXY" Default="" Mode="" Description="Set to 1 if running behind a reverse proxy (SWAG, NPM, Traefik) so rate limiting sees real client IPs." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+
+  <Config Name="Secure Cookies" Target="COOKIE_SECURE" Default="" Mode="" Description="Set to 1 when serving over HTTPS to mark session cookies Secure." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+</Container>

@@ -1,0 +1,43 @@
+# ── Work / non-project files (never commit) ──
+*.ps1
+*.psm1
+*.psd1
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+.venv/
+env/
+
+# Data (contains database and secrets)
+data/*.db
+data/.secret_key
+*.db
+.secret_key
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Local env
+.env
+.env.local

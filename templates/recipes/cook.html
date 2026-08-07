@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ recipe.title }} - Cook Mode</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #1a1a1a; color: #fff;
+               overflow-x: hidden; }
+        .header { position: sticky; top: 0; z-index: 10; padding: 1rem; background: #111;
+                  display: flex; justify-content: space-between; align-items: center;
+                  border-bottom: 1px solid #333; gap: 0.75rem; }
+        .header h1 { font-size: 1.1rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis;
+                     white-space: nowrap; min-width: 0; }
+        .close-btn { background: #333; color: #fff; border: none; padding: 0.5rem 1rem;
+                     border-radius: 6px; cursor: pointer; font-size: 0.9rem; text-decoration: none;
+                     flex-shrink: 0; }
+        .tabs { position: sticky; top: 54px; z-index: 10; display: flex; background: #111;
+                border-bottom: 1px solid #333; }
+        .tab { flex: 1; padding: 0.85rem 0.5rem; text-align: center; cursor: pointer; font-weight: 500;
+               color: #888; border-bottom: 2px solid transparent; font-size: 0.9rem; }
+        .tab.active { color: #fff; border-bottom-color: #e85a24; }
+        .progress { position: sticky; top: 98px; z-index: 10; height: 4px; background: #333; }
+        .progress-bar { height: 100%; background: #e85a24; transition: width 0.3s; }
+        .content { padding: 1rem; padding-bottom: 90px; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .ingredient-item { padding: 0.85rem 0; border-bottom: 1px solid #333; font-size: 1.1rem;
+                           display: flex; align-items: flex-start; gap: 0.75rem; line-height: 1.4; }
+        .ingredient-item input[type="checkbox"] { width: 22px; height: 22px; accent-color: #e85a24;
+                                                   flex-shrink: 0; margin-top: 2px; }
+        .ingredient-item.checked { color: #666; text-decoration: line-through; }
+        .instruction-step { margin-bottom: 1.5rem; }
+        .step-number { font-size: 2rem; font-weight: 700; color: #e85a24; margin-bottom: 0.25rem; }
+        .step-text { font-size: 1.15rem; line-height: 1.6; word-wrap: break-word; }
+        .nav-buttons { position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+                       display: none; gap: 0.75rem; padding: 1rem;
+                       background: #111; border-top: 1px solid #333; }
+        .nav-btn { flex: 1; padding: 0.85rem; font-size: 1rem; font-weight: 600; border: none;
+                   border-radius: 8px; cursor: pointer; min-height: 48px; }
+        .nav-btn.prev { background: #333; color: #fff; }
+        .nav-btn.next { background: #e85a24; color: #fff; }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .ctrl-btn { padding: 0.3rem 0.65rem; border-radius: 6px; border: 1px solid #444;
+                    background: #333; color: #fff; font-size: 0.8rem; font-weight: 600;
+                    cursor: pointer; font-family: inherit; min-height: 36px; }
+        .ctrl-btn.active { background: #e85a24; border-color: #e85a24; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ recipe.title }}</h1>
+        <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" class="close-btn">Exit</a>
+    </div>
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('ingredients')">Ingredients</div>
+        <div class="tab" onclick="showTab('instructions')">Instructions</div>
+        <div class="tab" onclick="showTab('timers')">Timers</div>
+    </div>
+    <div class="progress"><div class="progress-bar" id="progress" style="width:0%"></div></div>
+    <div class="content">
+        <div class="step active" id="ingredients-tab">
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;padding:0.25rem 0 0.75rem;border-bottom:1px solid #333;">
+                <span style="font-size:0.72rem;color:#888;font-weight:600;text-transform:uppercase;">Scale</span>
+                <button type="button" class="ctrl-btn scale-btn" data-scale="0.5">&half;&times;</button>
+                <button type="button" class="ctrl-btn scale-btn active" data-scale="1">1&times;</button>
+                <button type="button" class="ctrl-btn scale-btn" data-scale="2">2&times;</button>
+            </div>
+            {% for line in recipe.ingredients.split('\n') %}
+            {% if line.strip().startswith('# ') %}
+            <div class="cook-section">{{ line.strip()[2:] }}</div>
+            {% elif line.strip() %}
+            <label class="ingredient-item">
+                <input type="checkbox" onchange="this.parentElement.classList.toggle('checked', this.checked)">
+                <span class="ing-text">{{ line.strip() }}</span>
+            </label>
+            {% endif %}
+            {% endfor %}
+        </div>
+        <div class="step" id="instructions-tab">
+            {% set steps = recipe.instructions.split('\n')|select|list %}
+            {% set ns = namespace(n=0) %}
+            {% for line in steps %}
+            {% if line.strip() and not line.strip().startswith('# ') %}
+            {% set ns.n = ns.n + 1 %}
+            <div class="instruction-step" data-step="{{ ns.n }}">
+                <div class="step-number">{{ ns.n }}</div>
+                <div class="step-text">{{ line.strip() }}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        <div class="step" id="timers-tab">
+            <div style="background:#222;border:1px solid #333;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+                <p style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;color:#888;margin-bottom:0.75rem;font-weight:600;">Quick Timers</p>
+                <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;">
+                    <button onclick="startTimer(1,'1 min')" style="background:#333;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;min-height:40px;">1 min</button>
+                    <button onclick="startTimer(2,'2 min')" style="background:#333;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;min-height:40px;">2 min</button>
+                    <button onclick="startTimer(5,'5 min')" style="background:#333;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;min-height:40px;">5 min</button>
+                    <button onclick="startTimer(10,'10 min')" style="background:#333;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;min-height:40px;">10 min</button>
+                    <button onclick="startTimer(15,'15 min')" style="background:#333;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;min-height:40px;">15 min</button>
+                    <button onclick="startTimer(20,'20 min')" style="background:#333;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;min-height:40px;">20 min</button>
+                    <button onclick="startTimer(30,'30 min')" style="background:#333;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;min-height:40px;">30 min</button>
+                    <button onclick="startTimer(45,'45 min')" style="background:#333;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;min-height:40px;">45 min</button>
+                    <button onclick="startTimer(60,'1 hour')" style="background:#333;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;min-height:40px;">1 hour</button>
+                </div>
+                <p style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.04em;color:#888;margin-bottom:0.5rem;font-weight:600;">Custom Timer</p>
+                <div style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+                    <input type="number" id="custom-hr" value="0" min="0" max="23" style="background:#333;border:1px solid #444;color:#fff;padding:0.5rem;border-radius:6px;width:52px;text-align:center;">
+                    <span style="color:#888;font-size:0.8rem;">hr</span>
+                    <input type="number" id="custom-min" value="0" min="0" max="59" style="background:#333;border:1px solid #444;color:#fff;padding:0.5rem;border-radius:6px;width:52px;text-align:center;">
+                    <span style="color:#888;font-size:0.8rem;">min</span>
+                    <input type="number" id="custom-sec" value="0" min="0" max="59" style="background:#333;border:1px solid #444;color:#fff;padding:0.5rem;border-radius:6px;width:52px;text-align:center;">
+                    <span style="color:#888;font-size:0.8rem;">sec</span>
+                    <button onclick="startCustomTimer()" style="background:#e85a24;color:#fff;border:none;padding:0.5rem 0.85rem;border-radius:6px;cursor:pointer;font-weight:600;min-height:40px;">Start</button>
+                </div>
+            </div>
+            <div id="active-timers"></div>
+        </div>
+    </div>
+    <div class="nav-buttons" id="step-nav">
+        <button class="nav-btn prev" onclick="prevStep()">Previous</button>
+        <button class="nav-btn next" onclick="nextStep()">Next</button>
+    </div>
+    <script>
+    let currentStep=1;
+    const totalSteps=document.querySelectorAll('.instruction-step').length;
+    let timers=[];let timerIdCounter=0;
+
+    function showTab(tab){
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+        const tabs=document.querySelectorAll('.tab');
+        if(tab==='ingredients'){tabs[0].classList.add('active');document.getElementById('ingredients-tab').classList.add('active');document.getElementById('step-nav').style.display='none';}
+        else if(tab==='instructions'){tabs[1].classList.add('active');document.getElementById('instructions-tab').classList.add('active');document.getElementById('step-nav').style.display='flex';showStep(currentStep);}
+        else{tabs[2].classList.add('active');document.getElementById('timers-tab').classList.add('active');document.getElementById('step-nav').style.display='none';}
+    }
+    function showStep(n){
+        currentStep=Math.max(1,Math.min(n,totalSteps));
+        document.querySelectorAll('.instruction-step').forEach(s=>{s.style.display=s.dataset.step==currentStep?'block':'none';});
+        document.getElementById('progress').style.width=((currentStep/totalSteps)*100)+'%';
+        document.querySelector('.nav-btn.prev').disabled=currentStep===1;
+        document.querySelector('.nav-btn.next').disabled=currentStep===totalSteps;
+        window.scrollTo(0,0);
+    }
+    function prevStep(){showStep(currentStep-1);}
+    function nextStep(){showStep(currentStep+1);}
+    function startTimer(minutes,label){
+        const id=++timerIdCounter;const endTime=Date.now()+minutes*60*1000;
+        const timer={id,label,endTime,interval:null,done:false};
+        timer.interval=setInterval(()=>updateTimer(timer),250);timers.push(timer);renderTimers();
+    }
+    function startCustomTimer(){
+        const h=parseInt(document.getElementById('custom-hr').value)||0;
+        const m=parseInt(document.getElementById('custom-min').value)||0;
+        const s=parseInt(document.getElementById('custom-sec').value)||0;
+        const totalMin=h*60+m+s/60;if(totalMin<=0)return;
+        const parts=[];if(h)parts.push(h+'h');if(m)parts.push(m+'m');if(s)parts.push(s+'s');
+        startTimer(totalMin,parts.join(' '));
+    }
+    function updateTimer(timer){
+        const remaining=timer.endTime-Date.now();
+        if(remaining<=0&&!timer.done){timer.done=true;clearInterval(timer.interval);
+            try{if('Notification' in window&&Notification.permission==='granted')new Notification('Timer done!',{body:timer.label+' is complete'});}catch(e){}
+            try{const ctx=new(window.AudioContext||window.webkitAudioContext)();for(let i=0;i<3;i++){const osc=ctx.createOscillator();osc.connect(ctx.destination);osc.frequency.value=880;osc.start(ctx.currentTime+i*0.3);osc.stop(ctx.currentTime+i*0.3+0.15);}}catch(e){}
+        }renderTimers();
+    }
+    function removeTimer(id){const idx=timers.findIndex(t=>t.id===id);if(idx>=0){clearInterval(timers[idx].interval);timers.splice(idx,1);}renderTimers();}
+    function renderTimers(){
+        const c=document.getElementById('active-timers');if(!timers.length){c.innerHTML='';return;}
+        c.innerHTML=timers.map(t=>{
+            const rem=Math.max(0,t.endTime-Date.now());const sec=Math.ceil(rem/1000);
+            const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+            const d=h>0?h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'):String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+            return '<div style="background:#2a2a2a;border-radius:6px;padding:0.75rem 1rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">'+
+                '<div><div style="font-size:1.4rem;font-weight:700;font-variant-numeric:tabular-nums;'+(t.done?'color:#e85a24;animation:pulse 1s infinite;':'')+'">'+(t.done?'DONE':d)+'</div>'+
+                '<div style="font-size:0.8rem;color:#888;">'+t.label+'</div></div>'+
+                '<button onclick="removeTimer('+t.id+')" style="background:#444;color:#fff;border:none;padding:0.4rem 0.7rem;border-radius:4px;cursor:pointer;min-height:36px;">Dismiss</button></div>';
+        }).join('');
+    }
+    if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+    if('wakeLock' in navigator)navigator.wakeLock.request('screen').catch(()=>{});
+    </script>
+    <style>
+    .cook-section { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+        font-size: 0.78rem; color: #e85a24; padding: 0.85rem 0 0.25rem; }
+    </style>
+    <script src="/static/units.js"></script>
+    <script>
+    RecipeUnits.attach({ items: '.ingredient-item .ing-text', scaleBtns: '.scale-btn' });
+    </script>
+</body>
+</html>
