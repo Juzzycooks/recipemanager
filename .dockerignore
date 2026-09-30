@@ -12,3 +12,8 @@ docker-compose*.yml
 *.md
 .dockerignore
 .env
+
+# Not needed at runtime
+IOS/
+.claude/
+.impeccable/
