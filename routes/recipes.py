@@ -300,20 +300,16 @@ def edit(recipe_id):
     return render_template("recipes/form.html", recipe=recipe, categories=categories)
 
 
-@recipes_bp.route("/recipe/<int:recipe_id>/delete", methods=["POST"])
-@login_required
-def delete(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
-    if recipe.user_id != current_user.id and not current_user.is_admin:
-        flash("That belongs to someone else, so you can't change it.", "error")
-        return redirect(url_for("recipes.index"))
+def trash_recipe(recipe, deleted_by):
+    """Copy a recipe to the 24h trash, delete it and commit. Returns the restore token.
+    Raises OSError (recipe untouched) if the trash entry can't be written."""
     try:
         _purge_trash()
     except OSError:
         current_app.logger.warning("Trash purge failed", exc_info=True)
     token = secrets.token_urlsafe(12)
     entry = {
-        "deleted_by": current_user.id,
+        "deleted_by": deleted_by,
         "deleted_at": time.time(),
         "recipe": {
             "title": recipe.title, "description": recipe.description,
@@ -331,21 +327,16 @@ def delete(recipe_id):
             json.dump(entry, f)
     except OSError:
         current_app.logger.error("Could not write trash entry", exc_info=True)
-        flash("Couldn't set that recipe aside safely, so it wasn't deleted. Please try again.", "error")
-        return redirect(url_for("recipes.view", recipe_id=recipe_id))
-    title = recipe.title
+        raise
     db.session.delete(recipe)
     db.session.commit()
-    flash(f"Deleted \u201c{title}\u201d.|{token}", "undo")
-    return redirect(url_for("recipes.index"))
+    return token
 
 
-@recipes_bp.route("/recipe/restore/<token>", methods=["POST"])
-@login_required
-def restore(token):
+def restore_trash(token, user):
+    """Recreate a trashed recipe. Returns (recipe, None) or (None, 'invalid' | 'expired' | 'forbidden')."""
     if not _TRASH_TOKEN_RE.match(token or ""):
-        flash("That undo link isn't valid. The recipe can't be restored from it.", "error")
-        return redirect(url_for("recipes.index"))
+        return None, "invalid"
     path = os.path.join(_trash_dir(), f"{token}.json")
     try:
         with open(path, encoding="utf-8") as f:
@@ -354,15 +345,13 @@ def restore(token):
     except (OSError, ValueError):
         entry, age = None, 0
     if not entry or age >= TRASH_MAX_AGE:
-        flash("Sorry, that recipe can't be restored. Undo is only available for 24 hours after deleting.", "error")
-        return redirect(url_for("recipes.index"))
-    if entry.get("deleted_by") != current_user.id and not current_user.is_admin:
-        flash("Access denied. Only the person who deleted a recipe can restore it.", "error")
-        return redirect(url_for("recipes.index"))
+        return None, "expired"
+    if entry.get("deleted_by") != user.id and not user.is_admin:
+        return None, "forbidden"
     data = entry.get("recipe") or {}
     owner_id = data.get("user_id")
-    if not User.query.get(owner_id):
-        owner_id = current_user.id
+    if not db.session.get(User, owner_id):
+        owner_id = user.id
     recipe = Recipe(
         title=data.get("title") or "Untitled recipe", description=data.get("description") or "",
         ingredients=data.get("ingredients") or "", instructions=data.get("instructions") or "",
@@ -389,6 +378,38 @@ def restore(token):
         os.remove(path)
     except OSError:
         pass
+    return recipe, None
+
+
+@recipes_bp.route("/recipe/<int:recipe_id>/delete", methods=["POST"])
+@login_required
+def delete(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.user_id != current_user.id and not current_user.is_admin:
+        flash("That belongs to someone else, so you can't change it.", "error")
+        return redirect(url_for("recipes.index"))
+    title = recipe.title
+    try:
+        token = trash_recipe(recipe, current_user.id)
+    except OSError:
+        flash("Couldn't set that recipe aside safely, so it wasn't deleted. Please try again.", "error")
+        return redirect(url_for("recipes.view", recipe_id=recipe_id))
+    flash(f"Deleted \u201c{title}\u201d.|{token}", "undo")
+    return redirect(url_for("recipes.index"))
+
+
+@recipes_bp.route("/recipe/restore/<token>", methods=["POST"])
+@login_required
+def restore(token):
+    recipe, problem = restore_trash(token, current_user)
+    if problem == "invalid":
+        flash("That undo link isn't valid. The recipe can't be restored from it.", "error")
+    elif problem == "expired":
+        flash("Sorry, that recipe can't be restored. Undo is only available for 24 hours after deleting.", "error")
+    elif problem == "forbidden":
+        flash("Access denied. Only the person who deleted a recipe can restore it.", "error")
+    if problem:
+        return redirect(url_for("recipes.index"))
     flash(f"Restored \u201c{recipe.title}\u201d.", "success")
     return redirect(url_for("recipes.view", recipe_id=recipe.id))
 
@@ -421,21 +442,25 @@ def duplicate(recipe_id):
 _URL_RE = re.compile(r"https?://\S+")
 
 
-def _render_import_preview(data, source_url="", image_name="", kind="url", raw_text="", error=None, status=200):
-    """Render the 'Check what we found' page for a parsed recipe (nothing is saved yet)."""
-    fields = {k: (data.get(k) or "") for k in
-              ("title", "description", "ingredients", "instructions", "notes", "servings", "prep_time", "cook_time")}
+def import_warning(fields, raw_text=""):
+    """Plain-language warning when a parsed import is missing ingredients or a method ('' if fine)."""
     ing = bool(fields["ingredients"].strip())
     met = bool(fields["instructions"].strip())
     fix = "Check the original text below and paste them in." if raw_text else "Add them in the boxes below."
     if not ing and not met:
-        warning = "We couldn't find ingredients or a method. " + fix
-    elif not ing:
-        warning = "We found the method but no ingredients. " + fix
-    elif not met:
-        warning = "We found the ingredients but no method. " + fix
-    else:
-        warning = ""
+        return "We couldn't find ingredients or a method. " + fix
+    if not ing:
+        return "We found the method but no ingredients. " + fix
+    if not met:
+        return "We found the ingredients but no method. " + fix
+    return ""
+
+
+def _render_import_preview(data, source_url="", image_name="", kind="url", raw_text="", error=None, status=200):
+    """Render the 'Check what we found' page for a parsed recipe (nothing is saved yet)."""
+    fields = {k: (data.get(k) or "") for k in
+              ("title", "description", "ingredients", "instructions", "notes", "servings", "prep_time", "cook_time")}
+    warning = import_warning(fields, raw_text)
     return render_template("recipes/import_preview.html", f=fields, source_url=source_url,
                            image_name=image_name or "", kind=kind, raw_text=raw_text,
                            warning=warning, error=error), status

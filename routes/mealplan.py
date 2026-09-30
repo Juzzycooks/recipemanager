@@ -7,6 +7,45 @@ from models import db, Recipe, MealPlan, ShoppingListItem, Favorite, SiteSetting
 
 mealplan_bp = Blueprint("mealplan", __name__, url_prefix="/mealplan")
 
+MEAL_TYPES = ("breakfast", "lunch", "dinner", "snack")
+
+
+def add_week_to_shopping(user_id, first, last):
+    """Add every planned recipe's ingredients between two dates to the user's list.
+    Does not commit. Returns (added, merged)."""
+    from shopping_utils import add_lines_merged
+    plans = MealPlan.query.filter(MealPlan.user_id == user_id,
+                                  MealPlan.date >= first, MealPlan.date <= last).all()
+    added = merged = 0
+    for plan in plans:
+        recipe = plan.recipe
+        if recipe is None:
+            continue
+        a, m = add_lines_merged(user_id, recipe.ingredients.split("\n"), recipe_id=recipe.id)
+        added += a
+        merged += m
+    return added, merged
+
+
+def fill_week(user_id, week_dates, meal_types):
+    """Fill empty slots with random recipes (favourites when there are enough).
+    Does not commit. Returns the number added, or None when there are no recipes."""
+    fav_ids = [f.recipe_id for f in Favorite.query.filter_by(user_id=user_id).all()]
+    fav_recipes = Recipe.query.filter(Recipe.id.in_(fav_ids)).all() if fav_ids else []
+    all_recipes = Recipe.query.all()
+    if not all_recipes:
+        return None
+    pool = fav_recipes if len(fav_recipes) >= 7 else all_recipes
+    added = 0
+    for d in week_dates:
+        for mt in meal_types:
+            if MealPlan.query.filter_by(user_id=user_id, date=d, meal_type=mt).first():
+                continue
+            db.session.add(MealPlan(user_id=user_id, recipe_id=random.choice(pool).id,
+                                    date=d, meal_type=mt))
+            added += 1
+    return added
+
 
 def _get_week_dates(start_date):
     """Get list of 7 dates starting from start_date (Monday)."""
@@ -115,23 +154,7 @@ def generate_shopping_list():
     start = today + timedelta(weeks=offset)
     week_dates = _get_week_dates(start)
     
-    plans = MealPlan.query.filter(
-        MealPlan.user_id == current_user.id,
-        MealPlan.date >= week_dates[0],
-        MealPlan.date <= week_dates[-1]
-    ).all()
-    
-    from shopping_utils import add_lines_merged
-    added = merged = 0
-    for plan in plans:
-        recipe = plan.recipe
-        if recipe is None:
-            continue
-        a, m = add_lines_merged(current_user.id, recipe.ingredients.split("\n"),
-                                recipe_id=recipe.id)
-        added += a
-        merged += m
-
+    added, merged = add_week_to_shopping(current_user.id, week_dates[0], week_dates[-1])
     db.session.commit()
     msg = f"Added {added} ingredients to shopping list."
     if merged:
@@ -175,38 +198,11 @@ def auto_generate():
     start = today + timedelta(weeks=offset)
     week_dates = _get_week_dates(start)
     
-    # Gather candidate recipes: prefer favorites, then all
-    fav_ids = [f.recipe_id for f in Favorite.query.filter_by(user_id=current_user.id).all()]
-    fav_recipes = Recipe.query.filter(Recipe.id.in_(fav_ids)).all() if fav_ids else []
-    all_recipes = Recipe.query.all()
-    
-    if not all_recipes:
+    added = fill_week(current_user.id, week_dates, meal_types)
+    if added is None:
         flash("Add a few recipes first, then the planner can fill your week.", "error")
         return redirect(url_for("mealplan.index", week=offset))
-    
-    # Use favorites if we have enough, otherwise mix in all recipes
-    pool = fav_recipes if len(fav_recipes) >= 7 else all_recipes
-    
-    added = 0
-    for d in week_dates:
-        for mt in meal_types:
-            # Skip if already has a plan for this slot
-            existing = MealPlan.query.filter_by(
-                user_id=current_user.id, date=d, meal_type=mt
-            ).first()
-            if existing:
-                continue
-            
-            recipe = random.choice(pool)
-            plan = MealPlan(
-                user_id=current_user.id,
-                recipe_id=recipe.id,
-                date=d,
-                meal_type=mt
-            )
-            db.session.add(plan)
-            added += 1
-    
+
     db.session.commit()
     flash(f"Auto-generated {added} meals for the week.", "success")
     return redirect(url_for("mealplan.index", week=offset))

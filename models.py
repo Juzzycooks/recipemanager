@@ -214,3 +214,14 @@ class PasswordResetToken(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     used = db.Column(db.Boolean, default=False)
     user = db.relationship("User", backref=db.backref("reset_tokens", cascade="all, delete-orphan"))
+
+
+class ApiToken(db.Model):
+    """Bearer token for the /api/v1 JSON API (stores a hash, never the token)."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    token_hash = db.Column(db.String(64), unique=True, nullable=False)
+    name = db.Column(db.String(100), default="")
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    last_used_at = db.Column(db.DateTime, nullable=True)
+    user = db.relationship("User", backref=db.backref("api_tokens", cascade="all, delete-orphan"))

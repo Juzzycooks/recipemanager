@@ -16,6 +16,7 @@ Main areas: recipe shelf and recipe page, import (link, Instagram/TikTok, photo/
 | `app.py` | App factory, security headers (CSP), gzip, template filters, `asset_v` cache-buster, `get_setting()` per-request cache |
 | `models.py`, `migrate.py` | SQLAlchemy models; startup migrations |
 | `routes/` | One blueprint per area (`recipes`, `collections`, `mealplan`, `shopping`, `admin`, `auth`, `extras`, `calculators`, `api`) |
+| `routes/api_v1.py` | Token-authenticated JSON API for native apps, covering every area. Reference in `API.md`; tests in `tests/test_api_v1.py`. The old `routes/api.py` is the PantryTracker read-only API and is unchanged |
 | `scraper.py` | URL import: JSON-LD, microdata, WPRM/Tasty/Mediavine sections and notes, Instagram oEmbed |
 | `recipe_text.py` | One parser for loose text (captions, PDF text, OCR text) into title/ingredients/method/notes/times. Section headings are lines starting `# ` |
 | `ocr.py` | Tesseract wrapper for photo/screenshot import (Tesseract is in the Docker image) |
