@@ -7,8 +7,10 @@ enum AppColors {
     static let surface = Color("Surface")          // fields, chips, quiet fills
     static let card = Color("Card")                // raised content
     static let separator = Color("Hairline")
-    static let primary = Color("PrimaryGreen")
-    static let secondary = Color("SecondaryGreen")
+    /// Brand colours come from the chosen `AppTheme`. They read an @Observable store, so views that use them
+    /// update the moment the theme changes.
+    @MainActor static var primary: Color { ThemeStore.shared.theme.tint }
+    @MainActor static var secondary: Color { ThemeStore.shared.theme.tint.opacity(0.78) }
     static let onPrimary = Color("OnPrimary")
     static let textPrimary = Color("TextPrimary")
     static let textSecondary = Color("TextSecondary")

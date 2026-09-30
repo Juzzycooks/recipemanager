@@ -65,6 +65,7 @@ struct ShoppingListView: View {
     private enum Grouping: String, CaseIterable, Identifiable { case all = "All Items", recipe = "By Recipe"; var id: String { rawValue } }
 
     @Environment(Session.self) private var session
+    @AppStorage("showStoreLinks") private var showStoreLinks = true
     @State private var model = ShoppingModel()
     @State private var grouping = Grouping.all
     @State private var showingAdd = false
@@ -134,7 +135,7 @@ struct ShoppingListView: View {
             }
             .buttonStyle(.plain)
             .accessibilityAddTraits(item.checked ? .isSelected : [])
-            if let link = item.storeUrl, let url = URL(string: link), !item.checked {
+            if showStoreLinks, let link = item.storeUrl, let url = URL(string: link), !item.checked {
                 Link(destination: url) { Image(systemName: "magnifyingglass").foregroundStyle(AppColors.textSecondary).frame(minWidth: Size.tap, minHeight: Size.tap) }
                     .accessibilityLabel("Find \(item.name) at \(model.list?.store.name ?? "the store")")
             }

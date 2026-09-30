@@ -9,7 +9,8 @@ struct CookingView: View {
 
     @State private var index = 0
     @State private var goingForward = true
-    @State private var timer = CookTimer()
+    @Environment(CookTimer.self) private var timer
+    @AppStorage("keepAwake") private var keepAwake = true
     @State private var showingTimer = false
     @State private var showingIngredients = false
 
@@ -20,7 +21,7 @@ struct CookingView: View {
     var body: some View {
         VStack(spacing: 0) {
             topBar
-            if timer.isRunning || timer.finished { timerPill.padding(.top, Spacing.xs) }
+            if timer.isActive { TimerPill().padding(.top, Spacing.xs) }
             if let step = current {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.m) {
@@ -30,9 +31,11 @@ struct CookingView: View {
                         Text(step.heading ?? "Step \(step.number)").font(AppTypography.title).foregroundStyle(AppColors.textPrimary)
                             .accessibilityAddTraits(.isHeader)
                         Text(step.text).font(AppTypography.readingLarge).foregroundStyle(AppColors.textPrimary).lineSpacing(6)
-                        if let minutes = CookTimer.detectMinutes(in: step.text), !timer.isRunning {
-                            Button { timer.start(minutes: minutes) } label: { Label("Start \(minutes) min timer", systemImage: "timer") }
-                                .buttonStyle(.bordered)
+                        if let minutes = CookTimer.detectMinutes(in: step.text), !timer.isActive {
+                            Button { Task { await timer.start(minutes: minutes, title: recipe.title, detail: step.text) } } label: {
+                                Label("Start \(minutes) min timer", systemImage: "timer")
+                            }
+                            .buttonStyle(.bordered)
                         }
                     }
                     .screenPadding().padding(.top, Spacing.s)
@@ -51,9 +54,11 @@ struct CookingView: View {
         }
         .clipped()
         .background(AppColors.background.ignoresSafeArea())
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
-        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false; timer.cancel() }
-        .sheet(isPresented: $showingTimer) { TimerSheet(timer: timer, suggestion: current.flatMap { CookTimer.detectMinutes(in: $0.text) }) }
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = keepAwake }
+        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }   // the timer keeps running
+        .sheet(isPresented: $showingTimer) {
+            TimerSheet(recipeTitle: recipe.title, detail: current?.text ?? "", suggestion: current.flatMap { CookTimer.detectMinutes(in: $0.text) })
+        }
         .sheet(isPresented: $showingIngredients) { ingredientsSheet }
     }
 
@@ -77,19 +82,6 @@ struct CookingView: View {
             .foregroundStyle(AppColors.textPrimary)
         }
         .padding(.horizontal, Spacing.m)
-    }
-
-    private var timerPill: some View {
-        HStack(spacing: Spacing.xs) {
-            Image(systemName: timer.finished ? "bell.fill" : "timer")
-            Text(timer.finished ? "Time's up" : timer.display).font(.headline.monospacedDigit())
-            Button { timer.cancel() } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("Cancel timer")
-        }
-        .foregroundStyle(AppColors.onPrimary)
-        .padding(.horizontal, Spacing.m).frame(minHeight: 36)
-        .background(timer.finished ? AppColors.danger : AppColors.primary, in: Capsule())
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(timer.finished ? "Timer finished" : "Timer \(timer.display) remaining")
     }
 
     private var controls: some View {
@@ -134,27 +126,64 @@ struct CookingView: View {
     }
 }
 
+/// The running timer as a pill: live countdown, tap the x to cancel (which also stops any ringing).
+struct TimerPill: View {
+    @Environment(CookTimer.self) private var timer
+
+    var body: some View {
+        if let start = timer.startDate, let fire = timer.fireDate {
+            HStack(spacing: Spacing.xs) {
+                Image(systemName: timer.finished ? "bell.fill" : "timer")
+                if timer.finished {
+                    Text("Time's up").font(.headline)
+                } else {
+                    Text(timerInterval: start...fire, countsDown: true).font(.headline.monospacedDigit())
+                }
+                Button { timer.cancel() } label: { Image(systemName: "xmark.circle.fill") }
+                    .accessibilityLabel(timer.finished ? "Stop timer" : "Cancel timer")
+            }
+            .foregroundStyle(AppColors.onPrimary)
+            .padding(.horizontal, Spacing.m).frame(minHeight: 36)
+            .background(timer.finished ? AppColors.danger : AppColors.primary, in: Capsule())
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(timer.finished ? "Timer finished" : "Timer running")
+        }
+    }
+}
+
 struct TimerSheet: View {
     @Environment(\.dismiss) private var dismiss
-    let timer: CookTimer
+    @Environment(CookTimer.self) private var timer
+    let recipeTitle: String
+    let detail: String
     let suggestion: Int?
     private let presets = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60]
 
     var body: some View {
         NavigationStack {
             VStack(spacing: Spacing.l) {
-                if timer.isRunning {
-                    Text(timer.display).font(.system(size: 64, weight: .light, design: .serif).monospacedDigit()).foregroundStyle(AppColors.textPrimary)
-                    SecondaryButton(title: "Cancel timer") { timer.cancel() }
+                if timer.isActive {
+                    TimerPill()
+                    SecondaryButton(title: timer.finished ? "Stop timer" : "Cancel timer") { timer.cancel() }
                 } else {
                     if let suggestion {
-                        PrimaryButton(title: "Start \(suggestion) min (from this step)", systemImage: "timer") { timer.start(minutes: suggestion); dismiss() }
+                        PrimaryButton(title: "Start \(suggestion) min (from this step)", systemImage: "timer") { start(suggestion) }
                     }
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: Spacing.xs)], spacing: Spacing.xs) {
                         ForEach(presets, id: \.self) { minutes in
-                            FilterChip(title: minutes >= 60 ? "\(minutes / 60) hr" : "\(minutes) min") { timer.start(minutes: minutes); dismiss() }
+                            FilterChip(title: minutes >= 60 ? "\(minutes / 60) hr" : "\(minutes) min") { start(minutes) }
                         }
                     }
+                    Text(Self.ringingExplanation).font(.footnote)
+                        .foregroundStyle(AppColors.textSecondary).multilineTextAlignment(.center)
+                }
+                if timer.permissionDenied {
+                    Label("Alarms and notifications are off for this app, so the timer won't ring. Turn them on in Settings.", systemImage: "bell.slash")
+                        .font(.footnote).foregroundStyle(AppColors.danger)
+                    if let url = URL(string: UIApplication.openSettingsURLString) { Link("Open Settings", destination: url) }
+                } else if timer.isActive && !timer.isAlarm && !timer.finished {
+                    Text(Self.fallbackExplanation)
+                        .font(.footnote).foregroundStyle(AppColors.textSecondary).multilineTextAlignment(.center)
                 }
                 Spacer()
             }
@@ -164,5 +193,22 @@ struct TimerSheet: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
         .presentationDetents([.medium])
+    }
+
+    private func start(_ minutes: Int) {
+        Task { await timer.start(minutes: minutes, title: recipeTitle, detail: detail) }
+    }
+
+    /// Only iOS 26.1+ has alarm timers; older versions get repeating notifications, so don't promise a ringer.
+    private static var ringingExplanation: String {
+        if #available(iOS 26.1, *) { return "Rings like the Clock app, even with the phone locked or on silent." }
+        return "You'll get a repeating notification when time's up, even with the app closed."
+    }
+
+    private static var fallbackExplanation: String {
+        if #available(iOS 26.1, *) {
+            return "Alarms are turned off for this app, so you'll get notifications instead. Turn on Alarms in Settings for a ringing timer."
+        }
+        return "This version of iOS has no alarm timers, so you'll get a repeating notification instead."
     }
 }

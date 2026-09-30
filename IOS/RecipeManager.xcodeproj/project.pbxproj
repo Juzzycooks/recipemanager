@@ -12,26 +12,31 @@
 		0B2597BBD9BDE8B4B8E53BAB /* CollectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748198BF6054A808F4BA121A /* CollectionsView.swift */; };
 		0E67D32921D6206838841F9E /* collections.json in Resources */ = {isa = PBXBuildFile; fileRef = 305BBE40C7A1ED00B95317DD /* collections.json */; };
 		1253A6002CCEA39C376C5DCB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4C170412932B43729E245F52 /* Assets.xcassets */; };
+		175BCD8F89AABDC2AB97A8F2 /* TimerMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66FE8E1538ED30338EDC9D76 /* TimerMetadata.swift */; };
 		198906A9C1F5AFAD64EC68C9 /* CollectionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2548C11F7DEFA4003EA1DFFF /* CollectionDetailView.swift */; };
 		1C51A009E074CA7D57E1B63A /* AppRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042A7EA9394A882812888D37 /* AppRoute.swift */; };
 		26361599FEF7F81DC6DB5631 /* RecipePickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 118F4C66F17C633D33A6E588 /* RecipePickerSheet.swift */; };
 		2745D237CDF19CE78D5B0983 /* AppTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DEE4ED41829A8CEA3B83ED /* AppTabBar.swift */; };
 		2A3A6D5B852A5F04C9F1FC98 /* shopping.json in Resources */ = {isa = PBXBuildFile; fileRef = EBB741C47F215A85E9A737E9 /* shopping.json */; };
+		2E71C14DF6896E959F42482B /* TimerMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66FE8E1538ED30338EDC9D76 /* TimerMetadata.swift */; };
 		2F31D8E006DB7B9D17BB55C2 /* RecipeEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53DB8E9BF0E7856074D6291C /* RecipeEditorView.swift */; };
 		32B90CDE2FBA0731563FF1F1 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32FA0149D98B27E841A066B5 /* AppState.swift */; };
 		343ADB85F5EF6A519DB3618D /* collection_detail.json in Resources */ = {isa = PBXBuildFile; fileRef = 1F387094801016C92D48540C /* collection_detail.json */; };
 		34EB4B2C844E16E05C8C10CF /* RecipeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C19193D5736C8C199FC7C5F /* RecipeCard.swift */; };
 		3C0744D20C714E2C0D8E9E68 /* login.json in Resources */ = {isa = PBXBuildFile; fileRef = A142E23B7CC101A48F2D8A0A /* login.json */; };
 		412827060342DCD5F2717660 /* CollectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E0894AAB542F1320D3E3D7 /* CollectionCard.swift */; };
+		41CE6B6C7140E7D24BCE41BA /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39966D0E298FF8EA61B5A27D /* AppTheme.swift */; };
 		41D5CE250944135AF2430246 /* RecipeListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6493B97ACE71342357519F1A /* RecipeListView.swift */; };
 		46F020EB85B33843820775D6 /* RecipeDetailModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA3B9287D57527BA91083206 /* RecipeDetailModel.swift */; };
 		57170ABC5528D4962ACA512D /* MealPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A038E1ED3FD97222583AE16C /* MealPlanView.swift */; };
 		6237FF388EC744462E04BDC7 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3A6357AEE8AE3F22A7B386A /* Models.swift */; };
+		7399DD2FA9847EB78BF7E6B4 /* TimerWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A56448785A6DA182C887052 /* TimerWidgetBundle.swift */; };
 		7A1F5CAF22BEAE7B5770AE5C /* BotanicalIllustration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8450D0843FD40A5FC27C908F /* BotanicalIllustration.swift */; };
 		8105CE082392874D3AE5DA20 /* RecipeImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06E925DF03DD34F754975F03 /* RecipeImage.swift */; };
 		81BBA4017466637038C9CE6B /* AddRecipeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E4A4323724CF0389CCBAA5 /* AddRecipeView.swift */; };
 		8E5DF361C1B3BBB882BB8F49 /* RecipeFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0335F4C5DD94B01838E77179 /* RecipeFeed.swift */; };
 		8FC67924401E0B0F3485B3A2 /* RecipeManagerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24DD5391B8C48BA284DC4DE0 /* RecipeManagerApp.swift */; };
+		90F8BC30D92346161951B7C9 /* KitchenTimerLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E37E901A7EBDC7511EC0EEA0 /* KitchenTimerLiveActivity.swift */; };
 		933162B45195684C6B8EE0DF /* mealplan.json in Resources */ = {isa = PBXBuildFile; fileRef = EE0B7CA4C4635A7662E49275 /* mealplan.json */; };
 		95335F0FB7F5898C17A6E819 /* recipe_detail.json in Resources */ = {isa = PBXBuildFile; fileRef = B62F3A6B89235A9359914D2D /* recipe_detail.json */; };
 		97637455B9DAAE8CF93EE2E0 /* tokens.json in Resources */ = {isa = PBXBuildFile; fileRef = C9E1C73FFAA2F6314519A018 /* tokens.json */; };
@@ -44,13 +49,17 @@
 		AF698E983C15E183355B2DC3 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57519229ABCF4D003703C093 /* Session.swift */; };
 		AFA1D1E065803748877231A7 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8ECA1C666A3BACA15A7EA9F /* PrimaryButton.swift */; };
 		AFA83022B47D352FD880DAC7 /* CookingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3599734ADD452D241B5A7E28 /* CookingView.swift */; };
+		B6FA6073C9852CEDA2D3A8DD /* RecipeManagerTimerWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C4FB1EC67B5916575EC3D3FC /* RecipeManagerTimerWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B99CCBA06B4199EBCDC804DB /* CookTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7686D52DE945B6437B71C6F /* CookTimer.swift */; };
+		BF31503845FEB8AA2BEFC8C0 /* AdminViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0C5627313625F30764D3A4 /* AdminViews.swift */; };
 		C0960BB6610D99E65C2929F5 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E8A49DC49242004997251DF /* HomeView.swift */; };
 		C65C4CDCECD371BB4C4D5B19 /* AppTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E25077A2D34156B54E35E0 /* AppTypography.swift */; };
+		C7960702D6EA6EBA90BE301B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3098BEF84F3E1729F1EC3775 /* SettingsView.swift */; };
 		D306B614EE8A7A78751D5226 /* RecipeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 328AA2D4F68B4FEDFF1983BC /* RecipeDetailView.swift */; };
 		D6EDA15B0F26A64F54A57DF7 /* import_preview.json in Resources */ = {isa = PBXBuildFile; fileRef = 40E01BD9F2412E6E47017C3B /* import_preview.json */; };
 		DE437FA839DE554886B8AEEF /* ShoppingListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B474B442C9AF50773B42B7AF /* ShoppingListView.swift */; };
 		DE79C16A97AA2214B6EA97C4 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20F9A6250724BE7ED8FDAAE /* AppColors.swift */; };
+		DFFE08F728780D11E723D2E8 /* SystemTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B3D6386D4204D7FFBBE9057 /* SystemTimer.swift */; };
 		E8897B232B7AF49FF4115E00 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97D6F470558B4311A5657C76 /* ProfileView.swift */; };
 		EEEF14D68CA2102E24F5CB77 /* SmallComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88645AE01726AFA77EB3F245 /* SmallComponents.swift */; };
 		F7EA5404C5F023A3F3652D96 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F77FA09B68377C7128645BFC /* OnboardingView.swift */; };
@@ -58,6 +67,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		0ED3D3A5735AA86241E8B9E5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 26FA77AC73E8579BE15F9BC2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 73ADD3E742EBDDCEFE8C317D;
+			remoteInfo = RecipeManagerTimerWidget;
+		};
 		4BF1FEE5901EC84EEF1C5B7D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 26FA77AC73E8579BE15F9BC2 /* Project object */;
@@ -66,6 +82,20 @@
 			remoteInfo = RecipeManager;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		6150E5CFBD922A3F2D40228C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B6FA6073C9852CEDA2D3A8DD /* RecipeManagerTimerWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0335F4C5DD94B01838E77179 /* RecipeFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeFeed.swift; sourceTree = "<group>"; };
@@ -77,12 +107,15 @@
 		1F387094801016C92D48540C /* collection_detail.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = collection_detail.json; sourceTree = "<group>"; };
 		24DD5391B8C48BA284DC4DE0 /* RecipeManagerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeManagerApp.swift; sourceTree = "<group>"; };
 		2548C11F7DEFA4003EA1DFFF /* CollectionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionDetailView.swift; sourceTree = "<group>"; };
+		2A0C5627313625F30764D3A4 /* AdminViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminViews.swift; sourceTree = "<group>"; };
 		2B8489C17FC39697E9E6897C /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		305BBE40C7A1ED00B95317DD /* collections.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = collections.json; sourceTree = "<group>"; };
+		3098BEF84F3E1729F1EC3775 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		328AA2D4F68B4FEDFF1983BC /* RecipeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailView.swift; sourceTree = "<group>"; };
 		32FA0149D98B27E841A066B5 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		33DEE4ED41829A8CEA3B83ED /* AppTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTabBar.swift; sourceTree = "<group>"; };
 		3599734ADD452D241B5A7E28 /* CookingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookingView.swift; sourceTree = "<group>"; };
+		39966D0E298FF8EA61B5A27D /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		3C387F70429B7453AFE055E0 /* RecipeGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeGrid.swift; sourceTree = "<group>"; };
 		40E01BD9F2412E6E47017C3B /* import_preview.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = import_preview.json; sourceTree = "<group>"; };
 		4C170412932B43729E245F52 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -90,14 +123,18 @@
 		57519229ABCF4D003703C093 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
 		63F88E99DC58F7AE69822FBF /* ModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelsTests.swift; sourceTree = "<group>"; };
 		6493B97ACE71342357519F1A /* RecipeListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListView.swift; sourceTree = "<group>"; };
+		66FE8E1538ED30338EDC9D76 /* TimerMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerMetadata.swift; sourceTree = "<group>"; };
 		6F2EA7940F17C1F5DB97FB1F /* RecipeManagerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RecipeManagerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7292772057992FD2EA2D1BEF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		73D7DB6DB0206288B5067373 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		748198BF6054A808F4BA121A /* CollectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsView.swift; sourceTree = "<group>"; };
 		75E072F9D308815DB982BAF3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7A56448785A6DA182C887052 /* TimerWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerWidgetBundle.swift; sourceTree = "<group>"; };
 		7C19193D5736C8C199FC7C5F /* RecipeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeCard.swift; sourceTree = "<group>"; };
 		7E8A49DC49242004997251DF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		8450D0843FD40A5FC27C908F /* BotanicalIllustration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotanicalIllustration.swift; sourceTree = "<group>"; };
 		88645AE01726AFA77EB3F245 /* SmallComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallComponents.swift; sourceTree = "<group>"; };
+		8B3D6386D4204D7FFBBE9057 /* SystemTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemTimer.swift; sourceTree = "<group>"; };
 		95E4A4323724CF0389CCBAA5 /* AddRecipeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddRecipeView.swift; sourceTree = "<group>"; };
 		96E0894AAB542F1320D3E3D7 /* CollectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionCard.swift; sourceTree = "<group>"; };
 		97D6F470558B4311A5657C76 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
@@ -112,9 +149,11 @@
 		B62F3A6B89235A9359914D2D /* recipe_detail.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = recipe_detail.json; sourceTree = "<group>"; };
 		BA3B9287D57527BA91083206 /* RecipeDetailModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailModel.swift; sourceTree = "<group>"; };
 		C20F9A6250724BE7ED8FDAAE /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
+		C4FB1EC67B5916575EC3D3FC /* RecipeManagerTimerWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = RecipeManagerTimerWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C7686D52DE945B6437B71C6F /* CookTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CookTimer.swift; sourceTree = "<group>"; };
 		C9E1C73FFAA2F6314519A018 /* tokens.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = tokens.json; sourceTree = "<group>"; };
 		DD339DDCAAEDEE693CE4878D /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		E37E901A7EBDC7511EC0EEA0 /* KitchenTimerLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KitchenTimerLiveActivity.swift; sourceTree = "<group>"; };
 		EBB741C47F215A85E9A737E9 /* shopping.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = shopping.json; sourceTree = "<group>"; };
 		EE0B7CA4C4635A7662E49275 /* mealplan.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = mealplan.json; sourceTree = "<group>"; };
 		F77FA09B68377C7128645BFC /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -197,6 +236,7 @@
 				B3A6357AEE8AE3F22A7B386A /* Models.swift */,
 				0335F4C5DD94B01838E77179 /* RecipeFeed.swift */,
 				57519229ABCF4D003703C093 /* Session.swift */,
+				8B3D6386D4204D7FFBBE9057 /* SystemTimer.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -240,6 +280,7 @@
 			children = (
 				C20F9A6250724BE7ED8FDAAE /* AppColors.swift */,
 				0A03B0EF9B948C249DFF98A8 /* AppSpacing.swift */,
+				39966D0E298FF8EA61B5A27D /* AppTheme.swift */,
 				B5E25077A2D34156B54E35E0 /* AppTypography.swift */,
 			);
 			path = Theme;
@@ -261,6 +302,8 @@
 			children = (
 				BC0DE3988B96B6222582B82C /* RecipeManager */,
 				7EE665D6810BBFB42C901CBD /* RecipeManagerTests */,
+				CBD5CCC489F907B41795F1E9 /* Shared */,
+				E69C77E2A562BCE9357FE006 /* TimerWidget */,
 				C16130767BB24F08D8E2A54F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -301,8 +344,17 @@
 			children = (
 				9A12E7131F4049564115E456 /* RecipeManager.app */,
 				6F2EA7940F17C1F5DB97FB1F /* RecipeManagerTests.xctest */,
+				C4FB1EC67B5916575EC3D3FC /* RecipeManagerTimerWidget.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		CBD5CCC489F907B41795F1E9 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				66FE8E1538ED30338EDC9D76 /* TimerMetadata.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 		D5A20BDAF9C3D92413F5DEDD /* AddRecipe */ = {
@@ -331,10 +383,22 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		E69C77E2A562BCE9357FE006 /* TimerWidget */ = {
+			isa = PBXGroup;
+			children = (
+				7292772057992FD2EA2D1BEF /* Info.plist */,
+				E37E901A7EBDC7511EC0EEA0 /* KitchenTimerLiveActivity.swift */,
+				7A56448785A6DA182C887052 /* TimerWidgetBundle.swift */,
+			);
+			path = TimerWidget;
+			sourceTree = "<group>";
+		};
 		EAD104555839793093E3A73B /* Profile */ = {
 			isa = PBXGroup;
 			children = (
+				2A0C5627313625F30764D3A4 /* AdminViews.swift */,
 				97D6F470558B4311A5657C76 /* ProfileView.swift */,
+				3098BEF84F3E1729F1EC3775 /* SettingsView.swift */,
 			);
 			path = Profile;
 			sourceTree = "<group>";
@@ -348,10 +412,12 @@
 			buildPhases = (
 				AB71EC0A670A539A11EB7F80 /* Sources */,
 				AA643E74FFE3AF567AAE569E /* Resources */,
+				6150E5CFBD922A3F2D40228C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				8B81577E7D38C687315CA526 /* PBXTargetDependency */,
 			);
 			name = RecipeManager;
 			packageProductDependencies = (
@@ -359,6 +425,23 @@
 			productName = RecipeManager;
 			productReference = 9A12E7131F4049564115E456 /* RecipeManager.app */;
 			productType = "com.apple.product-type.application";
+		};
+		73ADD3E742EBDDCEFE8C317D /* RecipeManagerTimerWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BBA363258BD0B53765DF431E /* Build configuration list for PBXNativeTarget "RecipeManagerTimerWidget" */;
+			buildPhases = (
+				D87BD069DD37F53584A9C532 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RecipeManagerTimerWidget;
+			packageProductDependencies = (
+			);
+			productName = RecipeManagerTimerWidget;
+			productReference = C4FB1EC67B5916575EC3D3FC /* RecipeManagerTimerWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		ECF32E0B12B9EED008D3A875 /* RecipeManagerTests */ = {
 			isa = PBXNativeTarget;
@@ -391,6 +474,9 @@
 					6051323E133C621AE785966C = {
 						ProvisioningStyle = Automatic;
 					};
+					73ADD3E742EBDDCEFE8C317D = {
+						ProvisioningStyle = Automatic;
+					};
 					ECF32E0B12B9EED008D3A875 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -411,6 +497,7 @@
 			projectRoot = "";
 			targets = (
 				6051323E133C621AE785966C /* RecipeManager */,
+				73ADD3E742EBDDCEFE8C317D /* RecipeManagerTimerWidget */,
 				ECF32E0B12B9EED008D3A875 /* RecipeManagerTests */,
 			);
 		};
@@ -450,11 +537,13 @@
 			files = (
 				FF318E9DA15FF0B7D0CE4089 /* APIClient.swift in Sources */,
 				81BBA4017466637038C9CE6B /* AddRecipeView.swift in Sources */,
+				BF31503845FEB8AA2BEFC8C0 /* AdminViews.swift in Sources */,
 				DE79C16A97AA2214B6EA97C4 /* AppColors.swift in Sources */,
 				1C51A009E074CA7D57E1B63A /* AppRoute.swift in Sources */,
 				0445F4E599A8C401D6CB558D /* AppSpacing.swift in Sources */,
 				32B90CDE2FBA0731563FF1F1 /* AppState.swift in Sources */,
 				2745D237CDF19CE78D5B0983 /* AppTabBar.swift in Sources */,
+				41CE6B6C7140E7D24BCE41BA /* AppTheme.swift in Sources */,
 				C65C4CDCECD371BB4C4D5B19 /* AppTypography.swift in Sources */,
 				7A1F5CAF22BEAE7B5770AE5C /* BotanicalIllustration.swift in Sources */,
 				412827060342DCD5F2717660 /* CollectionCard.swift in Sources */,
@@ -482,9 +571,22 @@
 				AB640F71890E9281E589C402 /* RootView.swift in Sources */,
 				003FC86093FC592146819DBA /* SearchView.swift in Sources */,
 				AF698E983C15E183355B2DC3 /* Session.swift in Sources */,
+				C7960702D6EA6EBA90BE301B /* SettingsView.swift in Sources */,
 				DE437FA839DE554886B8AEEF /* ShoppingListView.swift in Sources */,
 				A2E3E2BC88B45261DE7EA361 /* SignInView.swift in Sources */,
 				EEEF14D68CA2102E24F5CB77 /* SmallComponents.swift in Sources */,
+				DFFE08F728780D11E723D2E8 /* SystemTimer.swift in Sources */,
+				2E71C14DF6896E959F42482B /* TimerMetadata.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D87BD069DD37F53584A9C532 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				90F8BC30D92346161951B7C9 /* KitchenTimerLiveActivity.swift in Sources */,
+				175BCD8F89AABDC2AB97A8F2 /* TimerMetadata.swift in Sources */,
+				7399DD2FA9847EB78BF7E6B4 /* TimerWidgetBundle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -499,6 +601,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		8B81577E7D38C687315CA526 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 73ADD3E742EBDDCEFE8C317D /* RecipeManagerTimerWidget */;
+			targetProxy = 0ED3D3A5735AA86241E8B9E5 /* PBXContainerItemProxy */;
+		};
 		E2CB5A9A4BE46CAB4D660B1E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 6051323E133C621AE785966C /* RecipeManager */;
@@ -507,6 +614,40 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		186947F3E047C83588974EE2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				INFOPLIST_FILE = TimerWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justinrahme.RecipeManager.TimerWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		2279FC3716CF6053E28BB388 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				INFOPLIST_FILE = TimerWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.justinrahme.RecipeManager.TimerWidget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		4523B718AA28E259AB3D624E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -719,6 +860,15 @@
 			buildConfigurations = (
 				A58C9451AAFADE8786C244A7 /* Debug */,
 				698356B673DCC2CC36414C0C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BBA363258BD0B53765DF431E /* Build configuration list for PBXNativeTarget "RecipeManagerTimerWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				186947F3E047C83588974EE2 /* Debug */,
+				2279FC3716CF6053E28BB388 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

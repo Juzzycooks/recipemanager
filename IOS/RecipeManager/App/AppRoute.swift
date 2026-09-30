@@ -8,6 +8,10 @@ enum AppRoute: Hashable {
     case mealPlan
     case shoppingList
     case devices
+    case settings
+    case adminSettings
+    case adminUsers
+    case adminCategories
 }
 
 enum RecipeListKind: Hashable {
@@ -31,6 +35,10 @@ extension View {
                     case .mealPlan: MealPlanView()
                     case .shoppingList: ShoppingListView()
                     case .devices: DevicesView()
+                    case .settings: SettingsView()
+                    case .adminSettings: AdminSettingsView()
+                    case .adminUsers: AdminUsersView()
+                    case .adminCategories: AdminCategoriesView()
                     }
                 }
                 .toolbarVisibility(.hidden, for: .tabBar)

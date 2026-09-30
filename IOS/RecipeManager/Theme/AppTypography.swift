@@ -31,7 +31,7 @@ enum AppTypography {
         // Segmented controls: quiet track, green selection (as in the design).
         let segmented = UISegmentedControl.appearance()
         segmented.backgroundColor = UIColor(AppColors.surface)
-        segmented.selectedSegmentTintColor = UIColor(AppColors.primary)
+        segmented.selectedSegmentTintColor = ThemeStore.shared.theme.uiColor
         segmented.setTitleTextAttributes([.foregroundColor: UIColor(AppColors.onPrimary)], for: .selected)
         segmented.setTitleTextAttributes([.foregroundColor: UIColor(AppColors.textPrimary)], for: .normal)
     }

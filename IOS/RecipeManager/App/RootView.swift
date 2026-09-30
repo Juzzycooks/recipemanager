@@ -31,6 +31,7 @@ struct RootView: View {
 struct MainView: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
+    @Environment(CookTimer.self) private var timer
     @State private var keyboardVisible = false
 
     var body: some View {
@@ -57,11 +58,13 @@ struct MainView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
         .overlay(alignment: .bottom) {
             VStack(spacing: Spacing.xs) {
+                if timer.isActive { TimerPill().transition(.move(edge: .bottom).combined(with: .opacity)) }
                 if let notice = app.notice { Toast(text: notice) }
                 UndoBanner()
             }
             .padding(.bottom, app.tabBarHidden ? 88 : 96)
             .animation(.snappy, value: app.notice)
+            .animation(.snappy, value: timer.isActive)
         }
         .sheet(isPresented: $app.showingAdd) { AddRecipeView() }
     }

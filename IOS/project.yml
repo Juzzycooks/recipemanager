@@ -15,7 +15,10 @@ targets:
   RecipeManager:
     type: application
     platform: iOS
-    sources: [RecipeManager]
+    sources: [RecipeManager, Shared]
+    dependencies:
+      - target: RecipeManagerTimerWidget
+        embed: true
     info:
       path: RecipeManager/Resources/Info.plist
       properties:
@@ -24,6 +27,8 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         ITSAppUsesNonExemptEncryption: false
+        NSSupportsLiveActivities: true
+        NSAlarmKitUsageDescription: Kitchen timers ring like the Clock app, even when your phone is on silent.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
     settings:
@@ -32,6 +37,21 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: "1,2"
+  RecipeManagerTimerWidget:
+    type: app-extension
+    platform: iOS
+    sources: [TimerWidget, Shared]
+    info:
+      path: TimerWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Kitchen Timer
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager.TimerWidget
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SKIP_INSTALL: YES
   RecipeManagerTests:
     type: bundle.unit-test
     platform: iOS

@@ -15,8 +15,14 @@ struct AppTabBar: View {
         }
         .padding(.horizontal, Spacing.xs)
         .padding(.top, Spacing.xs)
-        .barBackground()
-        .overlay(alignment: .top) { Rectangle().fill(AppColors.separator).frame(height: 0.5) }
+        .background(alignment: .top) {
+            // Behind the buttons, so the hairline can never cross the raised Add button.
+            ZStack(alignment: .top) {
+                AppColors.background.shadow(color: .black.opacity(0.06), radius: 6, y: -1)
+                Rectangle().fill(AppColors.separator).frame(height: 0.5)
+            }
+            .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private func item(_ tab: AppTab) -> some View {

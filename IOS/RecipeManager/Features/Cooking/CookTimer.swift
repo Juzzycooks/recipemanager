@@ -2,40 +2,65 @@ import Foundation
 import Observation
 import UIKit
 
-/// One kitchen timer for the cooking screen. Counts down in whole seconds; buzzes when it reaches zero.
+/// The kitchen timer. App-wide (it survives closing cooking mode), backed by a system timer that rings with
+/// the app closed (see `SystemTimer`). This class only tracks what the UI needs to show.
 @MainActor @Observable
 final class CookTimer {
-    private(set) var remaining = 0
-    private(set) var total = 0
+    private(set) var startDate: Date?
+    private(set) var fireDate: Date?
+    private(set) var title = ""
     private(set) var finished = false
-    private var task: Task<Void, Never>?
+    /// Set when both Alarms and Notifications are turned off, so the UI can explain why nothing will ring.
+    private(set) var permissionDenied = false
+    /// True when a real alarm (not the notification fallback) is backing the timer.
+    private(set) var isAlarm = false
 
-    var isRunning: Bool { task != nil }
+    private var id: UUID?
+    private var finishTask: Task<Void, Never>?
 
-    var display: String {
-        let m = remaining / 60, s = remaining % 60
-        return String(format: "%d:%02d", m, s)
-    }
+    var isRunning: Bool { fireDate != nil && !finished }
+    var isActive: Bool { fireDate != nil }
 
-    func start(minutes: Int) {
+    func start(minutes: Int, title: String, detail: String) async {
         cancel()
-        total = minutes * 60; remaining = total; finished = false
-        task = Task { [weak self] in
-            while let self, self.remaining > 0 {
-                try? await Task.sleep(for: .seconds(1))
-                if Task.isCancelled { return }
-                self.remaining -= 1
-            }
-            guard let self, !Task.isCancelled else { return }
+        let seconds = minutes * 60
+        let newID = UUID()
+        id = newID
+        self.title = title
+        let now = Date.now
+        startDate = now; fireDate = now.addingTimeInterval(TimeInterval(seconds)); finished = false; permissionDenied = false
+
+        switch await SystemTimer.schedule(id: newID, seconds: seconds, title: title, detail: detail) {
+        case .alarm: isAlarm = true
+        case .notification: isAlarm = false
+        case .denied: isAlarm = false; permissionDenied = true
+        }
+        guard id == newID else { return }   // cancelled or replaced while we were asking for permission
+        let fire = fireDate ?? now
+        finishTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(max(0, fire.timeIntervalSinceNow)))
+            guard !Task.isCancelled, let self, self.id == newID else { return }
             self.finished = true
-            self.task = nil
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         }
     }
 
+    /// Stops the countdown (and the ringing, if it already started).
     func cancel() {
-        task?.cancel(); task = nil
-        remaining = 0; total = 0; finished = false
+        finishTask?.cancel(); finishTask = nil
+        if let id { SystemTimer.cancel(id: id) }
+        id = nil; startDate = nil; fireDate = nil; finished = false; permissionDenied = false; isAlarm = false
+    }
+
+    /// Call when the app returns to the foreground: if the system timer was stopped elsewhere, drop ours.
+    func reconcile() {
+        guard let id, isActive else { return }
+        if isAlarm && !SystemTimer.isStillScheduled(id: id) {
+            finishTask?.cancel(); finishTask = nil
+            self.id = nil; startDate = nil; fireDate = nil; finished = false; isAlarm = false
+        } else if let fireDate, fireDate <= .now, !finished {
+            finished = true
+        }
     }
 
     /// "cook for 1–2 minutes" → 2; "simmer 20 min" → 20; "bake for 1 hour" → 60. Nil when the step names no time.

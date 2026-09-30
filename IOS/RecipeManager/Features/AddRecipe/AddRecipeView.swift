@@ -168,9 +168,11 @@ struct PhotoImportView: View {
                         .font(.subheadline).foregroundStyle(AppColors.danger)
                 }
                 let hasImages = !images.isEmpty
+                let tint = AppColors.primary
                 PhotosPicker(selection: $items, maxSelectionCount: 6, matching: .images) {
-                    Label(hasImages ? "Choose Photos" : "Change Photos", systemImage: "photo.on.rectangle")
-                        .fontWeight(.semibold).foregroundStyle(AppColors.primary)
+                    Label(hasImages ? "Change Photos" : "Choose Photos", systemImage: "photo.on.rectangle")
+                        
+                        .fontWeight(.semibold).foregroundStyle(tint)
                         .frame(maxWidth: .infinity, minHeight: 52).background(AppColors.surface, in: RoundedRectangle(cornerRadius: Radius.field))
                 }
                 if !images.isEmpty {

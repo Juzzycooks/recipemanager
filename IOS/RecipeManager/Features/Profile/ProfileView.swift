@@ -21,7 +21,6 @@ final class ProfileModel {
 
 struct ProfileView: View {
     @Environment(Session.self) private var session
-    @AppStorage("appearance") private var appearance = Appearance.system.rawValue
     @State private var model = ProfileModel()
     @State private var path: [AppRoute] = []
     @State private var showingAccount = false
@@ -86,9 +85,7 @@ struct ProfileView: View {
 
     private var settings: some View {
         VStack(spacing: 0) {
-            row("Appearance", symbol: "circle.lefthalf.filled") {
-                Picker("Appearance", selection: $appearance) { ForEach(Appearance.allCases) { Text($0.title).tag($0.rawValue) } }.labelsHidden()
-            }
+            button("Settings", symbol: "gearshape") { path.append(.settings) }
             divider
             button("Meal Plan", symbol: "calendar") { path.append(.mealPlan) }
             divider

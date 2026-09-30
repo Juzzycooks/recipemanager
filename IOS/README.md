@@ -45,11 +45,11 @@ After any change that affects lists, call `session.recipesChanged()` and the vis
 Onboarding → Sign in · **Home** (greeting, Quick Picks with All / Favorites / Recently Added, collections, shortcuts) ·
 **Search** (live results, filters for category / ingredient / favorites / sort, recent searches) · **Recipe** (hero,
 rating, Ingredients / Steps / Notes, add ingredients to the shopping list, plan, share, edit, duplicate, delete with undo) ·
-**Cooking mode** (one step at a time, screen stays awake, timer with minutes detected from the step text) ·
+**Cooking mode** (one step at a time, screen stays awake, timers detected from the step text, see below) ·
 **Collections** (My / Shared, create, add and remove recipes, share link) · **Add** (import from a URL or pasted text, scan
 photos with the server's OCR, add manually) · **Editor** (photo, reorderable ingredient and step rows, tags) ·
 **Meal plan** (week view, plan a meal, add the week to the shopping list, fill empty dinners) ·
-**Shopping list** (by aisle or by recipe, completed section) · **Profile** (counts, appearance, account, devices).
+**Shopping list** (by aisle or by recipe, completed section) · **Profile** (counts, account, devices) → **Settings** (light/dark/system, five colour themes, keep-screen-awake, store links, and for admins: site settings, users, categories).
 
 ## Where the design and the server differ
 
@@ -68,3 +68,20 @@ The design reference had fields the server has no data for, so they are not fake
 - **Share extension** (save a link from Safari): a new target posting to `POST /import/url`, reusing `APIClient` and the Keychain
   (needs a shared keychain access group).
 - **Voice control in cooking mode:** `CookingView.advance(_:)` is the single place steps change.
+
+## Kitchen timers
+
+`CookTimer` (app-wide, so it keeps running when you leave cooking mode) hands the countdown to the system via `SystemTimer`:
+
+- **iOS 26.1+:** an AlarmKit timer. It rings like the Clock app (even on silent or in a Focus) and shows a countdown on the Lock Screen and
+  in the Dynamic Island. The countdown UI lives in the `TimerWidget` extension; `Shared/TimerMetadata.swift` is compiled into both targets.
+  The first timer asks for Alarms permission.
+- **Earlier iOS, or Alarms turned off:** a burst of local notifications (one every 10 seconds for a minute) with sound.
+
+AlarmKit does not work in the simulator (authorization is always denied, so you get the notification path there). Test the ringing alarm and
+Live Activity on a device.
+
+## Themes
+
+`AppTheme` defines the colour themes (light and dark values each). `ThemeStore` is observable and `AppColors.primary` / `secondary` read it,
+so every view that uses them updates as soon as the theme changes. (`Color.accentColor` does not follow `.tint`, so don't use it for brand colour.)

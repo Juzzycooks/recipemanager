@@ -254,3 +254,19 @@ struct DeviceToken: Decodable, Sendable, Identifiable {
     let lastUsedAt: Date?
     let current: Bool
 }
+
+// MARK: Admin
+
+struct AdminSettings: Codable, Sendable, Hashable {
+    var siteName = ""
+    var logoUrl = ""
+    var publicShowAuthor = false
+    var storeName = ""
+    var storeSearchUrl = ""
+}
+
+struct NewUserResult: Decodable, Sendable {
+    let user: User
+    let emailed: Bool
+    let tempPassword: String?
+}

@@ -123,6 +123,16 @@ struct ServerFixtureTests {
         #expect(CookTimer.detectMinutes(in: "Stir well.") == nil)
     }
 
+    @MainActor @Test func themeChoiceIsSavedAndRestored() {
+        let store = ThemeStore.shared
+        let original = store.theme
+        defer { store.theme = original }
+        store.theme = .ocean
+        #expect(UserDefaults.standard.string(forKey: AppTheme.storageKey) == "ocean")
+        #expect(AppTheme.allCases.count == 5)
+        #expect(Set(AppTheme.allCases.map(\.rawValue)).count == 5)
+    }
+
     @Test func login() throws {
         let response: LoginResponse = try load("login")
         #expect(response.user.username == "chef")
