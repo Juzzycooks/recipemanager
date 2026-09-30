@@ -6,8 +6,7 @@ struct CollectionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             RecipeImage(path: collection.coverUrl, title: collection.name, id: collection.id)
-                .aspectRatio(4 / 3, contentMode: .fill)
-                .frame(maxWidth: .infinity).clipped()
+                .aspectRatio(4 / 3, contentMode: .fit)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: Spacing.xxs) {
                 Text(collection.name).font(AppTypography.cardTitle).foregroundStyle(AppColors.textPrimary)

@@ -6,7 +6,7 @@ enum AppColors {
     static let background = Color("Background")
     static let surface = Color("Surface")          // fields, chips, quiet fills
     static let card = Color("Card")                // raised content
-    static let separator = Color("Separator")
+    static let separator = Color("Hairline")
     static let primary = Color("PrimaryGreen")
     static let secondary = Color("SecondaryGreen")
     static let onPrimary = Color("OnPrimary")

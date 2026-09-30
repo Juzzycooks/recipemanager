@@ -9,6 +9,14 @@ struct RecipeImage: View {
     let id: Int
 
     var body: some View {
+        // Color.clear takes whatever size the parent offers; the picture is only painted into it and clipped.
+        // (A scaledToFill photo sizing itself made very wide or tall pictures blow the card layout apart.)
+        Color.clear
+            .overlay { content }
+            .clipped()
+    }
+
+    @ViewBuilder private var content: some View {
         if let url = session.imageURL(path) {
             AsyncImage(url: url) { phase in
                 switch phase {

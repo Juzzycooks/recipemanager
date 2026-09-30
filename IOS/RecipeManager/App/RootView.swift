@@ -35,17 +35,20 @@ struct MainView: View {
 
     var body: some View {
         @Bindable var app = app
-        TabView(selection: $app.tab) {
-            Tab(AppTab.home.title, systemImage: AppTab.home.symbol, value: AppTab.home) { HomeView() }
-            Tab(AppTab.search.title, systemImage: AppTab.search.symbol, value: AppTab.search) { SearchView() }
-            Tab(AppTab.collections.title, systemImage: AppTab.collections.symbol, value: AppTab.collections) { CollectionsView() }
-            Tab(AppTab.profile.title, systemImage: AppTab.profile.symbol, value: AppTab.profile) { ProfileView() }
-        }
-        .toolbarVisibility(.hidden, for: .tabBar)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // The bar sits below the content in a stack (not as a safe-area inset), so every screen's scroll
+        // view ends above it and its last row can always be reached.
+        VStack(spacing: 0) {
+            TabView(selection: $app.tab) {
+                Tab(AppTab.home.title, systemImage: AppTab.home.symbol, value: AppTab.home) { HomeView() }
+                Tab(AppTab.search.title, systemImage: AppTab.search.symbol, value: AppTab.search) { SearchView() }
+                Tab(AppTab.collections.title, systemImage: AppTab.collections.symbol, value: AppTab.collections) { CollectionsView() }
+                Tab(AppTab.profile.title, systemImage: AppTab.profile.symbol, value: AppTab.profile) { ProfileView() }
+            }
+            .toolbarVisibility(.hidden, for: .tabBar)
             if !app.tabBarHidden && !keyboardVisible {
                 AppTabBar(selection: $app.tab) { app.showingAdd = true }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(1)
             }
         }
         .animation(.snappy, value: app.tabBarHidden)

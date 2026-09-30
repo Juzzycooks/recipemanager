@@ -19,8 +19,7 @@ struct RecipeCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             RecipeImage(path: recipe.thumbUrl, title: recipe.title, id: recipe.id)
-                .aspectRatio(4 / 3, contentMode: .fill)
-                .frame(maxWidth: .infinity).clipped()
+                .aspectRatio(4 / 3, contentMode: .fit)
                 .accessibilityHidden(true)
             HStack(alignment: .top, spacing: 0) {
                 VStack(alignment: .leading, spacing: Spacing.xxs) {

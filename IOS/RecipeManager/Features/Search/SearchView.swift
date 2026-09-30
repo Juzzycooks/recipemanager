@@ -109,6 +109,11 @@ struct SearchView: View {
     }
 
     @ViewBuilder private var suggestions: some View {
+        VStack(alignment: .leading, spacing: Spacing.xxs) {
+            NavigationLink(value: AppRoute.recipeList(.all)) { libraryRow("All Recipes", symbol: "book.closed") }.buttonStyle(.plain)
+            NavigationLink(value: AppRoute.recipeList(.favorites)) { libraryRow("Favorites", symbol: "heart") }.buttonStyle(.plain)
+        }
+        .screenPadding()
         if !recents.isEmpty {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 HStack {
@@ -131,10 +136,18 @@ struct SearchView: View {
             }
             .screenPadding()
         }
-        if recents.isEmpty && model.categories.isEmpty {
-            EmptyStateView(title: "Search your recipes", systemImage: "magnifyingglass", message: "Find a recipe by its name or an ingredient.")
-                .padding(.top, Spacing.xl)
+    }
+
+    private func libraryRow(_ title: String, symbol: String) -> some View {
+        HStack(spacing: Spacing.s) {
+            Image(systemName: symbol).foregroundStyle(AppColors.primary).frame(width: 24)
+            Text(title).font(AppTypography.label).foregroundStyle(AppColors.textPrimary)
+            Spacer()
+            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(AppColors.textSecondary)
         }
+        .padding(.horizontal, Spacing.m).frame(minHeight: 52)
+        .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.field))
+        .overlay(RoundedRectangle(cornerRadius: Radius.field).stroke(AppColors.separator, lineWidth: 0.5))
     }
 
     private func suggestionRow(_ text: String, symbol: String) -> some View {
