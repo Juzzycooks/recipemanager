@@ -2,7 +2,13 @@
 {% block title %}Admin{% endblock %}
 {% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
-<div class="page-header"><h1>Admin</h1></div>
+<div class="page-header">
+    <h1>Admin</h1>
+    <div class="header-actions">
+        <a href="{{ url_for('admin.settings') }}" class="btn btn-secondary">Site settings</a>
+        <a href="#backup-h" class="btn btn-secondary">Backup and import</a>
+    </div>
+</div>
 <div class="stat-grid">
 <div class="card stat"><div class="stat-value">{{ user_count }}</div><div class="stat-label">Users</div></div>
 <div class="card stat"><div class="stat-value">{{ recipe_count }}</div><div class="stat-label">Recipes</div></div>

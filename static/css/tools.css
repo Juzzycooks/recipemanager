@@ -46,7 +46,7 @@
 .mp-date { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .is-today .mp-date { color: var(--accent); }
 .mp-day-body { flex: 1; }
-.mp-slot { margin-top: 0.5rem; min-height: 28px; border-radius: var(--radius); transition: background-color var(--duration-fast); }
+.mp-slot { margin-top: 0.5rem; min-height: 0; border-radius: var(--radius); transition: background-color var(--duration-fast); }
 .mp-slot.is-over { background: var(--accent-subtle); }
 .mp-meal-label { font-size: var(--fs-2xs); color: var(--text-tertiary); font-weight: 600; }
 .mp-item { display: flex; align-items: flex-start; gap: 0.15rem; padding: 0.2rem 0.25rem; border-radius: var(--radius);
@@ -108,10 +108,11 @@
 .shop-name { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.6rem; padding: 0.4rem 0.25rem;
         font-size: var(--fs-base); font-weight: 500; overflow-wrap: anywhere; }
 .shop-name .badge { font-weight: 500; }
-.shop-find { flex: none; }
+.shop-find { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--radius); color: var(--text-tertiary); }
+.shop-find:hover { background: var(--accent-subtle); color: var(--accent); }
+@media (pointer: coarse) { .shop-find { width: 44px; height: 44px; } }
 .is-done { background: var(--bg); }
 .is-done .shop-name { text-decoration: line-through; color: var(--text-tertiary); font-weight: 400; }
-@media (max-width: 560px) { .shop-find { display: none; } }
 @media (prefers-reduced-motion: reduce) { .shop-box { transition: none; } }
 
 /* ── Calculators and extras ── */
@@ -237,3 +238,26 @@
 .modal-actions form .btn { width: 100%; }
 .settings-group { border: none; border-top: 1px solid var(--rule); margin-top: 1.5rem; padding-top: 1rem; }
 .settings-group legend { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; padding: 0 0.5rem 0 0; }
+
+/* Meal plan, desktop: title gets the full width, actions tuck underneath; empty slots collapse until you drag */
+.mp-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 0 0.1rem; }
+.mp-item .mp-title { grid-column: 1 / -1; overflow-wrap: break-word; word-break: normal; hyphens: manual; }
+.mp-item .mp-move { grid-column: 2; }
+.mp-item form { grid-column: 3; }
+.mp-item > :not(.mp-title) { justify-self: end; }
+.mp-slot.is-empty { margin-top: 0; }
+.mp-grid.is-dragging .mp-slot.is-empty { min-height: 34px; margin-top: 0.5rem; border: 1px dashed var(--border); }
+.mp-grid.is-dragging .mp-slot.is-empty::before { content: attr(data-meal); font-size: var(--fs-2xs); color: var(--text-tertiary); padding: 0.4rem; display: block; text-transform: capitalize; }
+@media (max-width: 700px) {
+    .mp-item .mp-title { grid-column: 1; }
+    .mp-item .mp-move { grid-column: 2; }
+    .mp-item form { grid-column: 3; }
+}
+
+/* Admin summary tiles stay three across on phones instead of leaving one orphaned */
+@media (max-width: 560px) {
+    .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+    .stat-grid .stat { padding: 0.75rem 0.25rem; }
+    .stat-grid .stat-value { font-size: 1.75rem; }
+    .stat-grid .stat-label { letter-spacing: 0.02em; }
+}

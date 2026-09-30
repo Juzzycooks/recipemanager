@@ -272,3 +272,6 @@ kbd { font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 600; bo
     .detail-section { break-inside: auto; }
     a { color: inherit; text-decoration: none; }
 }
+
+.header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+[id] { scroll-margin-top: 84px; }

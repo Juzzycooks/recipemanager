@@ -275,6 +275,8 @@ function handleDrop(e, slot) {
 }
 document.querySelectorAll('.mp-item').forEach(el =>
     el.addEventListener('dragstart', e => handleDragStart(e, el.dataset.planId)));
+document.addEventListener('dragstart', () => document.querySelector('.mp-grid').classList.add('is-dragging'));
+document.addEventListener('dragend', () => document.querySelector('.mp-grid').classList.remove('is-dragging'));
 document.querySelectorAll('.mp-slot').forEach(slot => {
     slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('is-over'); });
     slot.addEventListener('dragleave', () => slot.classList.remove('is-over'));

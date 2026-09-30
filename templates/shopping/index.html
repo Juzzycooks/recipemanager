@@ -39,7 +39,7 @@
             {% if item.recipe %}<span class="badge badge-muted">{{ item.recipe.title }}</span>{% endif %}
         </div>
         {% if store_url %}
-        <a href="{{ store_link(item.name) }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm shop-find" aria-label="Find {{ item.name }} at {{ store_name }}">Find at {{ store_name }}</a>
+        <a href="{{ store_link(item.name) }}" target="_blank" rel="noopener noreferrer" class="shop-find" aria-label="Find {{ item.name }} at {{ store_name }}" title="Find at {{ store_name }}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></a>
         {% endif %}
         <form method="POST" action="{{ url_for('shopping.remove', item_id=item.id) }}">
             <button type="submit" class="shop-remove" aria-label="Remove {{ item.name }}">

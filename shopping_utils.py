@@ -120,9 +120,20 @@ def display_name(qty, unit, name):
     return f"{_fmt_qty(qty)} {name}"
 
 
+# Words that say "this is the packaged/pantry version", checked before the ingredient keywords
+# (so "tinned tomatoes", "chicken stock" and "coconut milk" don't land in Produce, Meat or Dairy).
+_PANTRY_PHRASES = ("tinned", "canned", "tin of", "can of", "dried", "stock", "broth", "paste", "puree",
+                   "coconut milk", "coconut cream", "black pepper", "peppercorn", "sauce", "jar of",
+                   "packet", "powder", "essence", "extract", "passata")
+
+
 def aisle_for(name):
     """Classify an item name into an aisle/section."""
     lowered = name.lower()
+    if "frozen" in lowered:
+        return "Frozen"
+    if any(p in lowered for p in _PANTRY_PHRASES) or re.search(r"\b(?:cans?|tins?)\b", lowered):
+        return "Pantry"
     for aisle, keywords in _AISLES:
         for kw in keywords:
             if kw in lowered:

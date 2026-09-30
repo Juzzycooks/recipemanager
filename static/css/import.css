@@ -22,3 +22,5 @@
 
 /* Keep the three-up field row aligned: the base "first label has no top margin" rule would lift only the first column */
 .form-grid-3 .form-group label { margin-top: 0; }
+
+@media (max-width: 560px) { .form-grid-3 { gap: 1rem 0; } }
