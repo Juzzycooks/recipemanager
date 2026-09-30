@@ -6,7 +6,7 @@
         <h2>Cook History</h2>
         <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" class="btn btn-secondary btn-sm">Back to recipe</a>
     </div>
-    <p style="color:var(--text-secondary);margin-bottom:1rem;font-size:0.9rem;">{{ recipe.title }} - Made {{ logs|length }} time(s)</p>
+    <p style="color:var(--text-secondary);margin-bottom:1rem;font-size:var(--fs-sm);">{{ recipe.title }} - Made {{ logs|length }} time(s)</p>
     {% if logs %}
     <div class="card">
         <table class="table">

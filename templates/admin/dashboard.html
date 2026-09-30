@@ -9,7 +9,7 @@
 </div>
 <div class="card">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-<h3 style="font-size:0.95rem;">Users</h3>
+<h3 style="font-size:var(--fs-base);">Users</h3>
 <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary btn-sm">Add user</a>
 </div>
 <table class="table">
@@ -40,7 +40,7 @@ onsubmit="return confirm('Delete {{ user.username }}?');" style="display:inline;
 
 <div class="card">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-<h3 style="font-size:0.95rem;">Categories</h3>
+<h3 style="font-size:var(--fs-base);">Categories</h3>
 </div>
 <form method="POST" action="{{ url_for('admin.add_category') }}" style="display:flex;gap:0.5rem;margin-bottom:1rem;">
 <input type="text" name="name" placeholder="New category name" required style="flex:1;">
@@ -50,22 +50,22 @@ onsubmit="return confirm('Delete {{ user.username }}?');" style="display:inline;
 <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
 {% for cat in categories %}
 <div style="display:inline-flex;align-items:center;gap:0.3rem;background:var(--accent-subtle);padding:0.25rem 0.5rem 0.25rem 0.65rem;border-radius:20px;">
-<span style="font-size:0.8rem;font-weight:500;color:var(--accent);">{{ cat.name }}</span>
-<span style="font-size:0.72rem;color:var(--text-tertiary);margin-left:0.1rem;">{{ cat.recipes|length }}</span>
+<span style="font-size:var(--fs-xs);font-weight:500;color:var(--accent);">{{ cat.name }}</span>
+<span style="font-size:var(--fs-2xs);color:var(--text-tertiary);margin-left:0.1rem;">{{ cat.recipes|length }}</span>
 <form method="POST" action="{{ url_for('admin.delete_category', cat_id=cat.id) }}" style="display:inline;" onsubmit="return confirm('Delete {{ cat.name }}?');">
-<button type="submit" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:0.75rem;padding:0 0.15rem;line-height:1;">&times;</button>
+<button type="submit" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:var(--fs-2xs);padding:0 0.15rem;line-height:1;">&times;</button>
 </form>
 </div>
 {% endfor %}
 </div>
 {% else %}
-<p style="color:var(--text-tertiary);font-size:0.88rem;">No categories yet.</p>
+<p style="color:var(--text-tertiary);font-size:var(--fs-sm);">No categories yet.</p>
 {% endif %}
 </div>
 
 <div class="card">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-<h3 style="font-size:0.95rem;">Calculators</h3>
+<h3 style="font-size:var(--fs-base);">Calculators</h3>
 <a href="{{ url_for('admin.add_calculator') }}" class="btn btn-primary btn-sm">Add calculator</a>
 </div>
 {% if calculators %}
@@ -75,7 +75,7 @@ onsubmit="return confirm('Delete {{ user.username }}?');" style="display:inline;
 {% for calc in calculators %}
 <tr>
 <td style="font-weight:600;">{{ calc.name }}</td>
-<td style="color:var(--text-tertiary);font-size:0.8rem;">{{ calc.url|truncate(40) }}</td>
+<td style="color:var(--text-tertiary);font-size:var(--fs-xs);">{{ calc.url|truncate(40) }}</td>
 <td>{{ calc.sort_order }}</td>
 <td>
 <div style="display:flex;gap:0.3rem;">
@@ -90,15 +90,15 @@ onsubmit="return confirm('Delete {{ user.username }}?');" style="display:inline;
 </tbody>
 </table>
 {% else %}
-<p style="color:var(--text-tertiary);font-size:0.88rem;">No calculators added yet.</p>
+<p style="color:var(--text-tertiary);font-size:var(--fs-sm);">No calculators added yet.</p>
 {% endif %}
 </div>
 
 <div class="card">
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <div>
-<h3 style="font-size:0.95rem;">Site Settings</h3>
-<p style="color:var(--text-tertiary);font-size:0.82rem;margin-top:0.2rem;">Customize logo, site name, and branding.</p>
+<h3 style="font-size:var(--fs-base);">Site Settings</h3>
+<p style="color:var(--text-tertiary);font-size:var(--fs-xs);margin-top:0.2rem;">Customize logo, site name, and branding.</p>
 </div>
 <a href="{{ url_for('admin.settings') }}" class="btn btn-secondary btn-sm">Settings</a>
 </div>
@@ -107,16 +107,16 @@ onsubmit="return confirm('Delete {{ user.username }}?');" style="display:inline;
 <div class="card">
 <div style="display:flex;justify-content:space-between;align-items:center;">
 <div>
-<h3 style="font-size:0.95rem;">Mealie Import</h3>
-<p style="color:var(--text-tertiary);font-size:0.82rem;margin-top:0.2rem;">Import recipes from a Mealie v4 instance.</p>
+<h3 style="font-size:var(--fs-base);">Mealie Import</h3>
+<p style="color:var(--text-tertiary);font-size:var(--fs-xs);margin-top:0.2rem;">Import recipes from a Mealie v4 instance.</p>
 </div>
 <a href="{{ url_for('admin.mealie_import_page') }}" class="btn btn-secondary btn-sm">Import</a>
 </div>
 </div>
 
 <div class="card">
-<h3 style="font-size:0.95rem;margin-bottom:0.25rem;">Backup &amp; Restore</h3>
-<p style="color:var(--text-tertiary);font-size:0.82rem;margin-bottom:1rem;">Export your recipes and images, or download a database snapshot.</p>
+<h3 style="font-size:var(--fs-base);margin-bottom:0.25rem;">Backup &amp; Restore</h3>
+<p style="color:var(--text-tertiary);font-size:var(--fs-xs);margin-bottom:1rem;">Export your recipes and images, or download a database snapshot.</p>
 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
 <a href="{{ url_for('admin.export_zip') }}" class="btn btn-primary btn-sm">Full backup (zip)</a>
 <a href="{{ url_for('admin.export_json') }}" class="btn btn-secondary btn-sm">Recipes (JSON)</a>

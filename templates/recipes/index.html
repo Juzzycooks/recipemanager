@@ -40,7 +40,7 @@
         {% endif %}
     </div>
     <div style="display:flex;gap:0.4rem;align-items:center;">
-        <select onchange="window.location=this.value" style="width:auto;padding:0.3rem 0.5rem;font-size:0.78rem;" aria-label="Sort recipes">
+        <select onchange="window.location=this.value" style="width:auto;padding:0.3rem 0.5rem;font-size:var(--fs-xs);" aria-label="Sort recipes">
             <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='newest', view=view_mode, collection=active_coll) }}" {% if sort=='newest' %}selected{% endif %}>Newest</option>
             <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='oldest', view=view_mode, collection=active_coll) }}" {% if sort=='oldest' %}selected{% endif %}>Oldest</option>
             <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='title_az', view=view_mode, collection=active_coll) }}" {% if sort=='title_az' %}selected{% endif %}>A-Z</option>
@@ -69,7 +69,7 @@
                 <tr style="cursor:pointer;" onclick="window.location='{{ url_for('recipes.view', recipe_id=recipe.id) }}'">
                     <td style="width:50px;padding:0.3rem;">
                         {% if recipe.image_url %}
-                        <img src="{{ recipe.image_url|recipe_thumb }}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:4px;" loading="lazy">
+                        <img src="{{ recipe.image_url|recipe_thumb }}" alt="" width="44" height="44" loading="lazy" decoding="async" style="width:44px;height:44px;object-fit:cover;border-radius:4px;" loading="lazy" decoding="async">
                         {% else %}
                         <div style="width:44px;height:44px;background:var(--border-light);border-radius:4px;"></div>
                         {% endif %}
@@ -82,7 +82,7 @@
                         {% for cat in recipe.categories %}<span class="tag">{{ cat.name }}</span> {% endfor %}
                     </td>
                     <td>{% if recipe.avg_rating() %}{{ "%.1f"|format(recipe.avg_rating()) }} ★{% endif %}</td>
-                    <td style="font-size:0.82rem;color:var(--text-secondary);">{{ recipe.prep_time or '' }}</td>
+                    <td style="font-size:var(--fs-xs);color:var(--text-secondary);">{{ recipe.prep_time or '' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -94,7 +94,7 @@
         <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" style="text-decoration:none;color:inherit;">
             <div class="card recipe-card">
                 {% if recipe.image_url %}
-                    <img class="recipe-card-img" src="{{ recipe.image_url|recipe_thumb }}" alt="{{ recipe.title }}" loading="lazy">
+                    <img class="recipe-card-img" src="{{ recipe.image_url|recipe_thumb }}" alt="{{ recipe.title }}" loading="lazy" decoding="async">
                 {% else %}
                     <div class="recipe-card-placeholder">No image</div>
                 {% endif %}
@@ -102,7 +102,7 @@
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                         <h3 style="flex:1;">{{ recipe.title }}</h3>
                         {% if recipe.id in user_favs %}
-                        <span style="color:var(--accent);font-size:1rem;">★</span>
+                        <span style="color:var(--accent);font-size:var(--fs-base);">★</span>
                         {% endif %}
                     </div>
                     {% if recipe.categories %}

@@ -1,0 +1,51 @@
+/* Recipe Manager design tokens: the single source of truth.
+   Loaded by templates/base.html, the public share pages, static/pages/_theme.css and cook mode.
+   Roles are documented in DESIGN.md. Change a value here, not in a template. */
+
+:root, [data-theme="light"] {
+  /* Accent: --accent is for text, lines, bullets; --accent-solid is for fills that carry white text */
+  --accent: #c0440e; --accent-hover: #a33a0b; --accent-subtle: #fdf0eb;
+  --accent-solid: #c0440e; --accent-solid-hover: #a33a0b;
+  /* Text */
+  --text-primary: #1a1a1a; --text-secondary: #595959; --text-tertiary: #6b6b6b;
+  /* Surfaces */
+  --bg: #f7f7f5; --surface: #fff; --border: #e5e5e3; --border-light: #f0f0ee;
+  --nav-bg: #fff; --input-bg: #fff;
+  /* Status */
+  --success: #1a7f37; --success-bg: #dafbe1; --success-border: #aceebb;
+  --error: #cf222e; --error-bg: #ffebe9; --error-border: #ffc1c0;
+  /* Shape + depth */
+  --radius: 8px; --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --focus-ring: 0 0 0 3px rgba(192,68,14,0.1);
+  /* Type scale (rem). Roles, not raw sizes: 2xs labels/tags, xs meta, sm UI, base reading + inputs, md cook step, lg headings */
+  --fs-2xs: 0.75rem; --fs-xs: 0.8125rem; --fs-sm: 0.875rem; --fs-base: 1rem; --fs-md: 1.125rem; --fs-lg: 1.25rem;
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 0.15s;
+}
+
+[data-theme="dark"] {
+  --accent: #e85a24; --accent-hover: #f06b35; --accent-subtle: #2d1f1a;
+  --accent-solid: #c8501a; --accent-solid-hover: #b84616;
+  --text-primary: #e8e8e6; --text-secondary: #a0a0a0; --text-tertiary: #949494;
+  --bg: #121212; --surface: #1e1e1e; --border: #333; --border-light: #2a2a2a;
+  --nav-bg: #1a1a1a; --input-bg: #2a2a2a;
+  --success: #3fb950; --success-bg: #1a2e1a; --success-border: #2a4a2a;
+  --error: #f85149; --error-bg: #2d1b1b; --error-border: #4a2a2a;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --focus-ring: 0 0 0 3px rgba(232,90,36,0.18);
+}
+
+/* Cook mode is always dark: a fixed kitchen-counter palette, independent of the theme toggle */
+:root {
+  --cook-bg: #1a1a1a; --cook-bar: #111; --cook-inset: #222;
+  --cook-surface: #333; --cook-surface-raised: #444; --cook-timer: #2a2a2a;
+  --cook-line: #333;
+  --cook-text: #fff; --cook-muted: #9a9a9a; --cook-done: #8a8a8a;
+  --cook-accent: #e85a24; --cook-accent-solid: #c8501a;
+}

@@ -2,8 +2,8 @@
 {% block title %}{{ "Edit User" if user else "Add User" }} - Admin{% endblock %}
 {% block content %}
 <div class="card" style="max-width:500px;margin:0 auto;">
-    <h2 style="font-size:1.15rem;margin-bottom:0.3rem;">{{ "Edit User" if user else "Add User" }}</h2>
-    <p style="color:var(--text-secondary);margin-bottom:1.25rem;font-size:0.88rem;">
+    <h2 style="font-size:var(--fs-md);margin-bottom:0.3rem;">{{ "Edit User" if user else "Add User" }}</h2>
+    <p style="color:var(--text-secondary);margin-bottom:1.25rem;font-size:var(--fs-sm);">
         {% if user %}Update user details below.{% else %}A temporary password will be generated. If SMTP is configured and an email is provided, credentials will be emailed automatically.{% endif %}
     </p>
     <form method="POST">

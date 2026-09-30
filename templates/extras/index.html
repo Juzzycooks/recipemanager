@@ -4,7 +4,7 @@
 <div class="page-header">
 <h2>Extras</h2>
 </div>
-<p style="color:var(--text-secondary);font-size:0.85rem;margin:-0.5rem 0 1.25rem;">Recipes, calculators and guides — each opens on its own page.</p>
+<p style="color:var(--text-secondary);font-size:var(--fs-sm);margin:-0.5rem 0 1.25rem;">Recipes, calculators and guides — each opens on its own page.</p>
 {% if pages %}
 <div class="recipe-grid">
 {% for page in pages %}
@@ -14,7 +14,7 @@
 <div class="recipe-card-body">
 <h3>{{ page.name }}</h3>
 {% if page.description %}
-<p style="color:var(--text-secondary);font-size:0.82rem;margin-top:0.2rem;">{{ page.description }}</p>
+<p style="color:var(--text-secondary);font-size:var(--fs-xs);margin-top:0.2rem;">{{ page.description }}</p>
 {% endif %}
 </div>
 </div>

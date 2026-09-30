@@ -16,22 +16,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css', v=asset_v) }}">
     <style>
-        :root, [data-theme="light"] {
-            --accent: #c0440e; --accent-subtle: #fdf0eb;
-            --text-primary: #1a1a1a; --text-secondary: #6b6b6b; --text-tertiary: #999;
-            --bg: #f7f7f5; --surface: #fff; --border: #e5e5e3; --border-light: #f0f0ee;
-            --radius: 8px; --radius-lg: 12px;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        [data-theme="dark"] {
-            --accent: #e85a24; --accent-subtle: #2d1f1a;
-            --text-primary: #e8e8e6; --text-secondary: #a0a0a0; --text-tertiary: #707070;
-            --bg: #121212; --surface: #1e1e1e; --border: #333; --border-light: #2a2a2a;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-        }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', -apple-system, system-ui, sans-serif;
                background: var(--bg); color: var(--text-primary); line-height: 1.6;
@@ -41,15 +27,15 @@
         .card { background: var(--surface); border-radius: var(--radius-lg); padding: 2rem;
                 border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
         h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
-        .description { color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem; }
+        .description { color: var(--text-secondary); margin-bottom: 1rem; font-size: var(--fs-base); }
         .tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1rem; }
-        .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.72rem;
+        .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: var(--fs-2xs);
                font-weight: 600; background: var(--accent-subtle); color: var(--accent); }
         .meta { display: flex; gap: 2rem; flex-wrap: wrap; padding: 1rem 0;
                 border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 1rem 0; }
-        .meta-item .label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
-        .meta-item .value { font-size: 1rem; font-weight: 700; }
-        h2 { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+        .meta-item .label { font-size: var(--fs-2xs); text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+        .meta-item .value { font-size: var(--fs-base); font-weight: 700; }
+        h2 { font-size: var(--fs-sm); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
              margin: 1.5rem 0 0.75rem; color: var(--text-primary); }
         ul { list-style: none; }
         ul li { padding: 0.4rem 0; border-bottom: 1px solid var(--border-light); padding-left: 1rem; position: relative; }
@@ -59,23 +45,25 @@
         ol li { padding: 0.6rem 0; border-bottom: 1px solid var(--border-light); display: flex; gap: 0.75rem; }
         ol li::before { counter-increment: step; content: counter(step); color: var(--accent);
                         font-weight: 700; min-width: 1.5rem; }
-        .footer { text-align: center; margin-top: 2rem; color: var(--text-tertiary); font-size: 0.82rem; }
+        .footer { text-align: center; margin-top: 2rem; color: var(--text-tertiary); font-size: var(--fs-xs); }
         .footer a { color: var(--accent); text-decoration: none; }
         .theme-toggle { position: fixed; top: 1rem; right: 1rem; background: var(--surface); border: 1px solid var(--border);
                         color: var(--text-secondary); width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
-                        display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
-                        transition: all 0.15s; z-index: 10; }
+                        display: flex; align-items: center; justify-content: center; font-size: var(--fs-md);
+                        transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s; z-index: 10; }
         .theme-toggle:hover { background: var(--border-light); color: var(--text-primary); }
         .ctrl-btn { padding: 0.25rem 0.6rem; border-radius: 6px; border: 1px solid var(--border);
-                    background: var(--surface); color: var(--text-primary); font-size: 0.76rem;
+                    background: var(--surface); color: var(--text-primary); font-size: var(--fs-2xs);
                     font-weight: 600; cursor: pointer; font-family: inherit; }
-        .ctrl-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .ctrl-btn.active { background: var(--accent-solid); color: #fff; border-color: var(--accent-solid); }
         @media (max-width: 600px) {
             .container { padding: 1rem; }
             .card { padding: 1.25rem; }
             h1 { font-size: 1.5rem; }
             .meta { gap: 1rem; }
         }
+        @media (pointer: coarse) { .theme-toggle { width: 44px; height: 44px; } .ctrl-btn { min-height: 44px; min-width: 44px; } }
+        @media (prefers-reduced-motion: reduce) { .card, .card:hover { transform: none !important; } }
     </style>
 </head>
 <body>
@@ -118,7 +106,7 @@
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
                 <h2 style="margin-bottom:0;">Ingredients</h2>
                 <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-top:1.5rem;">
-                    <span style="font-size:0.72rem;color:var(--text-tertiary);font-weight:600;">Scale</span>
+                    <span style="font-size:var(--fs-2xs);color:var(--text-tertiary);font-weight:600;">Scale</span>
                     <button type="button" class="ctrl-btn scale-btn" data-scale="0.5">&half;&times;</button>
                     <button type="button" class="ctrl-btn scale-btn active" data-scale="1">1&times;</button>
                     <button type="button" class="ctrl-btn scale-btn" data-scale="2">2&times;</button>
@@ -149,7 +137,7 @@
             {% endif %}
 
             {% if recipe.source_url %}
-            <p style="margin-top:1.5rem;font-size:0.85rem;color:var(--text-secondary);">
+            <p style="margin-top:1.5rem;font-size:var(--fs-sm);color:var(--text-secondary);">
                 Source: <a href="{{ recipe.source_url }}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">{{ recipe.source_url|truncate(50) }}</a>
             </p>
             {% endif %}
@@ -161,12 +149,12 @@
     <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode"><span class="theme-icon">🌙</span></button>
     <script>
     function getTheme() {
-        return localStorage.getItem('theme') ||
-               (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        var saved = null; try { saved = localStorage.getItem('theme'); } catch (e) {}
+        return saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     }
     function setTheme(t) {
         document.documentElement.setAttribute('data-theme', t);
-        localStorage.setItem('theme', t);
+        try { localStorage.setItem('theme', t); } catch (e) {}
         document.querySelector('.theme-icon').textContent = t === 'dark' ? '☀️' : '🌙';
     }
     function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
@@ -174,7 +162,7 @@
     </script>
     <style>
     .rm-section { list-style: none; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.04em; font-size: 0.8rem; color: var(--accent);
+        letter-spacing: 0.04em; font-size: var(--fs-xs); color: var(--accent);
         padding-top: 0.85rem; margin-bottom: 0.2rem; }
     ol.rm-steps { list-style: none; padding-left: 0; counter-reset: step; }
     ol.rm-steps > li:not(.rm-section) { counter-increment: step; position: relative; padding-left: 2rem; }

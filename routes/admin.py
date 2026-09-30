@@ -354,7 +354,8 @@ def uploaded_file(filename):
     from flask import send_from_directory, current_app
     data_dir = current_app.config.get("DATA_DIR", os.environ.get("DATA_DIR", "/app/data"))
     uploads_dir = os.path.join(data_dir, "uploads")
-    return send_from_directory(uploads_dir, filename)
+    # Filenames are random per upload (never reused), so they are safe to cache long-term
+    return send_from_directory(uploads_dir, filename, max_age=60 * 60 * 24 * 30)
 
 
 # ── Backup / Export / Import ──

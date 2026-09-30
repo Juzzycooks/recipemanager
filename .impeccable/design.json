@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-30T00:00:00Z",
+  "title": "Design System: Recipe Manager",
+  "extensions": {
+    "colorMeta": {
+      "terracotta-ember": {
+        "role": "primary",
+        "displayName": "Terracotta Ember",
+        "canonical": "#c0440e",
+        "tonalRamp": [
+          "#3a1304",
+          "#5c1f06",
+          "#7f2b09",
+          "#a33a0b",
+          "#c0440e",
+          "#e0794a",
+          "#f1b59a",
+          "#fdf0eb"
+        ]
+      },
+      "flour": {
+        "role": "neutral",
+        "displayName": "Flour",
+        "canonical": "#f7f7f5",
+        "tonalRamp": [
+          "#1a1a1a",
+          "#3a3a38",
+          "#595959",
+          "#6b6b6b",
+          "#c9c9c6",
+          "#e5e5e3",
+          "#f0f0ee",
+          "#f7f7f5"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Recipe card titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Ingredients, instructions, forms."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase meta labels, table headers."
+      }
+    },
+    "shadows": [
+      {
+        "name": "resting",
+        "value": "0 1px 2px rgba(0,0,0,0.04)",
+        "purpose": "Cards at rest."
+      },
+      {
+        "name": "standard",
+        "value": "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+        "purpose": "Raised elements."
+      },
+      {
+        "name": "lifted",
+        "value": "0 4px 12px rgba(0,0,0,0.08)",
+        "purpose": "Recipe card hover, mobile nav dropdown."
+      }
+    ],
+    "motion": [
+      {
+        "name": "quick",
+        "value": "0.15s all",
+        "purpose": "Hover and focus transitions on buttons, chips, nav links, inputs."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile",
+        "value": "700px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action; Terracotta fill.",
+      "html": "<button class=\"ds-btn-primary\">Save recipe</button>",
+      "css": ".ds-btn-primary{background:#c0440e;color:#fff;border:1px solid #c0440e;border-radius:8px;padding:.5rem 1rem;font:600 .84rem Inter,system-ui,sans-serif;cursor:pointer;transition:all .15s}.ds-btn-primary:hover{background:#a33a0b;border-color:#a33a0b}.ds-btn-primary:focus-visible{outline:2px solid #c0440e;outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Neutral action on a white surface.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary{background:#fff;color:#1a1a1a;border:1px solid #e5e5e3;border-radius:8px;padding:.5rem 1rem;font:600 .84rem Inter,system-ui,sans-serif;cursor:pointer;transition:all .15s}.ds-btn-secondary:hover{background:#f0f0ee}.ds-btn-secondary:focus-visible{outline:2px solid #c0440e;outline-offset:2px}"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Pill filter; solid Terracotta when active.",
+      "html": "<span class=\"ds-chip\">Dinner</span> <span class=\"ds-chip ds-chip-active\">Baking</span>",
+      "css": ".ds-chip{display:inline-block;padding:.3rem .7rem;border-radius:20px;font:500 .78rem Inter,system-ui,sans-serif;border:1px solid #e5e5e3;color:#595959;background:#fff;transition:all .15s}.ds-chip:hover{border-color:#c0440e;color:#c0440e}.ds-chip-active{background:#c0440e;color:#fff;border-color:#c0440e}"
+    },
+    {
+      "name": "Tag",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Small Ember Wash label.",
+      "html": "<span class=\"ds-tag\">Vegetarian</span>",
+      "css": ".ds-tag{display:inline-block;padding:.15rem .5rem;border-radius:4px;font:600 .72rem Inter,system-ui,sans-serif;background:#fdf0eb;color:#c0440e;letter-spacing:.01em}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Field with Ember focus ring.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search recipes or ingredients\">",
+      "css": ".ds-input{width:100%;padding:.55rem .75rem;border:1px solid #e5e5e3;border-radius:8px;font:.9rem Inter,system-ui,sans-serif;background:#fff;color:#1a1a1a;transition:border-color .15s,box-shadow .15s}.ds-input::placeholder{color:#6b6b6b}.ds-input:focus{outline:none;border-color:#c0440e;box-shadow:0 0 0 3px rgba(192,68,14,.1)}"
+    },
+    {
+      "name": "Recipe Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Photo on top, title and meta below; lifts on hover.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-img\">No image</div><div class=\"ds-card-body\"><h3>Pasteis de Nata</h3><div class=\"ds-card-meta\">45 min \u00b7 12 servings</div></div></div>",
+      "css": ".ds-card{background:#fff;border:1px solid #e5e5e3;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04);width:260px;transition:all .15s;cursor:pointer}.ds-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);transform:translateY(-2px)}.ds-card-img{height:120px;background:#f0f0ee;color:#6b6b6b;display:flex;align-items:center;justify-content:center;font:500 .85rem Inter,sans-serif}.ds-card-body{padding:1rem 1.25rem 1.25rem}.ds-card-body h3{font:600 .95rem/1.35 Inter,sans-serif;color:#1a1a1a;margin:0 0 .3rem}.ds-card-meta{color:#6b6b6b;font:.78rem Inter,sans-serif}"
+    },
+    {
+      "name": "Nav Link",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Top-bar link; active state is Terracotta on Ember Wash.",
+      "html": "<a class=\"ds-nav\">Recipes</a> <a class=\"ds-nav ds-nav-active\">Meal Plan</a>",
+      "css": ".ds-nav{display:inline-block;color:#595959;font:500 .84rem Inter,sans-serif;padding:.4rem .7rem;border-radius:6px;transition:all .15s;cursor:pointer}.ds-nav:hover{color:#1a1a1a;background:#f0f0ee}.ds-nav-active{color:#c0440e;background:#fdf0eb}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Kitchen Counter",
+    "overview": "A clear, sturdy workspace where everything is within reach. Surfaces are calm off-white and white, text is near-black Inter, and a single terracotta accent marks what is active, actionable, or the cook's own.",
+    "keyCharacteristics": [
+      "One accent, used for links, active states, primary actions, and list markers.",
+      "Single sans family (Inter); hierarchy comes from weight, size, and uppercase labels, not from font mixing.",
+      "Soft-lifted cards: hairline border plus ambient shadow, deeper on hover.",
+      "Rounded but not bubbly: 8px controls, 12px cards, pill chips.",
+      "Theme via CSS custom properties on data-theme, mirrored in static/pages/_theme.css for embedded pages."
+    ],
+    "rules": [
+      {
+        "name": "The One Ember Rule",
+        "body": "Terracotta is the only chromatic accent. Green and red mean status, never decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Wash, Not Fill Rule",
+        "body": "Secondary emphasis uses Ember Wash tints; solid Terracotta is reserved for the primary action and the selected state.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Inter only. Add hierarchy with weight and case, not a second typeface.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lift On Touch Rule",
+        "body": "Cards lift only in response to hover; at rest they stay quiet.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Sentence-Case Data Rule",
+        "body": "User-generated strings (aisle names, categories, titles) are never uppercased; uppercase is for fixed, short labels.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do use var(--accent) and the existing custom properties; never hard-code hex in templates.",
+      "Do change tokens only in static/css/tokens.css; every template and static/pages/_theme.css loads it.",
+      "Do design every surface for light and dark.",
+      "Do keep touch targets comfortable for kitchen use on phones and tablets.",
+      "Do keep public shared pages self-contained and attractive for a first-time visitor."
+    ],
+    "donts": [
+      "Don't introduce a second accent colour or a second typeface.",
+      "Don't hard-code the brand name; the site name and logo are admin-set.",
+      "Don't use shadows at rest beyond the Resting/Standard tokens; reserve Lifted for hover and overlays.",
+      "Don't put white text on --accent in dark theme; use --accent-solid."
+    ]
+  }
+}

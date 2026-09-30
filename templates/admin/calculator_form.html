@@ -2,8 +2,8 @@
 {% block title %}{{ "Edit" if calc else "Add" }} Calculator - Admin{% endblock %}
 {% block content %}
 <div class="card" style="max-width:600px;margin:0 auto;">
-    <h2 style="font-size:1.15rem;margin-bottom:0.3rem;">{{ "Edit" if calc else "Add" }} Calculator</h2>
-    <p style="color:var(--text-secondary);margin-bottom:1.25rem;font-size:0.88rem;">Calculators are embedded as iframes so users can interact with them directly.</p>
+    <h2 style="font-size:var(--fs-md);margin-bottom:0.3rem;">{{ "Edit" if calc else "Add" }} Calculator</h2>
+    <p style="color:var(--text-secondary);margin-bottom:1.25rem;font-size:var(--fs-sm);">Calculators are embedded as iframes so users can interact with them directly.</p>
     <form method="POST">
         <div class="form-group">
             <label for="name">Name</label>

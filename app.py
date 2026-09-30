@@ -1,7 +1,7 @@
 import os
 import secrets
 from datetime import timedelta
-from flask import Flask, url_for
+from flask import Flask, url_for, g, request
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from models import db, User, SiteSetting
@@ -64,6 +64,9 @@ def create_app():
     app.config["SMTP_FROM"] = os.environ.get("SMTP_FROM", "")
     app.config["SMTP_TLS"] = os.environ.get("SMTP_TLS", "true").lower() == "true"
 
+    # Static files: cache for an hour (tokens.css is version-stamped, sw.js is served no-cache below)
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = timedelta(hours=1)
+
     db.init_app(app)
     csrf.init_app(app)
 
@@ -114,6 +117,30 @@ def create_app():
         response.headers["Content-Security-Policy"] = csp
         return response
 
+    _COMPRESSIBLE = ("text/html", "text/css", "text/plain", "application/javascript",
+                     "application/json", "text/javascript", "image/svg+xml")
+
+    @app.after_request
+    def gzip_response(response):
+        """Gzip text responses (HTML carries ~10KB of inline CSS per page).
+        Skips streamed/file responses, small bodies and clients without gzip."""
+        import gzip
+        if (response.direct_passthrough or response.status_code < 200 or response.status_code in (204, 304)
+                or "Content-Encoding" in response.headers
+                or "gzip" not in request.headers.get("Accept-Encoding", "")
+                or (response.mimetype or "") not in _COMPRESSIBLE):
+            return response
+        data = response.get_data()
+        if len(data) < 1024:
+            return response
+        response.set_data(gzip.compress(data, compresslevel=6))
+        response.headers["Content-Encoding"] = "gzip"
+        response.headers["Content-Length"] = str(len(response.get_data()))
+        response.headers.add("Vary", "Accept-Encoding")
+        if response.headers.get("ETag") and not response.headers["ETag"].endswith('-gzip"'):
+            response.headers["ETag"] = response.headers["ETag"].rstrip('"') + '-gzip"'
+        return response
+
     with app.app_context():
         # Run migrations first (adds missing columns/tables to existing DB)
         from migrate import migrate
@@ -124,9 +151,17 @@ def create_app():
     @app.context_processor
     def inject_settings():
         def get_setting(key, default=""):
-            setting = SiteSetting.query.filter_by(key=key).first()
-            return setting.value if setting else default
-        return dict(get_setting=get_setting)
+            # Load all settings once per request instead of one query per call
+            if not hasattr(g, "_site_settings"):
+                g._site_settings = {row.key: row.value for row in SiteSetting.query.all()}
+            return g._site_settings.get(key, default)
+
+        tokens_path = os.path.join(app.static_folder, "css", "tokens.css")
+        try:
+            asset_v = int(os.path.getmtime(tokens_path))
+        except OSError:
+            asset_v = 0
+        return dict(get_setting=get_setting, asset_v=asset_v)
 
     @app.template_filter('recipe_image')
     def recipe_image_filter(image_url):

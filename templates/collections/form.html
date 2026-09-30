@@ -16,7 +16,7 @@
         {% if collection and collection.cover_image %}
         <div style="margin-bottom:0.5rem;">
             <img src="/admin/uploads/{{ collection.cover_image }}" alt="Cover" style="max-height:120px;border-radius:8px;">
-            <label style="display:inline-flex;align-items:center;gap:0.3rem;font-weight:400;font-size:0.82rem;margin:0.5rem 0 0;">
+            <label style="display:inline-flex;align-items:center;gap:0.3rem;font-weight:400;font-size:var(--fs-xs);margin:0.5rem 0 0;">
                 <input type="checkbox" name="remove_cover" value="1" style="width:auto;"> Remove cover
             </label>
         </div>

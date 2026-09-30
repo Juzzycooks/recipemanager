@@ -2,6 +2,7 @@
    Network-first so the app always shows fresh data; offline fallback
    for previously visited pages via a small runtime cache. */
 const CACHE = 'recipemanager-v1';
+const MAX_ENTRIES = 300;
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -25,6 +26,25 @@ self.addEventListener('fetch', (event) => {
   if ((url.pathname.startsWith('/admin') && !isUpload) || url.pathname.startsWith('/login')
       || url.pathname.startsWith('/logout') || url.pathname.startsWith('/profile')
       || url.pathname.includes('reset-password')) return;
+
+  // Uploads have random, never-reused filenames: serve from cache first, fill it on a miss
+  if (isUpload) {
+    event.respondWith(
+      caches.match(req).then((hit) => hit || fetch(req).then((resp) => {
+        if (resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE).then(async (c) => {
+            await c.put(req, clone);
+            // Keep the cache bounded: drop the oldest entries beyond the limit
+            const keys = await c.keys();
+            if (keys.length > MAX_ENTRIES) await Promise.all(keys.slice(0, keys.length - MAX_ENTRIES).map((k) => c.delete(k)));
+          });
+        }
+        return resp;
+      }))
+    );
+    return;
+  }
 
   event.respondWith(
     fetch(req)

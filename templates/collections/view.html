@@ -5,10 +5,10 @@
     <div>
         <h2>{{ collection.name }}</h2>
         {% if collection.description %}
-        <p style="font-size:0.88rem;color:var(--text-secondary);margin-top:0.25rem;">{{ collection.description }}</p>
+        <p style="font-size:var(--fs-sm);color:var(--text-secondary);margin-top:0.25rem;">{{ collection.description }}</p>
         {% endif %}
         {% if collection.category %}
-        <p style="font-size:0.82rem;margin-top:0.25rem;"><span class="tag">{{ collection.category.name }}</span> <span style="color:var(--text-tertiary);">auto-linked</span></p>
+        <p style="font-size:var(--fs-xs);margin-top:0.25rem;"><span class="tag">{{ collection.category.name }}</span> <span style="color:var(--text-tertiary);">auto-linked</span></p>
         {% endif %}
     </div>
     <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
@@ -24,8 +24,8 @@
     {% if collection.share_token %}
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
         <div style="flex:1;min-width:200px;">
-            <label style="margin:0;font-size:0.78rem;">Public link (no login required)</label>
-            <input type="text" id="share-url" value="{{ url_for('collections.view_shared', token=collection.public_url_token, _external=True) }}" readonly onclick="this.select()" style="font-size:0.82rem;margin-top:0.25rem;">
+            <label style="margin:0;font-size:var(--fs-xs);">Public link (no login required)</label>
+            <input type="text" id="share-url" value="{{ url_for('collections.view_shared', token=collection.public_url_token, _external=True) }}" readonly onclick="this.select()" style="font-size:var(--fs-xs);margin-top:0.25rem;">
         </div>
         <div style="display:flex;gap:0.4rem;">
             <button onclick="navigator.clipboard.writeText(document.getElementById('share-url').value);this.textContent='Copied'" class="btn btn-secondary btn-sm">Copy link</button>
@@ -36,7 +36,7 @@
     </div>
     {% else %}
     <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.85rem;color:var(--text-secondary);">Share this collection publicly (for your Instagram bio, etc.)</span>
+        <span style="font-size:var(--fs-sm);color:var(--text-secondary);">Share this collection publicly (for your Instagram bio, etc.)</span>
         <form method="POST" action="{{ url_for('collections.share', coll_id=collection.id) }}">
             <button type="submit" class="btn btn-primary btn-sm">Create public link</button>
         </form>
@@ -61,14 +61,14 @@
 </div>
 
 {% if all_recipes %}
-<p style="font-size:0.78rem;color:var(--text-tertiary);margin-bottom:0.75rem;">Drag cards to reorder manually added recipes.</p>
+<p style="font-size:var(--fs-xs);color:var(--text-tertiary);margin-bottom:0.75rem;">Drag cards to reorder manually added recipes.</p>
 <div class="recipe-grid" id="sortable-grid">
     {% for recipe in all_recipes %}
     {% set is_manual = recipe in collection.recipes %}
     <div class="card recipe-card" style="position:relative;" {% if is_manual %}draggable="true" data-recipe-id="{{ recipe.id }}"{% endif %}>
         <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" style="text-decoration:none;color:inherit;">
             {% if recipe.image_url %}
-                <img class="recipe-card-img" src="{{ recipe.image_url|recipe_image }}" alt="{{ recipe.title }}" loading="lazy">
+                <img class="recipe-card-img" src="{{ recipe.image_url|recipe_image }}" alt="{{ recipe.title }}" loading="lazy" decoding="async">
             {% else %}
                 <div class="recipe-card-placeholder">No image</div>
             {% endif %}
@@ -77,7 +77,7 @@
                 <div class="recipe-meta">
                     {% if recipe.prep_time %}<span>{{ recipe.prep_time }}</span>{% endif %}
                     {% if not is_manual and collection.category %}
-                    <span class="tag" style="font-size:0.65rem;">via {{ collection.category.name }}</span>
+                    <span class="tag" style="font-size:var(--fs-2xs);">via {{ collection.category.name }}</span>
                     {% endif %}
                 </div>
             </div>
@@ -146,6 +146,7 @@
 {% else %}
 <div class="card empty-state">
     <p>No recipes in this collection yet.</p>
+    <a href="{{ url_for('collections.edit', coll_id=collection.id) }}" class="btn btn-secondary">Add recipes</a>
 </div>
 {% endif %}
 {% endblock %}

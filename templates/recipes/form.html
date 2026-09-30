@@ -17,7 +17,7 @@
 
 <!-- Basics -->
 <div class="card">
-    <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Basics</p>
+    <p style="font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Basics</p>
     <div class="form-group" style="margin-top:0;">
         <label for="title">Title</label>
         <input type="text" id="title" name="title" required value="{{ recipe.title if recipe else '' }}" placeholder="e.g. Grandma's Banana Bread">
@@ -45,7 +45,7 @@
         <label>Categories</label>
         <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.25rem;">
             {% for cat in categories %}
-            <label style="cursor:pointer;display:inline-flex;align-items:center;gap:0.3rem;padding:0.3rem 0.7rem;border-radius:20px;font-size:0.78rem;font-weight:500;border:1px solid var(--border);color:var(--text-secondary);background:#fff;transition:all 0.15s;">
+            <label style="cursor:pointer;display:inline-flex;align-items:center;gap:0.3rem;padding:0.3rem 0.7rem;border-radius:20px;font-size:var(--fs-xs);font-weight:500;border:1px solid var(--border);color:var(--text-secondary);background:#fff;transition:all 0.15s;">
                 <input type="checkbox" name="categories" value="{{ cat.id }}" style="display:none;" class="cat-check"
                     {% if recipe and cat in recipe.categories %}checked{% endif %}>
                 {{ cat.name }}
@@ -58,7 +58,7 @@
 
 <!-- Ingredients & Instructions -->
 <div class="card">
-    <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Recipe details</p>
+    <p style="font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Recipe details</p>
     <div class="form-group" style="margin-top:0;">
         <label for="ingredients">Ingredients</label>
         <textarea id="ingredients" name="ingredients" required rows="10" placeholder="1 cup flour&#10;2 eggs&#10;1/2 cup sugar&#10;1 tsp vanilla extract">{{ recipe.ingredients if recipe else '' }}</textarea>
@@ -78,7 +78,7 @@
 
 <!-- Image -->
 <div class="card">
-    <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Image <span style="font-weight:400;">(optional)</span></p>
+    <p style="font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Image <span style="font-weight:400;">(optional)</span></p>
     <div class="form-group" style="margin-top:0;">
         <label for="image_file">Upload image</label>
         <input type="file" id="image_file" name="image_file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="previewUpload(this)">
@@ -89,13 +89,13 @@
         <input type="url" id="image_url" name="image_url" value="{{ recipe.image_url if recipe and recipe.image_url and recipe.image_url.startswith('http') else '' }}" placeholder="https://example.com/photo.jpg" oninput="updatePreview(this.value)">
     </div>
     {% if recipe and recipe.image_url %}
-    <p style="font-size:0.78rem;color:var(--text-tertiary);margin-top:0.5rem;">Current image: {{ recipe.image_url[:60] }}{% if recipe.image_url|length > 60 %}...{% endif %}</p>
+    <p style="font-size:var(--fs-xs);color:var(--text-tertiary);margin-top:0.5rem;">Current image: {{ recipe.image_url[:60] }}{% if recipe.image_url|length > 60 %}...{% endif %}</p>
     {% endif %}
 </div>
 
 <!-- Links -->
 <div class="card">
-    <p style="font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Links <span style="font-weight:400;">(optional)</span></p>
+    <p style="font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.75rem;">Links <span style="font-weight:400;">(optional)</span></p>
     <div class="form-group" style="margin-top:0;">
         <label for="source_url">Source URL</label>
         <input type="url" id="source_url" name="source_url" value="{{ recipe.source_url if recipe else '' }}" placeholder="https://example.com/recipe">
