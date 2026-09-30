@@ -33,7 +33,7 @@
 {% endif %}
     <div class="hero-frame">
         {% if hero_src %}
-        <img class="hero" fetchpriority="high" decoding="async" width="1200" height="514" src="{{ hero_src }}" alt="{{ recipe.title }}" onerror="var d=document.createElement('div');d.className='hero-band pub-mono tint-{{ rtint }}';d.setAttribute('data-mono','{{ recipe.title[:1]|upper|e }}');d.setAttribute('aria-hidden','true');this.replaceWith(d);">
+        <img referrerpolicy="no-referrer" class="hero" fetchpriority="high" decoding="async" width="1200" height="514" src="{{ hero_src }}" alt="{{ recipe.title }}" onerror="var d=document.createElement('div');d.className='hero-band pub-mono tint-{{ rtint }}';d.setAttribute('data-mono','{{ recipe.title[:1]|upper|e }}');d.setAttribute('aria-hidden','true');this.replaceWith(d);">
         {% else %}
         <div class="hero-band pub-mono tint-{{ rtint }}" data-mono="{{ recipe.title[:1]|upper }}" aria-hidden="true"></div>
         {% endif %}
@@ -141,3 +141,4 @@
     </script>
 </body>
 </html>
+

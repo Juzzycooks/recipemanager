@@ -19,7 +19,7 @@
     <div class="pub-mast"><a class="pub-brand" href="/">{{ get_setting('site_name', 'Recipe Manager') or 'Recipe Manager' }}</a></div>
     <header class="cover {{ 'has-img' if collection.cover_image else 'tint-' ~ (collection.id % 4 + 1) }}">
         {% if collection.cover_image %}
-        <img class="cover-img" fetchpriority="high" decoding="async" width="1600" height="900" src="/admin/uploads/{{ collection.cover_image }}" alt="" onerror="this.remove();">
+        <img referrerpolicy="no-referrer" class="cover-img" fetchpriority="high" decoding="async" width="1600" height="900" src="/admin/uploads/{{ collection.cover_image }}" alt="" onerror="this.remove();">
         {% endif %}
         <div class="cover-inner">
             <h1>{{ collection.name }}</h1>
@@ -42,9 +42,9 @@
                 <a href="{{ url_for('collections.view_shared_recipe', token=collection.public_url_token, recipe_id=recipe.id) }}">
                     {% if recipe.image_url %}
                         {% if recipe.image_url.startswith('http') %}
-                        <img class="card-img" src="{{ recipe.image_url }}" alt="{{ recipe.title }}" width="640" height="480" loading="lazy" decoding="async" data-mono="{{ recipe.title[:1]|upper }}" data-tint="{{ rtint }}">
+                        <img referrerpolicy="no-referrer" class="card-img" src="{{ recipe.image_url }}" alt="{{ recipe.title }}" width="640" height="480" loading="lazy" decoding="async" data-mono="{{ recipe.title[:1]|upper }}" data-tint="{{ rtint }}">
                         {% else %}
-                        <img class="card-img" src="/admin/uploads/{{ recipe.image_url }}" alt="{{ recipe.title }}" width="640" height="480" loading="lazy" decoding="async" data-mono="{{ recipe.title[:1]|upper }}" data-tint="{{ rtint }}">
+                        <img referrerpolicy="no-referrer" class="card-img" src="/admin/uploads/{{ recipe.image_url }}" alt="{{ recipe.title }}" width="640" height="480" loading="lazy" decoding="async" data-mono="{{ recipe.title[:1]|upper }}" data-tint="{{ rtint }}">
                         {% endif %}
                     {% else %}
                         <div class="card-placeholder pub-mono tint-{{ rtint }}" data-mono="{{ recipe.title[:1]|upper }}" aria-hidden="true"></div>

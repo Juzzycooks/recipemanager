@@ -125,6 +125,18 @@ onsubmit="return confirm('Delete {{ user.username }}?');">
 <a href="{{ url_for('admin.mealie_import_page') }}" class="btn btn-secondary btn-sm">Import</a>
 </section>
 
+<section class="card" aria-labelledby="images-h">
+<h3 id="images-h" class="card-title">Pictures</h3>
+<p class="hint-sm backup-lead">Imported recipes can point at pictures on other websites, which may stop loading. Saving them here keeps them for good.</p>
+{% if remote_image_count %}
+<form method="POST" action="{{ url_for('admin.localise_images') }}" class="row-tools">
+<button type="submit" class="btn btn-primary btn-sm">Save {{ remote_image_count }} remote picture{{ '' if remote_image_count == 1 else 's' }} to this server</button>
+</form>
+{% else %}
+<p class="hint-sm">All recipe pictures are stored on this server.</p>
+{% endif %}
+</section>
+
 <section class="card" aria-labelledby="backup-h">
 <h3 id="backup-h" class="card-title">Backup &amp; restore</h3>
 <p class="hint-sm backup-lead">Export your recipes and images, or download a database snapshot.</p>

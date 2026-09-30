@@ -445,14 +445,46 @@ def _localise_remote_image(url):
     """Download a remote image (SSRF-guarded, size-capped) and store it in uploads. '' on failure."""
     import io
     from werkzeug.datastructures import FileStorage
+    from urllib.parse import urlparse
+    parts = urlparse(url)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        # Many sites only serve images to their own pages: present ourselves as one of them
+        "Referer": f"{parts.scheme}://{parts.netloc}/",
+    }
     try:
-        resp = safe_get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+        resp = safe_get(url, headers=headers, timeout=15)
         content = resp.content
         if not content:
             return ""
         return _save_uploaded_image(FileStorage(io.BytesIO(content), filename="remote.jpg"))
     except Exception:
         return ""
+
+
+@recipes_bp.route("/recipe/<int:recipe_id>/localise-image", methods=["POST"])
+@login_required
+def localise_image(recipe_id):
+    """Repair a recipe whose image is a remote link the browser can't load: keep our own copy.
+
+    Called by the page script when an image fails to load. Returns the new local URL as JSON.
+    """
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.user_id != current_user.id and not current_user.is_admin:
+        return jsonify(error="forbidden"), 403
+    url = recipe.image_url or ""
+    if not url.startswith(("http://", "https://")):
+        public = f"/admin/uploads/{url}" if url and not url.startswith("/") else url
+        return jsonify(url=public, thumb=public)
+    local = _localise_remote_image(url)
+    if not local:
+        return jsonify(error="unavailable"), 502
+    recipe.image_url = local
+    db.session.commit()
+    uploads = os.path.join(current_app.config.get("DATA_DIR", os.environ.get("DATA_DIR", "/app/data")), "uploads")
+    thumb = f"thumb_{local}" if os.path.exists(os.path.join(uploads, f"thumb_{local}")) else local
+    return jsonify(url=f"/admin/uploads/{local}", thumb=f"/admin/uploads/{thumb}")
 
 
 @recipes_bp.route("/recipe/import", methods=["GET", "POST"])
@@ -505,10 +537,10 @@ def import_url():
                     # Don't save an empty draft: the caller is told to paste the caption or a screenshot
                     no_caption.append(url)
                     continue
-                image_url = data.get("image_url", "")
-                if data.get("source_type") == "social" and image_url.startswith("http"):
-                    # Social CDN links are signed and expire: keep our own copy
-                    image_url = _localise_remote_image(image_url) or ""
+                image_url = data.get("image_url", "") or ""
+                if image_url.startswith("http"):
+                    # Keep our own copy: hotlink protection and expiring CDN links break remote images later
+                    image_url = _localise_remote_image(image_url) or ("" if data.get("source_type") == "social" else image_url)
                 recipe = Recipe(
                     title=data.get("title", "Imported Recipe"),
                     description=data.get("description", ""),

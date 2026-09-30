@@ -154,18 +154,56 @@
         document.querySelectorAll('[aria-busy="true"]').forEach(function(b){ b.disabled = false; b.removeAttribute('aria-busy'); });
     });
 
-    // Broken card / hero images fall back to the placeholder instead of an empty box
+    // Broken recipe images: first try to keep our own copy of the remote image, then fall back to the monogram tile
+    function monogramFor(img) {
+        var d = document.createElement('div'); d.className = 'recipe-card-placeholder tint-' + (((parseInt(img.dataset.rid, 10) || 0) % 4) + 1);
+        d.setAttribute('aria-hidden', 'true'); d.dataset.mono = (img.dataset.mono || '·');
+        img.replaceWith(d);
+    }
     document.addEventListener('error', function(e){
         var img = e.target;
         if (!img || img.tagName !== 'IMG') return;
-        if (img.classList.contains('recipe-card-img')) {
-            var d = document.createElement('div'); d.className = 'recipe-card-placeholder tint-' + (((parseInt(img.dataset.rid, 10) || 0) % 4) + 1);
-            d.setAttribute('aria-hidden', 'true'); d.dataset.mono = (img.dataset.mono || '·');
-            img.replaceWith(d);
-        } else if (img.classList.contains('detail-hero')) {
-            img.style.display = 'none';
+        var isCard = img.classList.contains('recipe-card-img'), isHero = img.classList.contains('detail-hero');
+        if (!isCard && !isHero) return;
+        var remote = /^https?:\/\//i.test(img.getAttribute('src') || '') && img.src.indexOf(location.origin) !== 0;
+        if (remote && img.dataset.rid && !img.dataset.repairTried && document.querySelector('meta[name=csrf-token]')) {
+            img.dataset.repairTried = '1';
+            fetch('/recipe/' + img.dataset.rid + '/localise-image', {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'X-CSRFToken': document.querySelector('meta[name=csrf-token]').content }
+            }).then(function(r){ return r.ok ? r.json() : Promise.reject(); })
+              .then(function(j){ if (j && j.url) img.src = j.url; else throw 0; })
+              .catch(function(){ if (isCard) monogramFor(img); else img.style.display = 'none'; });
+            return;
         }
+        if (isCard) monogramFor(img); else img.style.display = 'none';
     }, true);
+
+    // Remote pictures are slow (full-size, from another site): quietly keep a local copy and use its small thumbnail
+    (function(){
+        var meta = document.querySelector('meta[name=csrf-token]');
+        if (!meta || !document.body.getAttribute('data-url-new')) return;   // signed-in pages only
+        var queue = [];
+        document.querySelectorAll('img[data-rid]').forEach(function(img){
+            var src = img.getAttribute('src') || '';
+            if (!/^https?:\/\//i.test(src) || img.src.indexOf(location.origin) === 0) return;
+            var key = 'rm-img-' + img.dataset.rid, seen = null;
+            try { seen = sessionStorage.getItem(key); } catch (e) {}
+            if (!seen) queue.push({ img: img, key: key });
+        });
+        queue = queue.slice(0, 12);
+        function next() {
+            var job = queue.shift(); if (!job) return;
+            try { sessionStorage.setItem(job.key, '1'); } catch (e) {}
+            fetch('/recipe/' + job.img.dataset.rid + '/localise-image', {
+                method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': meta.content }
+            }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+                if (j && job.img.isConnected) job.img.src = job.img.classList.contains('detail-hero') ? (j.url || j.thumb) : (j.thumb || j.url);
+            }).catch(function(){}).then(function(){ setTimeout(next, 400); });
+        }
+        var start = window.requestIdleCallback || function(f){ setTimeout(f, 1500); };
+        start(next);
+    })();
 
     // Menus: one open at a time, close on outside click or Escape
     document.addEventListener('click', function(e){

@@ -31,9 +31,44 @@ def dashboard():
     calculators = Calculator.query.order_by(Calculator.sort_order, Calculator.name).all()
     user_count = len(users)
     recipe_count = Recipe.query.count()
+    remote_images = _remote_image_recipes().count()
     return render_template("admin/dashboard.html", users=users,
                            categories=categories, user_count=user_count,
-                           recipe_count=recipe_count, calculators=calculators)
+                           recipe_count=recipe_count, calculators=calculators,
+                           remote_image_count=remote_images)
+
+
+def _remote_image_recipes():
+    """Recipes whose picture is a link to another site (Mealie API links are unusable, so skipped)."""
+    return Recipe.query.filter(
+        db.or_(Recipe.image_url.like("http://%"), Recipe.image_url.like("https://%")),
+        ~Recipe.image_url.like("%/api/media/recipes/%"))
+
+
+@admin_bp.route("/localise-images", methods=["POST"])
+@admin_required
+def localise_images():
+    """Keep our own copy of remote recipe pictures (in batches, so the request stays quick)."""
+    from routes.recipes import _localise_remote_image
+    BATCH = 25
+    saved = failed = 0
+    for recipe in _remote_image_recipes().order_by(Recipe.id).limit(BATCH).all():
+        local = _localise_remote_image(recipe.image_url)
+        if local:
+            recipe.image_url = local
+            saved += 1
+        else:
+            failed += 1
+            recipe.image_url = ""  # the link is dead or blocked: better the monogram tile than a broken box
+    db.session.commit()
+    left = _remote_image_recipes().count()
+    msg = f"Saved {saved} picture{'' if saved == 1 else 's'} to this server."
+    if failed:
+        msg += f" {failed} couldn't be downloaded (the site blocks it or the image is gone), so those recipes now show a letter tile."
+    if left:
+        msg += f" {left} more to go: run it again."
+    flash(msg, "success")
+    return redirect(url_for("admin.dashboard"))
 
 
 # ── User Management ──

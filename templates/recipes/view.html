@@ -17,7 +17,7 @@
 {% if recipe.image_url %}
     {% if recipe.image_url.startswith('http') %}
         {% if '/api/media/recipes/' not in recipe.image_url %}
-        <img class="detail-hero" fetchpriority="high" decoding="async" src="{{ recipe.image_url }}" alt="{{ recipe.title }}">
+        <img class="detail-hero" data-rid="{{ recipe.id }}" referrerpolicy="no-referrer" fetchpriority="high" decoding="async" src="{{ recipe.image_url }}" alt="{{ recipe.title }}">
         {% endif %}
     {% else %}
         <img class="detail-hero" fetchpriority="high" decoding="async" src="/admin/uploads/{{ recipe.image_url }}" alt="{{ recipe.title }}">
