@@ -48,8 +48,9 @@
                 <details class="menu nav-add">
                     <summary aria-label="Add a recipe">Add</summary>
                     <div class="menu-panel right">
+                        <a href="{{ url_for('recipes.import_url') }}#link">Paste a link</a>
+                        <a href="{{ url_for('recipes.import_url') }}#photos">Photo, screenshot or PDF</a>
                         <a href="{{ url_for('recipes.add') }}">Write a recipe</a>
-                        <a href="{{ url_for('recipes.import_url') }}">Import from a link or file</a>
                     </div>
                 </details>
                 <details class="menu">

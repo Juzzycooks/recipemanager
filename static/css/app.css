@@ -245,7 +245,7 @@ label { display: block; font-weight: 600; margin-bottom: 0.3rem; margin-top: 1re
 .offline-notice { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(1rem + env(safe-area-inset-bottom)); z-index: 200;
         background: var(--text-primary); color: var(--bg); padding: 0.55rem 1rem; border-radius: var(--radius-pill); font-size: var(--fs-sm);
         font-weight: 600; box-shadow: var(--shadow-md); max-width: calc(100vw - 2rem); text-align: center; }
-.offline-notice[hidden], .install-hint[hidden] { display: none; }
+[hidden] { display: none !important; }
 .install-hint { position: fixed; left: 0.75rem; right: 0.75rem; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 95; display: flex; align-items: center;
         gap: 0.5rem; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
         box-shadow: var(--shadow-md); padding: 0.75rem 0.9rem; }
@@ -275,3 +275,18 @@ kbd { font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 600; bo
 
 .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 [id] { scroll-margin-top: 84px; }
+
+/* ── "How do you want to add it?" switcher + two-line menu items ── */
+.add-switcher { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+.add-switcher a { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem; background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius-lg); color: var(--text-primary); min-height: 64px; }
+.add-switcher a:hover { border-color: var(--accent); }
+.add-switcher a.active { border-color: var(--accent); background: var(--accent-subtle); box-shadow: inset 0 0 0 1px var(--accent); }
+.add-switcher .ico { width: 24px; height: 24px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.add-switcher span { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.add-switcher strong { font-size: var(--fs-sm); }
+.add-switcher small { font-size: var(--fs-xs); color: var(--text-secondary); }
+@media (max-width: 720px) { .add-switcher { grid-template-columns: 1fr; gap: 0.5rem; } .add-switcher a { min-height: 56px; } }
+.menu-panel a .menu-title { display: block; font-weight: 600; }
+.menu-panel a .menu-desc { display: block; font-size: var(--fs-xs); color: var(--text-secondary); font-weight: 400; margin-top: 0.1rem; }
+.new-menu .menu-panel { min-width: 260px; }

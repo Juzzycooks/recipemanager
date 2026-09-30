@@ -138,3 +138,63 @@ button:focus-visible, a:focus-visible, input:focus-visible, label:focus-within {
     .nav-btn:active:not(:disabled), .preset:active, .start-btn:active { transform: none; }
     .timer-card.done { animation: none; }
 }
+
+/* ── Header tools: screen-awake badge and the running-timer pill ── */
+.header-tools { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; flex-shrink: 0; }
+.wake-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: var(--fs-xs); font-weight: 600; color: var(--cook-muted); white-space: nowrap; }
+.wake-badge .icon { width: 16px; height: 16px; }
+.wake-badge.is-off { color: var(--cook-accent); }
+.timer-pill { display: inline-flex; align-items: center; gap: 0.4rem; min-height: 48px; padding: 0 0.9rem; border: 0; border-radius: var(--radius-lg);
+              background: var(--cook-surface-raised); color: var(--cook-text); font-size: var(--fs-base); font-weight: 700; font-variant-numeric: tabular-nums; }
+.timer-pill[hidden] { display: none; }
+.timer-pill.is-done { background: var(--cook-accent-solid); color: #fff; animation: timer-flash 1s 6; }
+@media (max-width: 520px) { .wake-badge span[data-wake-text] { display: none; } .wake-badge.is-off span[data-wake-text] { display: inline; } }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ── Step extras: section label, timer chips, what you'll need ── */
+.step-section { font-family: var(--font-display); font-style: italic; font-weight: 700; font-size: var(--fs-lg); color: var(--cook-accent); margin-bottom: 0.25rem; }
+.step-chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.25rem; }
+.step-chips[hidden], .step-needs[hidden] { display: none; }
+.timer-chip { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 56px; padding: 0 1.1rem; border: 1px solid var(--cook-accent); border-radius: var(--radius-lg);
+              background: transparent; color: var(--cook-text); font-size: var(--fs-md); font-weight: 700; font-variant-numeric: tabular-nums; }
+.timer-chip .icon { color: var(--cook-accent); }
+.timer-chip:active { background: var(--cook-surface); transform: scale(0.98); }
+.step-needs { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--cook-line); }
+.needs-heading { font-size: var(--fs-sm); font-weight: 700; color: var(--cook-muted); margin-bottom: 0.5rem; }
+.needs-list { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.needs-list li { font-family: var(--font-display); font-size: 1.2rem; line-height: 1.3; padding: 0.35rem 0.8rem; border-radius: var(--radius-pill);
+                 background: var(--cook-inset); border: 1px solid var(--cook-line); }
+.needs-list li.is-checked { color: var(--cook-done); text-decoration: line-through; }
+
+/* ── Finish screen ── */
+.finish { text-align: center; padding: 2rem 0 1rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.finish-icon { width: 72px; height: 72px; fill: none; stroke: var(--cook-accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.finish h2 { font-family: var(--font-display); font-size: 2.5rem; line-height: 1.1; }
+.finish p { color: var(--cook-muted); font-size: var(--fs-md); max-width: 28ch; }
+.finish-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 64px; padding: 0 2rem; border: 0; border-radius: var(--radius-lg);
+                  background: var(--cook-accent-solid); color: #fff; font-size: var(--fs-lg); font-weight: 700; text-decoration: none; }
+.finish-primary:disabled { opacity: 0.7; cursor: default; }
+.rate-row { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; justify-content: center; }
+.rate-label { font-size: var(--fs-base); color: var(--cook-muted); font-weight: 600; margin-right: 0.5rem; }
+.star-btn { width: 56px; height: 56px; border: 0; border-radius: var(--radius-lg); background: transparent; color: var(--cook-muted); display: inline-flex; align-items: center; justify-content: center; }
+.star-btn .icon { width: 30px; height: 30px; }
+.star-btn[aria-pressed="true"] { color: var(--cook-accent); }
+.star-btn[aria-pressed="true"] .icon { fill: currentColor; }
+.finish-link { min-height: 48px; padding: 0 1rem; background: none; border: 0; color: var(--cook-muted); font-size: var(--fs-base); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; display: inline-flex; align-items: center; }
+
+/* ── Tablet / landscape: ingredients stay beside the method ── */
+@media (min-width: 900px) {
+    .tabs .tab:first-child { display: none; }
+    .content { max-width: 78rem; display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); column-gap: 3rem; align-items: start; }
+    #ingredients-tab { display: block; grid-column: 1; grid-row: 1; position: sticky; top: calc(var(--cook-header-h) + var(--cook-tabs-h) + 8px);
+                       max-height: calc(100vh - var(--cook-header-h) - var(--cook-tabs-h) - var(--cook-nav-h) - 16px); overflow-y: auto; padding-right: 0.5rem; }
+    #ingredients-tab .ingredient-item { font-size: 1.2rem; min-height: 52px; }
+    .step.active:not(#ingredients-tab) { grid-column: 2; grid-row: 1; }
+    .nav-buttons { padding-left: max(1rem, calc((100vw - 78rem) / 2 + 380px + 3rem)); }
+}
+@media (prefers-reduced-motion: reduce) { .timer-pill.is-done { animation: none; } .timer-chip:active { transform: none; } }
+
+/* The "screen may sleep" note only matters on a phone or tablet propped in the kitchen */
+@media (hover: hover) and (pointer: fine) { .wake-badge.is-off { display: none; } }
+.rate-label { flex: 0 0 100%; text-align: center; margin: 0 0 0.25rem; }
+.star-btn { width: 52px; height: 52px; }

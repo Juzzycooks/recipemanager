@@ -9,6 +9,8 @@
     <a href="{{ url_for('recipes.index') }}" class="btn btn-secondary btn-sm">Cancel</a>
 </div>
 
+{% if not recipe %}{% set active = 'write' %}{% include 'recipes/_add_switcher.html' %}{% endif %}
+
 <div id="draft-banner" class="card draft-banner" role="status" hidden>
     <p>You have an unsaved draft from <span id="draft-time"></span>.</p>
     <div class="draft-actions">

@@ -67,38 +67,45 @@
   window.addEventListener('offline', syncOnline);
   syncOnline();
 
-  /* ── "Add to home screen" hint (phones only, after a second visit, dismissible for 30 days) ── */
+  /* ── "Add to home screen" hint ──
+     Quiet by design: phones only, only after you've come back on three separate days-of-use sessions,
+     never once installed, and it always goes away (Not now, Install, or a 20 second timeout). */
   try {
+    var DAY = 24 * 3600 * 1000;
+    var hint = $('install-hint');
     var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-    var small = window.matchMedia('(max-width: 860px)').matches;
-    var visits = (parseInt(store(true, 'rm-visits'), 10) || 0) + 1;
-    store(false, 'rm-visits', String(visits));
-    var dismissedAt = parseInt(store(true, 'rm-install-dismissed'), 10) || 0;
-    var recentlyDismissed = Date.now() - dismissedAt < 30 * 24 * 3600 * 1000;
-    var hint = document.getElementById('install-hint');
-    if (hint && small && !standalone && visits >= 2 && !recentlyDismissed) {
-      var deferred = null;
-      var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    var phone = window.matchMedia('(max-width: 860px)').matches && window.matchMedia('(pointer: coarse)').matches;
+    var until = parseInt(store(true, 'rm-install-snooze'), 10) || 0;   // don't show again before this time
+    function snooze(days) { store(false, 'rm-install-snooze', String(Date.now() + days * DAY)); }
+
+    // Count sessions, not page loads
+    var counted = false;
+    try { counted = sessionStorage.getItem('rm-session-counted') === '1'; sessionStorage.setItem('rm-session-counted', '1'); } catch (e) {}
+    var sessions = parseInt(store(true, 'rm-sessions'), 10) || 0;
+    if (!counted) { sessions += 1; store(false, 'rm-sessions', String(sessions)); }
+
+    if (hint && phone && !standalone && sessions >= 3 && Date.now() > until) {
+      var deferred = null, timer = null;
       var text = hint.querySelector('[data-install-text]');
       var action = hint.querySelector('[data-install-action]');
-      function show() { hint.hidden = false; }
+      var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+      function close(days) { hint.hidden = true; clearTimeout(timer); snooze(days); }
+      function show() { hint.hidden = false; clearTimeout(timer); timer = setTimeout(function () { close(7); }, 20000); }
+      action.hidden = true;                                   // no button unless installing will actually work
       window.addEventListener('beforeinstallprompt', function (e) {
         e.preventDefault(); deferred = e;
         text.textContent = 'Install this app for quick access in the kitchen.';
         action.hidden = false; show();
       });
-      if (isIOS) {
-        text.textContent = 'Install this app: tap Share, then “Add to Home Screen”.';
-        action.hidden = true; show();
-      }
+      window.addEventListener('appinstalled', function () { close(3650); });
+      if (isIOS) { text.textContent = 'To install: tap Share, then “Add to Home Screen”.'; show(); }
       action.addEventListener('click', function () {
-        if (!deferred) return;
-        deferred.prompt();
-        deferred.userChoice.finally(function () { hint.hidden = true; deferred = null; });
+        var d = deferred; deferred = null;
+        if (!d) return close(30);
+        d.prompt();
+        d.userChoice.then(function (c) { close(c && c.outcome === 'accepted' ? 3650 : 30); }, function () { close(30); });
       });
-      hint.querySelector('[data-install-dismiss]').addEventListener('click', function () {
-        hint.hidden = true; store(false, 'rm-install-dismissed', String(Date.now()));
-      });
+      hint.querySelector('[data-install-dismiss]').addEventListener('click', function () { close(30); });
     }
   } catch (e) {}
 })();

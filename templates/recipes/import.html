@@ -3,10 +3,11 @@
 {% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="form-narrow center-col">
-<div class="page-header"><h1>Import a recipe</h1></div>
+<div class="page-header"><h1>Add a recipe</h1></div>
+{% set active = 'link' %}{% include 'recipes/_add_switcher.html' %}
 <p class="muted import-lead">Pick a source below. A single recipe opens in a preview first, so nothing is saved until you check it and confirm.</p>
 
-<div class="card">
+<div class="card" id="link">
     <h3 class="section-title">Import from URL</h3>
     <p class="muted import-lead">Paste one link to preview it before saving. Several links (one per line) are saved straight away.</p>
     <form method="POST">
@@ -26,7 +27,7 @@
     </p>
 </div>
 
-<div class="card">
+<div class="card" id="photos">
     <h3 class="section-title">Import from photos or screenshots</h3>
     <p class="muted import-lead">Snap a cookbook page or screenshot a recipe (from Instagram, TikTok, a website, a message). We read the text and sort it into ingredients, method and notes.</p>
     {% if ocr_ok %}
@@ -54,7 +55,7 @@
     {% endif %}
 </div>
 
-<div class="card">
+<div class="card" id="caption">
     <h3 class="section-title">Import from Instagram / TikTok</h3>
     <p class="muted import-lead">Copy the caption from the post and paste it here.</p>
     <form method="POST" action="{{ url_for('recipes.import_caption') }}">
@@ -77,7 +78,7 @@
     </p>
 </div>
 
-<div class="card">
+<div class="card" id="pdf">
     <h3 class="section-title">Import from PDF</h3>
     <p class="muted import-lead">Upload PDF cookbooks or recipe printouts.</p>
     <form method="POST" action="{{ url_for('recipes.import_pdf') }}" enctype="multipart/form-data">

@@ -37,7 +37,14 @@
     <h1 class="page-title">Recipes</h1>
     <div class="header-actions">
         <a href="{{ url_for('recipes.random_recipe') }}" class="btn btn-secondary" title="What should I cook?">Surprise me</a>
-        <a href="{{ url_for('recipes.add') }}" class="btn btn-primary">New recipe</a>
+        <details class="menu nav-add new-menu">
+            <summary aria-label="New recipe: choose how to add it">New recipe</summary>
+            <div class="menu-panel right">
+                <a href="{{ url_for('recipes.import_url') }}#link"><span class="menu-title">Paste a link</span><span class="menu-desc">A website, Instagram or TikTok post</span></a>
+                <a href="{{ url_for('recipes.import_url') }}#photos"><span class="menu-title">Photo, screenshot or PDF</span><span class="menu-desc">We read the text for you</span></a>
+                <a href="{{ url_for('recipes.add') }}"><span class="menu-title">Write it yourself</span><span class="menu-desc">Type it in from scratch</span></a>
+            </div>
+        </details>
     </div>
 </div>
 
@@ -218,12 +225,12 @@
     <h2 id="welcome-title" class="welcome-title">Welcome to your recipe shelf</h2>
     <p class="welcome-lead">Nothing here yet. Start with whichever is easiest for you today.</p>
     <div class="start-grid">
-        <a class="start-card" href="{{ url_for('recipes.import_url') }}">
+        <a class="start-card" href="{{ url_for('recipes.import_url') }}#link">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>
             <h3>Paste a link</h3>
             <p>Bring in a recipe from any website. We pull out the ingredients and steps for you.</p>
         </a>
-        <a class="start-card" href="{{ url_for('recipes.import_url') }}">
+        <a class="start-card" href="{{ url_for('recipes.import_url') }}#photos">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5a2 2 0 0 1 2-2h2.2l1.3-2h5l1.3 2H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.3"/></svg>
             <h3>Snap a photo or screenshot</h3>
             <p>Photograph a cookbook page or screenshot a post. The photo option is on the import page.</p>
