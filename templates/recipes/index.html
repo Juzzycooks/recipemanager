@@ -23,7 +23,8 @@
 </form>
 
 <div class="shelf-controls">
-    <div class="filter-groups">
+    {% set nfilters = (1 if favorites_only else 0) + (1 if active_cat else 0) + (1 if active_coll else 0) %}
+    <div class="filter-groups" id="filter-groups">
         <div class="filter-group" role="group" aria-label="Show">
             <a href="{{ url_for('recipes.index', q=search, ingredient=ingredient_search, cat=active_cat, collection=active_coll, sort=sort, view=view_mode) }}" class="chip {% if not favorites_only %}active{% endif %}">All</a>
             <a href="{{ url_for('recipes.index', q=search, ingredient=ingredient_search, cat=active_cat, collection=active_coll, favorites=1, sort=sort, view=view_mode) }}" class="chip {% if favorites_only %}active{% endif %}">Favorites</a>
@@ -46,6 +47,7 @@
         {% endif %}
     </div>
     <div class="shelf-view">
+        <button type="button" class="filters-toggle btn btn-secondary btn-sm" aria-controls="filter-groups" aria-expanded="true" data-active="{{ nfilters }}">Filters{% if nfilters %} ({{ nfilters }}){% endif %}</button>
         <label class="sr-only" for="sort-select">Sort recipes</label>
         <select id="sort-select" onchange="window.location=this.value">
             <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='newest', view=view_mode, collection=active_coll) }}" {% if sort=='newest' %}selected{% endif %}>Newest</option>
@@ -63,6 +65,17 @@
         </div>
     </div>
 </div>
+
+<script>
+(function(){
+    var g = document.getElementById('filter-groups'), b = document.querySelector('.filters-toggle');
+    if (!g || !b) return;
+    var small = window.matchMedia('(max-width: 640px)');
+    function sync(){ var open = !small.matches || b.dataset.active !== '0'; g.hidden = !open; b.setAttribute('aria-expanded', open); }
+    b.addEventListener('click', function(){ var o = g.hidden; g.hidden = !o; b.setAttribute('aria-expanded', o); });
+    sync(); small.addEventListener('change', sync);
+})();
+</script>
 
 {% if recipes %}
     {% if view_mode == 'list' %}

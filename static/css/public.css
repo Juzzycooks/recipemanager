@@ -32,6 +32,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: bala
 .cover-desc { font-family: var(--font-display); font-style: italic; font-size: var(--fs-lg); line-height: 1.4;
               max-width: 46ch; margin-top: 0.75rem; }
 .cover-count { margin-top: 1rem; font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+.cover:not(.has-img) { min-height: 15rem; }
 .cover.has-img { color: var(--cook-text); background: var(--cook-bg); }
 
 /* ── Layout ── */
@@ -46,7 +47,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: bala
 .card > a { display: block; color: inherit; text-decoration: none; }
 .card > a:focus-visible { outline-offset: -3px; }
 .card-img, .card-placeholder { width: 100%; aspect-ratio: 4 / 3; display: block; object-fit: cover; }
-.card-placeholder.pub-mono::before { font-size: 4rem; }
+.card-placeholder.pub-mono { display: flex; align-items: center; justify-content: center; }
+.card-placeholder.pub-mono::before { font-size: 4rem; line-height: 1; }
 .card-body { padding: 1rem 1.15rem 1.2rem; border-top: 1px solid var(--rule); }
 .card-body h2 { font-size: var(--fs-lg); line-height: 1.2; margin-bottom: 0.3rem; }
 .card-desc { font-family: var(--font-display); font-size: var(--fs-base); color: var(--text-secondary); line-height: 1.4; }
@@ -167,6 +169,6 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: bala
 }
 
 /* Public masthead: the cook's site name */
-.pub-mast { padding: 0.9rem 1.5rem; border-bottom: 3px double var(--rule); }
+.pub-mast { padding: 0.9rem max(1.5rem, calc((100% - 1080px) / 2 + 1.5rem)); border-bottom: 3px double var(--rule); }
 .pub-brand { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
-.pub-brand:hover { color: var(--text-primary); }
+.pub-brand, .pub-brand:hover { color: var(--text-primary); text-decoration: none; }

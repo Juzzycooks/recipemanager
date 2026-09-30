@@ -159,14 +159,31 @@ function movePlan(planId, date, meal) {
     }).then(r => { if (r.ok) location.reload(); return r.ok; });
 }
 
+let modalOpener = null;
 function openModal(id) {
     const m = document.getElementById(id);
+    modalOpener = document.activeElement;
     m.hidden = false;
     const f = m.querySelector('select, input:not([type=hidden])');
     if (f) f.focus();
     return m;
 }
-function closeModal(m) { m.hidden = true; }
+function closeModal(m) {
+    m.hidden = true;
+    if (modalOpener && document.contains(modalOpener)) modalOpener.focus();
+    modalOpener = null;
+}
+// Keep Tab inside an open dialog
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const m = document.querySelector('.modal-backdrop:not([hidden])');
+    if (!m) return;
+    const f = Array.from(m.querySelectorAll('a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), select, textarea')).filter(x => x.offsetParent !== null);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 
 document.querySelectorAll('.modal-backdrop').forEach(m => {
     m.addEventListener('click', e => { if (e.target === m) closeModal(m); });

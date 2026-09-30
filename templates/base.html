@@ -78,6 +78,22 @@
         {% endwith %}
         {% block content %}{% endblock %}
     </div>
+    {% if current_user.is_authenticated %}
+    <nav class="tabbar" aria-label="Quick navigation">
+        <a href="{{ url_for('recipes.index') }}" {% if ep.startswith('recipes.') and ep not in ('recipes.add','recipes.import_url','recipes.unit_converter') %}class="active" aria-current="page"{% endif %}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>
+            <span>Recipes</span></a>
+        <a href="{{ url_for('mealplan.index') }}" {% if ep.startswith('mealplan.') %}class="active" aria-current="page"{% endif %}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+            <span>Plan</span></a>
+        <a href="{{ url_for('shopping.index') }}" {% if ep.startswith('shopping.') %}class="active" aria-current="page"{% endif %}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8zM9 7a3 3 0 0 1 6 0"/></svg>
+            <span>Shop</span></a>
+        <a href="{{ url_for('recipes.add') }}" {% if ep == 'recipes.add' %}class="active" aria-current="page"{% endif %}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Add</span></a>
+    </nav>
+    {% endif %}
     <script>
     // Auto-inject CSRF token into all forms
     document.querySelectorAll('form').forEach(function(f){
@@ -129,7 +145,12 @@
         }
     }, true);
     document.addEventListener('keydown', function(e){
-        if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(function(d){ d.removeAttribute('open'); });
+        if (e.key === 'Escape') document.querySelectorAll('details.menu[open]').forEach(function(d){
+            d.removeAttribute('open'); var s = d.querySelector('summary'); if (s && d.contains(document.activeElement)) s.focus();
+        });
+    });
+    document.addEventListener('focusin', function(e){
+        document.querySelectorAll('details.menu[open]').forEach(function(d){ if (!d.contains(e.target)) d.removeAttribute('open'); });
     });
 
     // Dark mode toggle

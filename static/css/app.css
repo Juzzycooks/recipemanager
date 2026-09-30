@@ -101,7 +101,7 @@ label { display: block; font-weight: 600; margin-bottom: 0.3rem; margin-top: 1re
 .recipe-grid > * { min-width: 0; }
 .recipe-card { cursor: pointer; overflow: hidden; padding: 0; transition: box-shadow 0.2s, transform 0.2s; }
 @media (hover: hover) { .recipe-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); } }
-.recipe-card-img, .recipe-card-placeholder { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.recipe-card-img, .recipe-card-placeholder { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
 .recipe-card-placeholder { display: flex; align-items: center; justify-content: center; font-family: var(--font-display);
         font-weight: 700; font-style: italic; background: var(--tint-1); color: var(--tint-1-ink); }
 .recipe-card-placeholder::before { content: attr(data-mono); font-size: 4.5rem; line-height: 1; }
@@ -129,10 +129,10 @@ label { display: block; font-weight: 600; margin-bottom: 0.3rem; margin-top: 1re
 .chip.active:hover { background: var(--accent-solid-hover); color: #fff; }
 
 /* ── Search, headers ── */
-.search-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+.search-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
 .search-bar input { flex: 1; }
-.page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.75rem;
-        flex-wrap: wrap; gap: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--rule); }
+.page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.25rem;
+        flex-wrap: wrap; gap: 0.75rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--rule); }
 .page-header h1, .page-header h2 { font-size: clamp(1.75rem, 4vw, 2.4rem); letter-spacing: -0.01em; text-wrap: balance; overflow-wrap: anywhere; }
 .page-header > * { min-width: 0; }
 .actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
@@ -216,4 +216,22 @@ label { display: block; font-weight: 600; margin-bottom: 0.3rem; margin-top: 1re
     .recipe-card-body h3 { font-size: 1.1rem; }
     .page-header { align-items: flex-start; }
 }
-@media (max-width: 480px) { .recipe-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+    .recipe-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .recipe-card-placeholder::before { font-size: 2.75rem; }
+    .recipe-card-body h3 { font-size: 1rem; }
+}
+@media (max-width: 340px) { .recipe-grid { grid-template-columns: 1fr; } }
+
+/* ── Thumb-reach tab bar (phones): the four things you do in the kitchen ── */
+.tabbar { display: none; }
+@media (max-width: 860px) {
+    body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+            background: var(--nav-bg); border-top: 3px double var(--rule); padding: 0.3rem 0.25rem calc(0.3rem + env(safe-area-inset-bottom)); }
+    .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; min-height: 52px;
+            border-radius: var(--radius); color: var(--text-secondary); font-size: var(--fs-2xs); font-weight: 600; }
+    .tabbar a:hover { color: var(--text-primary); }
+    .tabbar a.active { color: var(--accent); background: var(--accent-subtle); }
+}
+@media (pointer: coarse) { .back-link { min-height: 44px; } }

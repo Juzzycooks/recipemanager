@@ -245,6 +245,8 @@ Share pages carry the admin's site name and a cover: full-bleed photo under a bo
 - **Do** honor `prefers-reduced-motion` on every animation and transition you add.
 - **Do** divide lists with rule-blue lines; keep cards white.
 
+- **Do** keep the four kitchen actions (Recipes, Plan, Shop, Add) in the thumb-reach tab bar on phones (<=860px); the top masthead carries the rest.
+
 ### Don't:
 - **Don't** use `border-left` or `border-right` stripes as accents.
 - **Don't** use emoji as icons; use inline SVG (stroke 2, round caps, 22px in cook mode).
