@@ -1,0 +1,52 @@
+name: RecipeManager
+options:
+  bundleIdPrefix: com.justinrahme
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+targets:
+  RecipeManager:
+    type: application
+    platform: iOS
+    sources: [RecipeManager]
+    info:
+      path: RecipeManager/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: Recipes
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        ITSAppUsesNonExemptEncryption: false
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1,2"
+  RecipeManagerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [RecipeManagerTests]
+    dependencies:
+      - target: RecipeManager
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManagerTests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  RecipeManager:
+    build:
+      targets:
+        RecipeManager: all
+        RecipeManagerTests: [test]
+    test:
+      targets: [RecipeManagerTests]

@@ -1,0 +1,23 @@
+{
+    "entries": [
+        {
+            "date": "2026-10-01",
+            "id": 1,
+            "meal_type": "dinner",
+            "recipe": {
+                "cook_time": "40 min",
+                "description": "Meat dumplings in yogurt sauce.",
+                "id": 1,
+                "image_url": "",
+                "prep_time": "45 min",
+                "servings": "4",
+                "thumb_url": "",
+                "title": "Shish Barak"
+            },
+            "sort_order": 0
+        }
+    ],
+    "from": "2026-10-01",
+    "share_url": null,
+    "to": "2026-10-01"
+}

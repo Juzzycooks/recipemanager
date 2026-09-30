@@ -365,6 +365,7 @@ class TestShopping(Api):
         self.assertIn("Other", lst["aisle_order"])
         self.assertTrue(all(i["aisle"] for i in lst["items"]))
         item = next(i for i in lst["items"] if "flour" in i["name"])
+        self.assertIsNone(item["recipe_title"])
         self.assertIn("3", item["name"])  # quantities combined
         upd = self.patch(f"/shopping/items/{item['id']}", token=tok, json={"checked": True}).get_json()
         self.assertTrue(upd["checked"])
@@ -382,6 +383,7 @@ class TestShopping(Api):
         rid = self.new_recipe("Stew", ingredients="# Veg\n2 carrots\n1 leek\n# Meat\n500 g beef")["id"]
         r = self.post(f"/shopping/recipe/{rid}", token=tok, json={"items": ["2 carrots", "# Veg"]}).get_json()
         self.assertEqual(r["added"], 1)
+        self.assertEqual(self.get("/shopping", token=tok).get_json()["items"][0]["recipe_title"], "Stew")
         self.assertEqual(self.post(f"/shopping/recipe/{rid}", token=tok, json={"items": []}).status_code, 422)
         r = self.post(f"/shopping/recipe/{rid}", token=tok).get_json()
         self.assertEqual(r["added"], 2)

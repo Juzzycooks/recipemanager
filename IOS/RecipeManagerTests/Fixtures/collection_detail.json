@@ -1,0 +1,41 @@
+{
+    "category": null,
+    "cover_url": "",
+    "created_at": "2026-09-30T21:23:38.353042+00:00",
+    "description": "",
+    "id": 1,
+    "manual_recipe_ids": [
+        1
+    ],
+    "name": "Weeknight Dinners",
+    "recipe_count": 1,
+    "recipes": [
+        {
+            "author": {
+                "id": 1,
+                "username": "chef"
+            },
+            "avg_rating": 4.0,
+            "categories": [
+                {
+                    "id": 1,
+                    "name": "Dinner"
+                }
+            ],
+            "cook_time": "40 min",
+            "created_at": "2026-09-30T21:07:16.927172+00:00",
+            "description": "Meat dumplings in yogurt sauce.",
+            "id": 1,
+            "image_url": "",
+            "is_favorite": true,
+            "prep_time": "45 min",
+            "rating_count": 1,
+            "servings": "4",
+            "thumb_url": "",
+            "title": "Shish Barak",
+            "updated_at": "2026-09-30T21:07:16.927174+00:00"
+        }
+    ],
+    "share_url": null,
+    "slug": null
+}

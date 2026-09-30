@@ -75,7 +75,7 @@ Code: `routes/api_v1.py`. Tests: `tests/test_api_v1.py`.
 `GET /mealplan?from&to` (or `?week=offset`; default this Monday to Sunday; max 92 days), `POST /mealplan` `{recipe_id, date, meal_type}`, `PATCH /mealplan/{id}` `{date?, meal_type?, recipe_id?}`, `DELETE /mealplan/{id}`, `POST /mealplan/shopping` `{from, to}` or `{week}`, `POST /mealplan/auto-generate` `{week?, meal_types?}`, `POST/DELETE /mealplan/share`. `meal_type` is `breakfast|lunch|dinner|snack`.
 
 ### Shopping list
-`GET /shopping` returns `{store, aisle_order, items[]}` (each item has `aisle` and `store_url`; group by `aisle` in `aisle_order`). `POST /shopping/items` `{name}` or `{names: []}` (same item + compatible unit combines quantities; returns `{added, merged}`). `POST /shopping/recipe/{id}` optional `{items: [lines]}`. `PATCH /shopping/items/{id}` `{checked?, name?}`. `DELETE /shopping/items/{id}`. `DELETE /shopping/items` clears all, or only ticked with `?checked=1`.
+`GET /shopping` returns `{store, aisle_order, items[]}` (each item has `aisle`, `store_url` and `recipe_title` when it came from a recipe; group by `aisle` in `aisle_order`). `POST /shopping/items` `{name}` or `{names: []}` (same item + compatible unit combines quantities; returns `{added, merged}`). `POST /shopping/recipe/{id}` optional `{items: [lines]}`. `PATCH /shopping/items/{id}` `{checked?, name?}`. `DELETE /shopping/items/{id}`. `DELETE /shopping/items` clears all, or only ticked with `?checked=1`.
 
 ### Guides and calculators
 `GET /extras`, `POST/DELETE /extras/{slug}/share`. `GET /calculators`, `GET /calculators/{id}`; admin: `POST`, `PATCH`, `DELETE`.

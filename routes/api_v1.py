@@ -1306,6 +1306,7 @@ def _shopping_item(item, store_url):
     from shopping_utils import aisle_for, parse_line
     name = parse_line(item.name)[2] or item.name
     return {"id": item.id, "name": item.name, "checked": bool(item.checked), "recipe_id": item.recipe_id,
+            "recipe_title": item.recipe.title if item.recipe else None,
             "aisle": aisle_for(name), "store_url": store_link(store_url, name) or None,
             "created_at": _iso(item.created_at)}
 

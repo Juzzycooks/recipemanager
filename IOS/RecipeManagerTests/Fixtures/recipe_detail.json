@@ -1,0 +1,95 @@
+{
+    "author": {
+        "id": 1,
+        "username": "chef"
+    },
+    "avg_rating": 4.0,
+    "can_edit": true,
+    "categories": [
+        {
+            "id": 1,
+            "name": "Dinner"
+        }
+    ],
+    "collections": [],
+    "comments": [
+        {
+            "can_delete": true,
+            "created_at": "2026-09-30T21:07:16.964620+00:00",
+            "id": 1,
+            "text": "Better the next day.",
+            "user": {
+                "id": 1,
+                "username": "chef"
+            }
+        }
+    ],
+    "cook_time": "40 min",
+    "created_at": "2026-09-30T21:07:16.927172+00:00",
+    "description": "Meat dumplings in yogurt sauce.",
+    "id": 1,
+    "image_url": "",
+    "ingredient_sections": [
+        {
+            "heading": "Dumplings",
+            "lines": [
+                "2 cups flour",
+                "250 g minced beef",
+                "1 onion"
+            ]
+        },
+        {
+            "heading": "Sauce",
+            "lines": [
+                "1 kg yoghurt",
+                "2 cloves garlic"
+            ]
+        }
+    ],
+    "ingredients": "# Dumplings\n2 cups flour\n250 g minced beef\n1 onion\n# Sauce\n1 kg yoghurt\n2 cloves garlic",
+    "instruction_sections": [
+        {
+            "heading": "Dumplings",
+            "lines": [
+                "Make the dough and rest it.",
+                "Fill and pinch the dumplings."
+            ]
+        },
+        {
+            "heading": "Sauce",
+            "lines": [
+                "Warm the yoghurt gently.",
+                "Add dumplings and serve."
+            ]
+        }
+    ],
+    "instructions": "# Dumplings\nMake the dough and rest it.\nFill and pinch the dumplings.\n# Sauce\nWarm the yoghurt gently.\nAdd dumplings and serve.",
+    "is_favorite": true,
+    "last_made": "2026-09-30T21:07:16.971662+00:00",
+    "made_count": 1,
+    "my_rating": 4,
+    "notes": "",
+    "nutrition": {
+        "carbs": 414.3,
+        "fat": 46.5,
+        "kcal": 3021,
+        "matched": 5,
+        "per_serving": {
+            "carbs": 103.6,
+            "fat": 11.6,
+            "kcal": 755,
+            "protein": 53.7
+        },
+        "protein": 214.8,
+        "servings": 4,
+        "total_lines": 5
+    },
+    "prep_time": "45 min",
+    "rating_count": 1,
+    "servings": "4",
+    "share_url": null,
+    "source_url": "",
+    "thumb_url": "",
+    "title": "Shish Barak",
+    "updated_at": "2026-09-30T21:07:16.927174+00:00"
+}
