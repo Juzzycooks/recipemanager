@@ -14,6 +14,7 @@
   <a href="https://hub.docker.com/r/juzzycooks/recipemanager"><img alt="Docker pulls" src="https://img.shields.io/docker/pulls/juzzycooks/recipemanager?logo=docker&label=pulls"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/server-Docker%20%C2%B7%20Unraid-2b5d44">
   <img alt="iOS" src="https://img.shields.io/badge/iPhone-iOS%2018%2B-274e3b">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue"></a>
 </p>
 
 <p align="center">
@@ -352,4 +353,6 @@ The visual system ("The Well-Used Cookbook") is described in [`DESIGN.md`](DESIG
 
 ## License
 
-This project is for personal use.
+Spoonmate is released under the [MIT License](LICENSE). That covers the server, the iPhone app, the tools, and the demo illustrations in `docs/` and `tools/seed_demo.py`.
+
+The Alegreya typeface bundled in `static/fonts/` is by The Alegreya Project Authors and is licensed separately under the SIL Open Font License 1.1 (see [`static/fonts/OFL.txt`](static/fonts/OFL.txt)).
