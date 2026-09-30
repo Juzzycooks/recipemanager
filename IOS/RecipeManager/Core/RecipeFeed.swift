@@ -42,7 +42,7 @@ final class RecipeFeed {
         let wanted = !recipes[i].isFavorite
         recipes[i].isFavorite = wanted
         do {
-            try await session.run { try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(recipe.id)/favorite") }
+            _ = try await session.runOrQueue(.favorite(recipeID: recipe.id, wanted: wanted)) { try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(recipe.id)/favorite") }
             if removeWhenUnfavorited && !wanted { recipes.removeAll { $0.id == recipe.id }; total -= 1 }
         } catch {
             if let j = recipes.firstIndex(where: { $0.id == recipe.id }) { recipes[j].isFavorite = !wanted }

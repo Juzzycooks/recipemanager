@@ -32,6 +32,8 @@ struct MainView: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     @Environment(CookTimer.self) private var timer
+    @Environment(OfflineSync.self) private var sync
+    @Environment(\.scenePhase) private var scenePhase
     @State private var keyboardVisible = false
 
     var body: some View {
@@ -56,8 +58,18 @@ struct MainView: View {
         .animation(.snappy, value: keyboardVisible)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
+        .task {
+            // Reconnect: send what was changed offline, refresh what's on screen, and top up the offline copy.
+            Connectivity.shared.onRegained = { Task { await catchUp() } }
+            await catchUp()
+        }
+        .onChange(of: scenePhase) {
+            // Coming back to the app: something may have been added elsewhere (the Safari extension, another device).
+            if scenePhase == .active { session.recipesChanged(); Task { await catchUp() } }
+        }
         .overlay(alignment: .bottom) {
             VStack(spacing: Spacing.xs) {
+                OfflineBanner()
                 if timer.isActive { TimerPill().transition(.move(edge: .bottom).combined(with: .opacity)) }
                 if let notice = app.notice { Toast(text: notice) }
                 UndoBanner()
@@ -67,6 +79,43 @@ struct MainView: View {
             .animation(.snappy, value: timer.isActive)
         }
         .sheet(isPresented: $app.showingAdd) { AddRecipeView() }
+    }
+}
+
+extension MainView {
+    /// Replays queued changes, then keeps the offline copy current (skipped while offline).
+    @MainActor fileprivate func catchUp() async {
+        guard !Connectivity.shared.isOffline else { return }
+        if Outbox.shared.count > 0 { await Outbox.shared.replay(session) }
+        await sync.syncIfNeeded(session)
+    }
+}
+
+/// Top-of-screen status: offline (with how many changes are waiting), or syncing.
+struct OfflineBanner: View {
+    @Environment(OfflineSync.self) private var sync
+
+    var body: some View {
+        let offline = Connectivity.shared.isOffline
+        let waiting = Outbox.shared.count
+        if offline {
+            pill("wifi.slash", "Offline · showing saved recipes" + (waiting > 0 ? " · \(waiting) change\(waiting == 1 ? "" : "s") waiting" : ""))
+        } else if Outbox.shared.isReplaying {
+            pill("arrow.triangle.2.circlepath", "Syncing your changes…")
+        } else if case .syncing(let message) = sync.state {
+            pill("arrow.down.circle", message)
+        }
+    }
+
+    private func pill(_ symbol: String, _ text: String) -> some View {
+        Label(text, systemImage: symbol)
+            .font(.caption.weight(.medium)).foregroundStyle(AppColors.textPrimary)
+            .padding(.horizontal, Spacing.s).frame(minHeight: 28)
+            .background(AppColors.card, in: Capsule())
+            .overlay(Capsule().stroke(AppColors.separator, lineWidth: 0.5))
+            .shadow(color: .black.opacity(0.06), radius: 4, y: 1)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .accessibilityAddTraits(.updatesFrequently)
     }
 }
 

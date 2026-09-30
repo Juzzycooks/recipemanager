@@ -55,6 +55,7 @@ struct RecipeSummary: Codable, Sendable, Identifiable, Hashable {
     var ratingCount: Int
     var author: User?
     var createdAt: Date?
+    var updatedAt: Date?
 }
 
 /// The bare minimum a meal-plan entry carries.
@@ -126,6 +127,8 @@ struct RecipeDetail: Codable, Sendable, Identifiable, Hashable {
     var collections: [CollectionRef]
     var comments: [RecipeComment]
     var canEdit: Bool
+    var createdAt: Date?
+    var updatedAt: Date?
 
     var steps: [String] { instructionSections.flatMap(\.lines) }
     var timeSummary: [String] {
@@ -167,8 +170,8 @@ struct ShoppingItem: Codable, Sendable, Identifiable, Hashable {
     let storeUrl: String?
 }
 
-struct ShoppingList: Decodable, Sendable {
-    struct Store: Decodable, Sendable { let name: String; let searchUrl: String }
+struct ShoppingList: Codable, Sendable {
+    struct Store: Codable, Sendable { let name: String; let searchUrl: String }
     let store: Store
     let aisleOrder: [String]
     var items: [ShoppingItem]
@@ -269,4 +272,14 @@ struct NewUserResult: Decodable, Sendable {
     let user: User
     let emailed: Bool
     let tempPassword: String?
+}
+
+extension RecipeSummary {
+    /// The card-sized view of a full recipe (used to build lists from the offline library).
+    init(_ d: RecipeDetail) {
+        self.init(id: d.id, title: d.title, description: d.description, prepTime: d.prepTime, cookTime: d.cookTime,
+                  servings: d.servings, imageUrl: d.imageUrl, thumbUrl: d.thumbUrl, categories: d.categories,
+                  isFavorite: d.isFavorite, avgRating: d.avgRating, ratingCount: d.ratingCount, author: d.author,
+                  createdAt: d.createdAt, updatedAt: d.updatedAt)
+    }
 }

@@ -19,6 +19,12 @@ targets:
     dependencies:
       - target: RecipeManagerTimerWidget
         embed: true
+      - target: RecipeManagerShare
+        embed: true
+    entitlements:
+      path: RecipeManager/RecipeManager.entitlements
+      properties:
+        keychain-access-groups: ["$(AppIdentifierPrefix)com.justinrahme.RecipeManager.shared"]
     info:
       path: RecipeManager/Resources/Info.plist
       properties:
@@ -51,6 +57,36 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager.TimerWidget
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SKIP_INSTALL: YES
+  RecipeManagerShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - ShareExtension
+      - path: Shared/Credentials.swift
+      - path: Shared/SharedContent.swift
+      - path: RecipeManager/Core/APIClient.swift
+      - path: RecipeManager/Core/Models.swift
+    entitlements:
+      path: ShareExtension/ShareExtension.entitlements
+      properties:
+        keychain-access-groups: ["$(AppIdentifierPrefix)com.justinrahme.RecipeManager.shared"]
+    info:
+      path: ShareExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Save to Recipes
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsText: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager.Share
         SKIP_INSTALL: YES
   RecipeManagerTests:
     type: bundle.unit-test

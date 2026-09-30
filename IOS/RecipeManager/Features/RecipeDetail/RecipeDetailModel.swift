@@ -36,7 +36,7 @@ final class RecipeDetailModel {
         guard var r = recipe else { return }
         let wanted = !r.isFavorite
         r.isFavorite = wanted; recipe = r
-        do { try await session.run { [id] in try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(id)/favorite") }; session.recipesChanged() }
+        do { _ = try await session.runOrQueue(.favorite(recipeID: id, wanted: wanted)) { [id] in try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(id)/favorite") }; session.recipesChanged() }
         catch { recipe?.isFavorite = !wanted; self.error = error.localizedDescription }
     }
 
@@ -44,8 +44,14 @@ final class RecipeDetailModel {
         struct Body: Encodable, Sendable { let score: Int }
         struct Result: Decodable, Sendable { let myRating: Int?; let avgRating: Double?; let ratingCount: Int }
         do {
-            let result: Result = try await session.run { [id] in try await $0.send("PUT", "/recipes/\(id)/rating", body: Body(score: score)) }
-            recipe?.myRating = result.myRating; recipe?.avgRating = result.avgRating; recipe?.ratingCount = result.ratingCount
+            let result: Result? = try await session.runOrQueue(.rate(recipeID: id, score: score)) { [id] in
+                try await $0.send("PUT", "/recipes/\(id)/rating", body: Body(score: score))
+            }
+            if let result {
+                recipe?.myRating = result.myRating; recipe?.avgRating = result.avgRating; recipe?.ratingCount = result.ratingCount
+            } else {
+                recipe?.myRating = score   // saved on this phone; sent when you're back online
+            }
         } catch { self.error = error.localizedDescription }
     }
 
@@ -64,9 +70,10 @@ final class RecipeDetailModel {
     func madeIt(_ session: Session, _ app: AppState) async {
         struct Result: Decodable, Sendable { let madeCount: Int }
         do {
-            let result: Result = try await session.run { [id] in try await $0.send("POST", "/recipes/\(id)/made") }
-            recipe?.madeCount = result.madeCount; recipe?.lastMade = .now
-            app.say("Logged. Made \(result.madeCount) time\(result.madeCount == 1 ? "" : "s").")
+            let result: Result? = try await session.runOrQueue(.madeIt(recipeID: id)) { [id] in try await $0.send("POST", "/recipes/\(id)/made") }
+            let count = result?.madeCount ?? ((recipe?.madeCount ?? 0) + 1)
+            recipe?.madeCount = count; recipe?.lastMade = .now
+            app.say(result == nil ? "Saved. It will sync when you're online." : "Logged. Made \(count) time\(count == 1 ? "" : "s").")
         } catch { self.error = error.localizedDescription }
     }
 

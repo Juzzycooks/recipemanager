@@ -28,6 +28,13 @@ final class ShoppingModel {
         catch { self.error = error.localizedDescription }
     }
 
+    /// Saves the list as it is now, so a relaunch without a connection shows your latest edits.
+    private func persist(_ session: Session) async {
+        guard let client = session.client, let list, let url = client.url("/shopping"),
+              let data = try? APIClient.encoder.encode(list) else { return }
+        await OfflineStore.shared.store(data, for: url)
+    }
+
     func add(_ name: String, _ session: Session) async {
         struct Body: Encodable, Sendable { let name: String }
         let trimmed = name.trimmingCharacters(in: .whitespaces)
@@ -35,6 +42,13 @@ final class ShoppingModel {
         do {
             try await session.run { try await $0.send("POST", "/shopping/items", body: Body(name: trimmed)) }
             await load(session)
+            await persist(session)
+        } catch let e as APIError where e.isOffline {
+            // Add it on this phone now (a temporary negative id) and send it later.
+            let local = ShoppingItem(id: -Int.random(in: 1...Int.max / 2), name: trimmed, checked: false, recipeId: nil, recipeTitle: nil, aisle: "Other", storeUrl: nil)
+            withAnimation(.snappy) { list?.items.insert(local, at: 0) }
+            Outbox.shared.enqueue(.addShoppingItem(name: trimmed, checked: false))
+            await persist(session)
         } catch { self.error = error.localizedDescription }
     }
 
@@ -43,20 +57,37 @@ final class ShoppingModel {
         struct Body: Encodable, Sendable { let checked: Bool }
         let wanted = !item.checked
         withAnimation(.snappy) { list?.items[i].checked = wanted }
-        do { let _: ShoppingItem = try await session.run { try await $0.send("PATCH", "/shopping/items/\(item.id)", body: Body(checked: wanted)) } }
-        catch { self.error = error.localizedDescription; await load(session) }
+        if item.id < 0 {   // added offline, not sent yet
+            Outbox.shared.setAddChecked(name: item.name, checked: wanted)
+            await persist(session)
+            return
+        }
+        do {
+            let _: ShoppingItem? = try await session.runOrQueue(.setShoppingChecked(itemID: item.id, checked: wanted)) {
+                try await $0.send("PATCH", "/shopping/items/\(item.id)", body: Body(checked: wanted))
+            }
+            await persist(session)
+        } catch { self.error = error.localizedDescription; await load(session) }
     }
 
     func remove(_ item: ShoppingItem, _ session: Session) async {
         withAnimation(.snappy) { list?.items.removeAll { $0.id == item.id } }
-        do { try await session.run { try await $0.send("DELETE", "/shopping/items/\(item.id)") } }
-        catch { self.error = error.localizedDescription; await load(session) }
+        if item.id < 0 {
+            Outbox.shared.cancelAdd(name: item.name)
+            await persist(session)
+            return
+        }
+        do {
+            _ = try await session.runOrQueue(.deleteShoppingItem(itemID: item.id)) { try await $0.send("DELETE", "/shopping/items/\(item.id)") }
+            await persist(session)
+        } catch { self.error = error.localizedDescription; await load(session) }
     }
 
     func clear(checkedOnly: Bool, _ session: Session) async {
         do {
             try await session.run { try await $0.send("DELETE", "/shopping/items", query: checkedOnly ? ["checked": "1"] : [:]) }
             await load(session)
+            await persist(session)
         } catch { self.error = error.localizedDescription }
     }
 }

@@ -7,21 +7,50 @@ enum APIError: LocalizedError {
     case network(Error)
     case decoding(Error)
 
+    /// True when the request failed because there is no usable connection (not because the server said no).
+    var isOffline: Bool {
+        guard case .network(let error) = self, let url = error as? URLError else { return false }
+        switch url.code {
+        case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotConnectToHost,
+             .cannotFindHost, .dataNotAllowed, .internationalRoamingOff, .dnsLookupFailed:
+            return true
+        default:
+            return false
+        }
+    }
+
     var errorDescription: String? {
         switch self {
         case .unauthorized: "You've been signed out. Sign in again."
         case .server(_, _, let message): message
         case .invalidServer: "That doesn't look like a server address."
-        case .network(let error): "Couldn't reach the server. \(error.localizedDescription)"
+        case .network(let error):
+            isOffline ? "You're offline. Connect to the internet and try again."
+                      : "Couldn't reach the server. \(error.localizedDescription)"
         case .decoding: "The server sent something the app didn't understand. Is it up to date?"
         }
     }
+}
+
+/// Optional storage behind the client: remembers GET responses, can rebuild some from a local copy of the library,
+/// and is told whether the server could be reached. The app supplies one; the Share extension doesn't.
+protocol ResponseCaching: Sendable {
+    func store(_ data: Data, for url: URL) async
+    func cached(for url: URL) async -> Data?
+    /// A response built locally (e.g. the recipe list from the offline library), or nil.
+    func generated(path: String, query: [String: String]) async -> Data?
+    func reachability(_ reachable: Bool) async
 }
 
 /// Thin wrapper over URLSession for the `/api/v1` JSON API (see API.md).
 struct APIClient: Sendable {
     let baseURL: URL
     var token: String?
+    var cache: (any ResponseCaching)?
+
+    init(baseURL: URL, token: String?, cache: (any ResponseCaching)? = nil) {
+        self.baseURL = baseURL; self.token = token; self.cache = cache
+    }
 
     struct Empty: Decodable, Sendable {}
     private struct Envelope: Decodable { struct Inner: Decodable { let code: String; let message: String }; let error: Inner }
@@ -40,13 +69,29 @@ struct APIClient: Sendable {
     static let encoder: JSONEncoder = {
         let e = JSONEncoder()
         e.keyEncodingStrategy = .convertToSnakeCase
+        e.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer()
+            try container.encode(DateParsing.format(date))
+        }
         return e
     }()
 
     // MARK: Requests
 
     func get<T: Decodable & Sendable>(_ path: String, query: [String: String] = [:]) async throws -> T {
-        try decode(try await data("GET", path, query: query, body: nil))
+        let request = try makeRequest("GET", path, query: query)
+        do {
+            let data = try await perform(request)
+            if let cache, let url = request.url { await cache.store(data, for: url) }
+            return try decode(data)
+        } catch let error as APIError where error.isOffline {
+            // No connection: answer from what we saved earlier (prefer the local library for lists and recipes).
+            if let cache {
+                if let built = await cache.generated(path: path, query: query) { return try decode(built) }
+                if let url = request.url, let saved = await cache.cached(for: url) { return try decode(saved) }
+            }
+            throw error
+        }
     }
 
     func send<T: Decodable & Sendable>(_ method: String, _ path: String, body: (any Encodable & Sendable)? = nil) async throws -> T {
@@ -79,6 +124,17 @@ struct APIClient: Sendable {
         return try decode(try await perform(request))
     }
 
+    /// The URL a request to `path` would use (also the cache key for its response).
+    func url(_ path: String, query: [String: String] = [:]) -> URL? {
+        try? makeRequest("GET", path, query: query).url
+    }
+
+    /// Cheap reachability probe that never falls back to cached data.
+    func ping() async -> Bool {
+        guard let request = try? makeRequest("GET", "/site", query: [:]) else { return false }
+        return (try? await perform(request)) != nil
+    }
+
     // MARK: Plumbing
 
     private func makeRequest(_ method: String, _ path: String, query: [String: String]) throws -> URLRequest {
@@ -106,8 +162,13 @@ struct APIClient: Sendable {
     private func perform(_ request: URLRequest) async throws -> Data {
         let data: Data, response: URLResponse
         do { (data, response) = try await URLSession.shared.data(for: request) }
-        catch { throw APIError.network(error) }
+        catch {
+            let failure = APIError.network(error)
+            if failure.isOffline { await cache?.reachability(false) }
+            throw failure
+        }
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidServer }
+        await cache?.reachability(true)
         guard (200..<300).contains(http.statusCode) else {
             let env = try? Self.decoder.decode(Envelope.self, from: data)
             if http.statusCode == 401, env?.error.code != "invalid_credentials" { throw APIError.unauthorized }
@@ -117,7 +178,7 @@ struct APIClient: Sendable {
         return data
     }
 
-    private func decode<T: Decodable>(_ data: Data) throws -> T {
+    func decode<T: Decodable>(_ data: Data) throws -> T {
         if T.self == Empty.self || data.isEmpty, let empty = Empty() as? T { return empty }
         do { return try Self.decoder.decode(T.self, from: data) }
         catch { throw APIError.decoding(error) }
@@ -132,6 +193,12 @@ struct APIClient: Sendable {
 }
 
 enum DateParsing {
+    static func format(_ date: Date) -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f.string(from: date)
+    }
+
     // ISO8601DateFormatter isn't Sendable; formatters are created per call (cheap enough for JSON decoding of pages).
     static func parse(_ text: String) -> Date? {
         let withFraction = ISO8601DateFormatter()

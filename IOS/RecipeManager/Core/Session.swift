@@ -23,9 +23,9 @@ final class Session {
     var lastServer: String { defaults.string(forKey: Self.serverKey) ?? "" }
 
     init() {
-        if let saved = defaults.string(forKey: Self.serverKey), let url = URL(string: saved), let token = Keychain.read() {
+        if let saved = CredentialStore.read(), let url = URL(string: saved.server) {
             baseURL = url
-            self.token = token
+            token = saved.token
             isRestoring = true
             Task { await restore() }
         }
@@ -33,7 +33,7 @@ final class Session {
 
     var client: APIClient? {
         guard let baseURL else { return nil }
-        return APIClient(baseURL: baseURL, token: token)
+        return APIClient(baseURL: baseURL, token: token, cache: OfflineStore.shared)
     }
 
     /// Runs a request; a 401 signs the user out (token revoked elsewhere).
@@ -90,11 +90,15 @@ final class Session {
         let device = "iOS app"
         let response: LoginResponse = try await anonymous.send("POST", "/auth/login",
                                                               body: Body(username: username, password: password, deviceName: device))
-        Keychain.write(response.token)
-        defaults.set(url.absoluteString, forKey: Self.serverKey)
+        CredentialStore.write(Credentials(server: url.absoluteString, token: response.token))
+        defaults.set(url.absoluteString, forKey: Self.serverKey)   // only to prefill the sign-in screen next time
+        await OfflineStore.shared.clear()                          // never show a previous account's data
+        Outbox.shared.clear()
         baseURL = url
         token = response.token
         user = response.user
+        _ = try? await client?.get("/me") as User?                 // saved now so the app can start offline later
+        watchConnectivity()
     }
 
     func signOut() async {
@@ -103,9 +107,30 @@ final class Session {
     }
 
     private func signOutLocally() {
-        Keychain.delete()
+        CredentialStore.delete()
         token = nil
         user = nil
+        Task { await OfflineStore.shared.clear() }
+        URLCache.shared.removeAllCachedResponses()
+        Outbox.shared.clear()
+    }
+
+    // MARK: Offline
+
+    /// Sends the request; if there's no connection, queues `op` to replay later and applies it to the local copy.
+    /// Returns nil when queued (the caller keeps its optimistic state).
+    func runOrQueue<T: Sendable>(_ op: OutboxOp, _ request: @Sendable (APIClient) async throws -> T) async throws -> T? {
+        do { return try await run(request) }
+        catch let error as APIError where error.isOffline {
+            Outbox.shared.enqueue(op)
+            await OfflineStore.shared.apply(op)
+            return nil
+        }
+    }
+
+    /// Wires reconnect handling: probe the server while offline, and on reconnect send queued changes and refresh.
+    func watchConnectivity() {
+        Connectivity.shared.probe = { [weak self] in await self?.client?.ping() ?? false }
     }
 
     private func restore() async {
@@ -113,11 +138,11 @@ final class Session {
         guard let client else { return }
         do { user = try await client.get("/me") }
         catch APIError.unauthorized { signOutLocally() }
-        catch { // offline: keep the token, show the app once the network is back
+        catch {
             user = nil
-            token = Keychain.read()
             offlineRestore = true
         }
+        watchConnectivity()
     }
 
     /// True when the token is kept but the server couldn't be reached at launch.

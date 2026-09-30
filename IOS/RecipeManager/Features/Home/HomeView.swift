@@ -39,7 +39,7 @@ final class HomeModel {
         let wanted = !picks[i].isFavorite
         picks[i].isFavorite = wanted
         do {
-            try await session.run { try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(recipe.id)/favorite") }
+            _ = try await session.runOrQueue(.favorite(recipeID: recipe.id, wanted: wanted)) { try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(recipe.id)/favorite") }
             if filter == .favorites && !wanted { picks.removeAll { $0.id == recipe.id } }
         } catch {
             if let j = picks.firstIndex(where: { $0.id == recipe.id }) { picks[j].isFavorite = !wanted }

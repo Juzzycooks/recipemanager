@@ -103,7 +103,7 @@ struct CollectionDetailView: View {
         guard let i = collection?.recipes.firstIndex(where: { $0.id == recipe.id }) else { return }
         let wanted = !recipe.isFavorite
         collection?.recipes[i].isFavorite = wanted
-        do { try await session.run { try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(recipe.id)/favorite") } }
+        do { _ = try await session.runOrQueue(.favorite(recipeID: recipe.id, wanted: wanted)) { try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(recipe.id)/favorite") } }
         catch { collection?.recipes[i].isFavorite = !wanted; self.error = error.localizedDescription }
     }
 

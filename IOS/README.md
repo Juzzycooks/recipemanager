@@ -63,10 +63,6 @@ The design reference had fields the server has no data for, so they are not fake
 
 ## Where to extend
 
-- **Offline / caching:** add a store beneath `Session.run` (or swap `RecipeImage`'s `AsyncImage` for a cached loader). Views don't
-  talk to `URLSession` directly.
-- **Share extension** (save a link from Safari): a new target posting to `POST /import/url`, reusing `APIClient` and the Keychain
-  (needs a shared keychain access group).
 - **Voice control in cooking mode:** `CookingView.advance(_:)` is the single place steps change.
 
 ## Kitchen timers
@@ -85,3 +81,29 @@ Live Activity on a device.
 
 `AppTheme` defines the colour themes (light and dark values each). `ThemeStore` is observable and `AppColors.primary` / `secondary` read it,
 so every view that uses them updates as soon as the theme changes. (`Color.accentColor` does not follow `.tint`, so don't use it for brand colour.)
+
+## Share extension ("Save to Recipes")
+
+Share a web page from Safari (or any app that shares a link) and choose **Recipes**. The extension reads the link, has your server parse it
+(`POST /import/url`), shows the picture, title and counts so you can rename it, and saves it (`POST /import/save`). Selected recipe text, or a
+caption with a link in it (Instagram, TikTok), works too. It has no account of its own: the app and the extension list the same keychain
+access group in their entitlements, and the app stores the server address and token as one keychain item (`Shared/Credentials.swift`), so
+signing in to the app is all that's needed. If you are not signed in, or are offline, the extension says so.
+
+`ShareExtension/` holds its UI; it compiles `APIClient`, `Models` and the `Shared/` helpers from the app, nothing else.
+
+## Offline use
+
+All client-side; the server is unchanged.
+
+- **Local copy of your library** (`OfflineStore`): every recipe in full, plus the collections, shopping list, categories and a few weeks of meal
+  plan, and (optionally) the pictures. `OfflineSync` keeps it current: it lists the recipes, downloads only the ones that changed, and runs on
+  sign-in, on returning to the app (at most every 10 minutes) and from Settings → Offline → Update now.
+- **Browsing offline:** `APIClient.get` saves every response, and when the network is unreachable answers from that. The recipe list, search,
+  filters, sorting and paging are rebuilt locally from the library, so they behave like the server's.
+- **Changes made offline** (`Outbox`): favourites, ratings, "I made this" and shopping list adds, ticks and deletes are applied on the phone at
+  once and queued (kept on disk, so they survive a relaunch). `Connectivity` notices when the server is back (it probes every 10 seconds while
+  offline) and the queue is sent in order. Later changes to the same thing replace earlier ones. Everything else (editing a recipe, importing,
+  the meal plan, collections) needs a connection and says "You're offline".
+- **Signing out** erases the offline copy and the queue.
+- Settings → Offline shows what is stored, when it last updated and how many changes are waiting.
