@@ -1,0 +1,24 @@
+/* Import preview: "Check what we found" */
+.import-warning { display: flex; gap: 0.75rem; align-items: flex-start; background: var(--accent-subtle); color: var(--text-primary); }
+.import-warning p { margin: 0; font-size: var(--fs-sm); }
+.import-icon { flex: none; color: var(--accent); margin-top: 0.1rem; }
+.import-image { display: flex; flex-direction: column; gap: 0.5rem; }
+.import-image .img-preview { border-radius: var(--radius); }
+.import-field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+.import-field-head label { margin-top: 0; }
+.import-summary { font-size: var(--fs-xs); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.import-original summary { cursor: pointer; font-weight: 600; font-size: var(--fs-sm); min-height: 1.5rem; }
+.import-original summary:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius); }
+.import-raw { margin: 0.75rem 0 0; padding: 0.75rem; max-height: 22rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+              background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius); font: inherit; font-size: var(--fs-sm); }
+.import-raw:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+@media (pointer: coarse) { .import-original summary { min-height: 44px; display: flex; align-items: center; } }
+
+/* Draft banner on the recipe form */
+.draft-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; background: var(--accent-subtle); }
+.draft-banner[hidden] { display: none; }
+.draft-banner p { margin: 0; font-size: var(--fs-sm); }
+.draft-actions { display: flex; gap: 0.5rem; }
+
+/* Keep the three-up field row aligned: the base "first label has no top margin" rule would lift only the first column */
+.form-grid-3 .form-group label { margin-top: 0; }

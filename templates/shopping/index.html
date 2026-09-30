@@ -38,7 +38,9 @@
             <span>{{ item.name }}</span>
             {% if item.recipe %}<span class="badge badge-muted">{{ item.recipe.title }}</span>{% endif %}
         </div>
-        <a href="https://www.woolworths.com.au/shop/search/products?searchTerm={{ quote_plus(item.name) }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm shop-find" aria-label="Find {{ item.name }} at Woolworths">Find at Woolworths</a>
+        {% if store_url %}
+        <a href="{{ store_link(item.name) }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm shop-find" aria-label="Find {{ item.name }} at {{ store_name }}">Find at {{ store_name }}</a>
+        {% endif %}
         <form method="POST" action="{{ url_for('shopping.remove', item_id=item.id) }}">
             <button type="submit" class="shop-remove" aria-label="Remove {{ item.name }}">
                 <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>

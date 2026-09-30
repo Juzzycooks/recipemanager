@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ recipe.title }} · {{ get_setting('site_name', 'Recipe Manager') or 'Recipe Manager' }}{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css', v=asset_v) }}">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css', v=asset_v) }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/picker.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 {% set has_img = recipe.image_url and not (recipe.image_url.startswith('http') and '/api/media/recipes/' in recipe.image_url) %}
 <article class="recipe-page">
@@ -75,7 +76,7 @@
             <details class="menu">
                 <summary class="btn btn-secondary btn-lg" aria-label="More actions">More</summary>
                 <div class="menu-panel right">
-                    <form method="POST" action="{{ url_for('shopping.add_recipe_to_list', recipe_id=recipe.id) }}"><button type="submit" class="menu-item">Add to shopping list</button></form>
+                    <form method="POST" action="{{ url_for('shopping.add_recipe_to_list', recipe_id=recipe.id) }}" data-pick-trigger><button type="submit" class="menu-item">Add to shopping list</button></form>
                     <form method="POST" action="{{ url_for('recipes.made_it', recipe_id=recipe.id) }}"><button type="submit" class="menu-item">I made this{% if made_count %} ({{ made_count }}×){% endif %}</button></form>
                     <hr>
                     <a href="{{ url_for('recipes.print_view', recipe_id=recipe.id) }}" target="_blank" rel="noopener">Print</a>
@@ -159,6 +160,25 @@
             {% endif %}
         </div>
     </div>
+<dialog id="pick-dialog" class="pick-dialog" aria-labelledby="pick-title">
+    <form method="POST" action="{{ url_for('shopping.add_selected') }}" class="pick-form">
+        <input type="hidden" name="recipe_id" value="{{ recipe.id }}">
+        <div class="pick-head">
+            <h2 id="pick-title">Add to shopping list</h2>
+            <p class="pick-note">Untick anything you already have in the pantry.</p>
+        </div>
+        <div class="pick-tools">
+            <button type="button" class="btn btn-secondary btn-sm" data-pick-all>Select all</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-pick-none>Select none</button>
+            <span class="pick-status" data-pick-status role="status"></span>
+        </div>
+        <div class="pick-list" data-pick-list></div>
+        <div class="pick-actions">
+            <button type="button" class="btn btn-secondary" data-pick-cancel>Cancel</button>
+            <button type="submit" class="btn btn-primary" data-pick-submit>Add items</button>
+        </div>
+    </form>
+</dialog>
 </article>
 
 <script>
@@ -178,5 +198,6 @@ function copyShareLink() {
 <script>
 RecipeUnits.attach({ items: '#ingredient-list li:not(.list-section)', scaleBtns: '.scale-btn' });
 </script>
+<script src="{{ url_for('static', filename='js/shopping.js', v=asset_v) }}"></script>
 
 {% endblock %}

@@ -229,3 +229,11 @@
 .btn-block { width: 100%; margin-top: 1.5rem; }
 .card-title-gap { margin-bottom: 0.75rem; }
 @media (max-width: 480px) { .auth-wrapper { margin-top: 1.5rem; } }
+
+/* Share link row + settings groups */
+.share-row { display: flex; gap: 0.5rem; align-items: center; }
+.share-row input { flex: 1; min-width: 0; font-size: var(--fs-sm); }
+.modal-actions form { display: flex; }
+.modal-actions form .btn { width: 100%; }
+.settings-group { border: none; border-top: 1px solid var(--rule); margin-top: 1.5rem; padding-top: 1rem; }
+.settings-group legend { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; padding: 0 0.5rem 0 0; }

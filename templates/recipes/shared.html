@@ -42,6 +42,9 @@
     <main class="pub-main">
         <header class="recipe-head">
             <h1>{{ recipe.title }}</h1>
+            {% if get_setting('public_show_author') == '1' and recipe.author %}
+            <p class="pub-byline">By {{ recipe.author.username }}</p>
+            {% endif %}
             {% if recipe.description %}
             <p class="description">{{ recipe.description }}</p>
             {% endif %}

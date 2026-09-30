@@ -4,10 +4,11 @@
 {% block content %}
 <div class="form-narrow center-col">
 <div class="page-header"><h1>Import a recipe</h1></div>
+<p class="muted import-lead">Pick a source below. A single recipe opens in a preview first, so nothing is saved until you check it and confirm.</p>
 
 <div class="card">
     <h3 class="section-title">Import from URL</h3>
-    <p class="muted import-lead">Paste recipe links from websites.</p>
+    <p class="muted import-lead">Paste one link to preview it before saving. Several links (one per line) are saved straight away.</p>
     <form method="POST">
         <div class="form-group">
             <label for="urls">Recipe URLs</label>
@@ -21,8 +22,36 @@
     </form>
     <hr class="divider">
     <p class="hint-sm">
-        Recipe websites are fully parsed (ingredients, instructions, etc.). For Instagram and TikTok, use the caption import below.
+        Recipe websites are parsed fully, including ingredient sections and notes when the site provides them. Instagram links are tried too, but Instagram often blocks that: if it does, paste the caption or upload a screenshot below.
     </p>
+</div>
+
+<div class="card">
+    <h3 class="section-title">Import from photos or screenshots</h3>
+    <p class="muted import-lead">Snap a cookbook page or screenshot a recipe (from Instagram, TikTok, a website, a message). We read the text and sort it into ingredients, method and notes.</p>
+    {% if ocr_ok %}
+    <form method="POST" action="{{ url_for('recipes.import_photo') }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="photos">Photos or screenshots</label>
+            <input type="file" id="photos" name="photos" accept="image/*" multiple required>
+            <div class="form-hint">Pick several images if the recipe is spread over more than one screenshot; they are read in the order you choose them. Up to 8 images.</div>
+        </div>
+        <div class="form-group">
+            <label for="photo_title">Recipe title (optional)</label>
+            <input type="text" id="photo_title" name="photo_title" placeholder="Leave blank to use the first line of the text">
+        </div>
+        <div class="form-group check-row">
+            <label><input type="checkbox" name="use_as_cover" value="1"> Use the first image as the recipe picture</label>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Read the text and preview</button>
+        </div>
+    </form>
+    <hr class="divider">
+    <p class="hint-sm">Reading happens on your own server; nothing is sent elsewhere. Clear, straight-on, well-lit images work best, and handwriting is hit and miss. You check the quantities in a preview before anything is saved.</p>
+    {% else %}
+    <p class="hint-sm">Photo import needs Tesseract, which isn't installed on this server. It is included in the Docker image, so update to the latest image to enable it.</p>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -30,21 +59,21 @@
     <p class="muted import-lead">Copy the caption from the post and paste it here.</p>
     <form method="POST" action="{{ url_for('recipes.import_caption') }}">
         <div class="form-group">
-            <label for="caption_title">Recipe Title (optional)</label>
+            <label for="caption_title">Recipe title (optional)</label>
             <input type="text" id="caption_title" name="caption_title" placeholder="Leave blank to auto-detect from caption">
         </div>
         <div class="form-group">
-            <label for="caption">Caption Text</label>
+            <label for="caption">Caption text</label>
             <textarea id="caption" name="caption" rows="10" placeholder="Paste the full caption here...&#10;&#10;e.g.&#10;Beef & Tomato Orzo with a Cheesy Top&#10;&#10;Ingredients&#10;500g lean beef mince&#10;1 onion, finely diced&#10;...&#10;&#10;Method&#10;Heat a large frying pan..."></textarea>
             <div class="form-hint">Works with any caption that has Ingredients and Method/Instructions sections. Periods used as line breaks (common on Instagram) are handled automatically.</div>
         </div>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Import Caption</button>
+            <button type="submit" class="btn btn-primary">Preview recipe</button>
         </div>
     </form>
     <hr class="divider">
     <p class="hint-sm">
-        How to get the caption: Open the post in Instagram/TikTok then tap the "..." menu then Copy text / Copy caption. The recipe opens for editing after import so you can clean it up.
+        How to get the caption: Open the post in Instagram/TikTok then tap the "..." menu then Copy text / Copy caption. You can clean it up in a preview before saving.
     </p>
 </div>
 
@@ -55,7 +84,7 @@
         <div class="form-group">
             <label for="pdf_files">PDF files</label>
             <input type="file" id="pdf_files" name="pdf_files" accept=".pdf" multiple>
-            <div class="form-hint">Select one or more PDF files. Each PDF creates one recipe. Best results with simple, text-based PDFs.</div>
+            <div class="form-hint">Select one or more PDF files. One PDF opens in a preview; several are saved straight away as one recipe each. Best results with simple, text-based PDFs.</div>
         </div>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Import PDF</button>
@@ -63,7 +92,7 @@
     </form>
     <hr class="divider">
     <p class="hint-sm">
-        PDF parsing is best-effort. The recipe will be imported and opened for editing so you can clean it up.
+        PDF parsing is best-effort. A single PDF opens in a preview so you can clean it up first.
     </p>
 </div>
 

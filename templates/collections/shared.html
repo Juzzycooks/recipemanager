@@ -23,6 +23,9 @@
         {% endif %}
         <div class="cover-inner">
             <h1>{{ collection.name }}</h1>
+            {% if get_setting('public_show_author') == '1' and collection.user %}
+            <p class="pub-byline">A collection by {{ collection.user.username }}</p>
+            {% endif %}
             {% if collection.description %}
             <p class="cover-desc">{{ collection.description }}</p>
             {% endif %}

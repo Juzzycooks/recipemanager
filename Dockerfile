@@ -22,7 +22,7 @@ WORKDIR /app
 # libjpeg-turbo/zlib/libwebp: Pillow runtime libs (no-op if wheels are bundled).
 RUN apk update && apk upgrade --no-cache \
     && apk add --no-cache --upgrade openssl libcrypto3 libssl3 sqlite-libs \
-    && apk add --no-cache su-exec libjpeg-turbo zlib libwebp
+    && apk add --no-cache su-exec libjpeg-turbo zlib libwebp tesseract-ocr tesseract-ocr-data-eng
 
 RUN pip install --no-cache-dir --upgrade pip
 

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ "Edit" if recipe else "New" }} Recipe{% endblock %}
-{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/import.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="form-wide center-col">
 <div class="page-header">
@@ -8,7 +9,15 @@
     <a href="{{ url_for('recipes.index') }}" class="btn btn-secondary btn-sm">Cancel</a>
 </div>
 
-<form method="POST" enctype="multipart/form-data">
+<div id="draft-banner" class="card draft-banner" role="status" hidden>
+    <p>You have an unsaved draft from <span id="draft-time"></span>.</p>
+    <div class="draft-actions">
+        <button type="button" class="btn btn-primary btn-sm" id="draft-restore">Restore draft</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="draft-discard">Discard</button>
+    </div>
+</div>
+
+<form method="POST" enctype="multipart/form-data" id="recipe-form" data-draft-key="recipeDraft:{{ 'edit:' ~ recipe.id if recipe else 'new' }}">
 
 <!-- Image preview -->
 <div id="img-preview" class="card img-preview" {% if not (recipe and recipe.image_url) %}hidden{% endif %}>
@@ -138,5 +147,47 @@ function previewUpload(input) {
         document.getElementById('image_url').value = '';
     }
 }
+</script>
+<script>
+(function () {
+    var form = document.getElementById('recipe-form');
+    if (!form) return;
+    var key = form.getAttribute('data-draft-key');
+    var banner = document.getElementById('draft-banner');
+    function fields() {
+        return Array.prototype.filter.call(form.elements, function (el) {
+            if (!el.name || el.name === 'csrf_token') return false;
+            var t = (el.type || '').toLowerCase();
+            return el.tagName === 'TEXTAREA' || t === 'text' || t === 'url';
+        });
+    }
+    function snapshot() { var o = {}; fields().forEach(function (el) { o[el.name] = el.value; }); return o; }
+    function store(v) { try { if (v === null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+    function load() { try { var r = localStorage.getItem(key); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+    var initial = snapshot();
+    function differs(a, b) { return Object.keys(a).some(function (k) { return (a[k] || '') !== (b[k] || ''); }); }
+    var timer = null;
+    function save() {
+        var now = snapshot();
+        if (!differs(now, initial)) { store(null); return; }
+        store({ at: Date.now(), values: now });
+    }
+    form.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(save, 500); });
+    form.addEventListener('submit', function () { clearTimeout(timer); store(null); });
+    var draft = load();
+    if (draft && draft.values && differs(draft.values, initial) && banner) {
+        var when = '';
+        try { when = new Date(draft.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }); } catch (e) { when = 'earlier'; }
+        document.getElementById('draft-time').textContent = when;
+        banner.hidden = false;
+        document.getElementById('draft-restore').addEventListener('click', function () {
+            fields().forEach(function (el) { if (draft.values[el.name] !== undefined) el.value = draft.values[el.name]; });
+            var url = document.getElementById('image_url');
+            if (url && url.value) updatePreview(url.value);
+            banner.hidden = true;
+        });
+        document.getElementById('draft-discard').addEventListener('click', function () { store(null); banner.hidden = true; });
+    }
+})();
 </script>
 {% endblock %}

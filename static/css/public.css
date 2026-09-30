@@ -172,3 +172,30 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: bala
 .pub-mast { padding: 0.9rem max(1.5rem, calc((100% - 1080px) / 2 + 1.5rem)); border-bottom: 3px double var(--rule); }
 .pub-brand { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
 .pub-brand, .pub-brand:hover { color: var(--text-primary); text-decoration: none; }
+
+/* Byline (cook's name, opt-in from admin settings) */
+.pub-byline { font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); margin-top: 0.5rem; overflow-wrap: anywhere; }
+.cover .pub-byline { color: inherit; opacity: 0.9; }
+
+/* Shared meal plan: days as ruled rows */
+.pub-weeknav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+.pub-week { list-style: none; margin-top: 1rem; border-top: 3px double var(--rule); }
+.pub-day { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.5rem 1.5rem; padding: 0.9rem 0;
+           border-bottom: 1px solid var(--rule); }
+.pub-day-head { display: flex; flex-direction: column; }
+.pub-dow { font-family: var(--font-display); font-size: var(--fs-md); font-weight: 700; line-height: 1.2; }
+.pub-date { font-size: var(--fs-xs); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.pub-day.is-today .pub-dow { color: var(--accent); }
+.pub-day.is-today .pub-date::after { content: " (today)"; }
+.pub-meals { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.pub-meal { display: flex; gap: 0.75rem; align-items: baseline; font-family: var(--font-display); font-size: var(--fs-reading);
+            line-height: 1.4; overflow-wrap: anywhere; }
+.pub-meal a { display: inline-block; padding: 0.15rem 0; }
+.pub-meal-type { flex: none; width: 5.5rem; font-family: var(--font-ui); font-size: var(--fs-2xs); font-weight: 700;
+                 color: var(--text-secondary); }
+.pub-nothing { color: var(--text-tertiary); font-style: italic; font-family: var(--font-display); }
+@media (max-width: 600px) {
+  .pub-day { grid-template-columns: 1fr; }
+  .pub-day-head { flex-direction: row; align-items: baseline; gap: 0.6rem; }
+}
+@media (pointer: coarse) { .pub-meal a { min-height: 44px; display: inline-flex; align-items: center; } }

@@ -18,6 +18,8 @@
 <div class="card tool-bar">
     <span class="tool-bar-label">{{ week_dates[0].strftime('%b %d') }} to {{ week_dates[-1].strftime('%b %d, %Y') }}</span>
     <div class="row-tools">
+        <button type="button" data-open="share-modal" class="btn btn-secondary btn-sm">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Share this plan</button>
         <button type="button" data-open="auto-modal" class="btn btn-secondary btn-sm">Auto-generate</button>
         <form method="POST" action="{{ url_for('mealplan.generate_shopping_list') }}">
             <input type="hidden" name="week" value="{{ offset }}">
@@ -125,6 +127,36 @@
     </div>
 </div>
 
+<!-- Share Modal -->
+<div id="share-modal" class="modal-backdrop" hidden>
+    <div class="card modal-card" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
+        <h3 id="share-modal-title">Share this plan</h3>
+        {% if share_url %}
+        <p class="modal-note">Anyone with this link can see your meal plan, week by week, without logging in. They see recipe titles and meal types only.</p>
+        <div class="share-row">
+            <label for="share-url" class="sr-only">Public link</label>
+            <input type="text" id="share-url" value="{{ share_url }}" readonly>
+            <button type="button" class="btn btn-secondary btn-sm" id="share-copy">Copy</button>
+        </div>
+        <p class="form-hint" id="share-status" role="status"></p>
+        <div class="modal-actions">
+            <button type="button" data-close class="btn btn-secondary">Done</button>
+            <form method="POST" action="{{ url_for('mealplan.unshare') }}" class="grow">
+                <button type="submit" class="btn btn-danger">Stop sharing</button>
+            </form>
+        </div>
+        {% else %}
+        <p class="modal-note">Make a read-only link to your plan that anyone can open without an account. They see recipe titles and meal types only. You can switch it off at any time.</p>
+        <form method="POST" action="{{ url_for('mealplan.share') }}">
+            <div class="modal-actions">
+                <button type="button" data-close class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create link</button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
 <!-- Auto-Generate Modal -->
 <div id="auto-modal" class="modal-backdrop" hidden>
     <div class="card modal-card" role="dialog" aria-modal="true" aria-labelledby="auto-modal-title">
@@ -199,6 +231,17 @@ document.querySelectorAll('[data-add-date]').forEach(b =>
         document.getElementById('modal-date').value = b.dataset.addDate;
         openModal('add-modal');
     }));
+
+/* Share link: copy */
+const shareCopy = document.getElementById('share-copy');
+if (shareCopy) shareCopy.addEventListener('click', () => {
+    const input = document.getElementById('share-url');
+    const status = document.getElementById('share-status');
+    input.select();
+    const done = ok => { status.textContent = ok ? 'Link copied.' : 'Could not copy automatically. The link is selected, so press Ctrl+C or Cmd+C.'; };
+    if (navigator.clipboard) navigator.clipboard.writeText(input.value).then(() => done(true), () => done(false));
+    else done(false);
+});
 
 /* Tap / keyboard alternative to drag-and-drop */
 let movingId = null;

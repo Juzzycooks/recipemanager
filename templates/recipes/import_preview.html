@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Check what we found{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/import.css', v=asset_v) }}">{% endblock %}
+{% block content %}
+<div class="form-wide center-col">
+<div class="page-header"><h1>Check what we found</h1></div>
+<p class="muted import-lead">Nothing is saved yet. Fix anything that looks off, then save the recipe.</p>
+
+{% if error %}
+<div class="flash error" role="alert" id="import-error">{{ error }}</div>
+{% endif %}
+
+{% if warning %}
+<div class="card import-warning" role="status">
+    <svg class="import-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4.5"/><path d="M12 17.5v.01"/></svg>
+    <p>{{ warning }}</p>
+</div>
+{% endif %}
+
+<form method="POST" action="{{ url_for('recipes.import_save') }}" id="import-form">
+<input type="hidden" name="source_url" value="{{ source_url }}">
+<input type="hidden" name="image_name" value="{{ image_name }}">
+<input type="hidden" name="kind" value="{{ kind }}">
+<input type="hidden" name="raw_text" value="{{ raw_text }}">
+
+{% if image_name %}
+<div class="card import-image">
+    <div class="img-preview"><img src="{{ image_name|recipe_image }}" alt="Picture found with the recipe"></div>
+    <label class="check-row"><input type="checkbox" name="use_image" value="1" {% if error is none or request.form.get('use_image') %}checked{% endif %}> Use this picture</label>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2 class="conv-title">Basics</h2>
+    <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" required maxlength="200" value="{{ f.title }}"{% if error and not f.title %} aria-invalid="true" aria-describedby="import-error" autofocus{% endif %}>
+    </div>
+    <div class="form-group">
+        <label for="description">Description <span class="opt">(optional)</span></label>
+        <textarea id="description" name="description" rows="2">{{ f.description }}</textarea>
+    </div>
+    <div class="form-grid-3">
+        <div class="form-group">
+            <label for="prep_time">Prep time</label>
+            <input type="text" id="prep_time" name="prep_time" value="{{ f.prep_time }}" placeholder="e.g. 15 min">
+        </div>
+        <div class="form-group">
+            <label for="cook_time">Cook time</label>
+            <input type="text" id="cook_time" name="cook_time" value="{{ f.cook_time }}" placeholder="e.g. 45 min">
+        </div>
+        <div class="form-group">
+            <label for="servings">Servings</label>
+            <input type="text" id="servings" name="servings" value="{{ f.servings }}" placeholder="e.g. 4">
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="import-field-head">
+        <label for="ingredients">Ingredients</label>
+        <span class="import-summary" id="sum-ingredients" data-noun="ingredient" data-empty="No ingredients yet" aria-live="polite"></span>
+    </div>
+    <textarea id="ingredients" name="ingredients" rows="10" data-summary="sum-ingredients" spellcheck="false">{{ f.ingredients }}</textarea>
+    <div class="form-hint">One per line. Start a line with # to make a section heading.</div>
+</div>
+
+<div class="card">
+    <div class="import-field-head">
+        <label for="instructions">Method</label>
+        <span class="import-summary" id="sum-instructions" data-noun="step" data-empty="No steps yet" aria-live="polite"></span>
+    </div>
+    <textarea id="instructions" name="instructions" rows="10" data-summary="sum-instructions">{{ f.instructions }}</textarea>
+    <div class="form-hint">One step per line. Start a line with # to make a section heading.</div>
+</div>
+
+<div class="card">
+    <label for="notes">Notes <span class="opt">(optional)</span></label>
+    <textarea id="notes" name="notes" rows="3">{{ f.notes }}</textarea>
+    <div class="form-hint">One note per line.</div>
+</div>
+
+{% if raw_text %}
+<details class="card import-original">
+    <summary>Show the original text</summary>
+    <pre class="import-raw" tabindex="0">{{ raw_text }}</pre>
+</details>
+{% endif %}
+
+<div class="form-actions form-actions-end">
+    <a href="{{ url_for('recipes.import_url') }}" class="btn btn-secondary">Start over</a>
+    <button type="submit" class="btn btn-primary">Save recipe</button>
+</div>
+</form>
+</div>
+
+<script>
+(function () {
+    function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+    function update(ta) {
+        var out = document.getElementById(ta.getAttribute('data-summary'));
+        if (!out) return;
+        var items = 0, sections = 0;
+        ta.value.split('\n').forEach(function (l) {
+            l = l.trim();
+            if (!l) return;
+            if (l.charAt(0) === '#') sections++; else items++;
+        });
+        if (!items) { out.textContent = out.getAttribute('data-empty'); return; }
+        var t = plural(items, out.getAttribute('data-noun'));
+        if (sections) t += ' in ' + plural(sections, 'section');
+        out.textContent = t;
+    }
+    document.querySelectorAll('textarea[data-summary]').forEach(function (ta) {
+        update(ta);
+        ta.addEventListener('input', function () { update(ta); });
+    });
+})();
+</script>
+{% endblock %}

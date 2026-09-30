@@ -17,7 +17,7 @@ def admin_required(f):
     @login_required
     def decorated(*args, **kwargs):
         if not current_user.is_admin:
-            flash("Admin access required.", "error")
+            flash("That page is for admins only. Ask an admin if you need something changed.", "error")
             return redirect(url_for("recipes.index"))
         return f(*args, **kwargs)
     return decorated
@@ -49,13 +49,13 @@ def add_user():
         gen_password = secrets.token_urlsafe(12)
 
         if not username:
-            flash("Username is required.", "error")
+            flash("Enter a username.", "error")
             return redirect(url_for("admin.add_user"))
         if email and not is_valid_email(email):
-            flash("Invalid email address.", "error")
+            flash("That email address doesn't look right. Check it for typos.", "error")
             return redirect(url_for("admin.add_user"))
         if User.query.filter_by(username=username).first():
-            flash("Username already taken.", "error")
+            flash("That username is taken. Try another.", "error")
             return redirect(url_for("admin.add_user"))
 
         user = User(username=username, email=email, is_admin=is_admin)
@@ -84,7 +84,7 @@ def edit_user(user_id):
         user.username = request.form.get("username", "").strip() or user.username
         email = request.form.get("email", "").strip()
         if email and not is_valid_email(email):
-            flash("Invalid email address.", "error")
+            flash("That email address doesn't look right. Check it for typos.", "error")
             return redirect(url_for("admin.edit_user", user_id=user_id))
         user.email = email
         user.is_admin = request.form.get("is_admin") == "on"
@@ -131,9 +131,9 @@ def delete_user(user_id):
 def add_category():
     name = request.form.get("name", "").strip()
     if not name:
-        flash("Category name is required.", "error")
+        flash("Give the category a name.", "error")
     elif Category.query.filter_by(name=name).first():
-        flash("Category already exists.", "error")
+        flash("That category already exists.", "error")
     else:
         db.session.add(Category(name=name))
         db.session.commit()
@@ -164,7 +164,7 @@ def mealie_import_page():
         password = request.form.get("mealie_password", "")
 
         if not base_url or not email or not password:
-            flash("All Mealie connection fields are required.", "error")
+            flash("Fill in all the Mealie connection fields first.", "error")
             return redirect(url_for("admin.mealie_import_page"))
 
         try:
@@ -244,7 +244,7 @@ def add_calculator():
         sort_order = request.form.get("sort_order", type=int) or 0
 
         if not name or not url:
-            flash("Name and URL are required.", "error")
+            flash("Enter both a name and a web address.", "error")
             return redirect(url_for("admin.add_calculator"))
 
         calc = Calculator(name=name, url=url, description=description,
@@ -314,7 +314,23 @@ def settings():
     if request.method == "POST":
         site_name = request.form.get("site_name", "").strip()
         _set_setting("site_name", site_name)
-        
+        _set_setting("public_show_author", "1" if request.form.get("public_show_author") else "0")
+
+        # Shopping: store label and search link ({q} = item name)
+        store_name = request.form.get("store_name", "").strip()[:60]
+        store_url = request.form.get("store_search_url", "").strip()
+        if not store_name:
+            store_name = "Woolworths" if store_url else ""
+        store_ok = True
+        if store_url and not (store_url.lower().startswith(("http://", "https://"))
+                              and "{q}" in store_url and len(store_url) <= 500):
+            flash("The store search link needs to start with http:// or https:// and include {q} where the item name goes. "
+                  "Your previous link was kept.", "error")
+            store_ok = False
+        else:
+            _set_setting("store_search_url", store_url)
+            _set_setting("store_name", store_name)
+
         # Handle logo upload (content-verified, re-encoded, EXIF stripped)
         if "logo_file" in request.files:
             file = request.files["logo_file"]
@@ -338,12 +354,20 @@ def settings():
                 logo_setting.value = ""
                 db.session.commit()
         
-        flash("Settings saved.", "success")
+        if store_ok:
+            flash("Settings saved.", "success")
+        else:
+            flash("Your other settings were saved.", "success")
         return redirect(url_for("admin.settings"))
     
     logo_file = SiteSetting.query.filter_by(key="logo_file").first()
     site_name = SiteSetting.query.filter_by(key="site_name").first()
+    from routes.shopping import _store_settings
+    store_name, store_url = _store_settings()
+    show_author = SiteSetting.query.filter_by(key="public_show_author").first()
     return render_template("admin/settings.html",
+                           store_name=store_name, store_search_url=store_url,
+                           public_show_author=bool(show_author and show_author.value == "1"),
                            logo_file=logo_file.value if logo_file else "",
                            site_name=site_name.value if site_name else "")
 
@@ -497,7 +521,7 @@ def import_backup():
         return redirect(url_for("admin.dashboard"))
 
     if not isinstance(payload, dict) or not isinstance(payload.get("recipes"), list):
-        flash("Backup file has an unexpected format.", "error")
+        flash("That backup file isn't in a format we recognise. Use one exported from this app.", "error")
         return redirect(url_for("admin.dashboard"))
 
     # Skip exact-title duplicates to make re-imports safe

@@ -58,7 +58,7 @@ def create():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         if not name:
-            flash("Name is required.", "error")
+            flash("Give the collection a name.", "error")
             return redirect(url_for("collections.create"))
         cat_id = request.form.get("category_id", type=int) or None
         slug_input = request.form.get("slug", "").strip()
@@ -66,7 +66,7 @@ def create():
         if slug:
             existing = Collection.query.filter_by(slug=slug).first()
             if existing:
-                flash("That slug is already taken.", "error")
+                flash("That web address is already used by another collection. Try a different one.", "error")
                 return redirect(url_for("collections.create"))
         cover = ""
         if "cover_image" in request.files:
@@ -91,7 +91,7 @@ def create():
 def view(coll_id):
     coll = Collection.query.get_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
     all_recipes = coll.get_all_recipes()
     return render_template("collections/view.html", collection=coll,
@@ -104,7 +104,7 @@ def view(coll_id):
 def edit(coll_id):
     coll = Collection.query.get_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
     categories = Category.query.order_by(Category.name).all()
     if request.method == "POST":
@@ -116,7 +116,7 @@ def edit(coll_id):
         if new_slug and new_slug != coll.slug:
             existing = Collection.query.filter_by(slug=new_slug).first()
             if existing and existing.id != coll.id:
-                flash("That slug is already taken.", "error")
+                flash("That web address is already used by another collection. Try a different one.", "error")
                 return redirect(url_for("collections.edit", coll_id=coll.id))
         coll.slug = new_slug
         if "cover_image" in request.files:
@@ -136,7 +136,7 @@ def edit(coll_id):
 def delete(coll_id):
     coll = Collection.query.get_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
     db.session.delete(coll)
     db.session.commit()
@@ -149,7 +149,7 @@ def delete(coll_id):
 def share(coll_id):
     coll = Collection.query.get_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
     if not coll.share_token:
         coll.share_token = secrets.token_urlsafe(16)
@@ -163,7 +163,7 @@ def share(coll_id):
 def unshare(coll_id):
     coll = Collection.query.get_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
     coll.share_token = None
     db.session.commit()
@@ -242,7 +242,7 @@ def shared_cook_mode(token, recipe_id):
 def add_recipe(coll_id):
     coll = Collection.query.get_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
     recipe_id = request.form.get("recipe_id", type=int)
     recipe = Recipe.query.get_or_404(recipe_id)
@@ -251,7 +251,7 @@ def add_recipe(coll_id):
         db.session.commit()
         flash(f"Added '{recipe.title}' to collection.", "success")
     else:
-        flash("Recipe already in this collection.", "error")
+        flash("That recipe is already in this collection.", "error")
     return redirect(url_for("collections.view", coll_id=coll.id))
 
 
@@ -260,7 +260,7 @@ def add_recipe(coll_id):
 def remove_recipe(coll_id, recipe_id):
     coll = Collection.query.get_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe in coll.recipes:

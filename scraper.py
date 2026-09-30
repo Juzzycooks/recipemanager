@@ -1,8 +1,81 @@
 import re
 import json
+import html as html_mod
 from bs4 import BeautifulSoup
 
 from security import safe_get
+from recipe_text import parse_recipe_text
+
+
+def _clean(value):
+    """Plain text from a JSON-LD / microdata value: unescape entities, drop tags, collapse spaces."""
+    if value is None:
+        return ""
+    text = str(value)
+    if "<" in text and ">" in text:
+        text = BeautifulSoup(text, "html.parser").get_text(" ")
+    text = html_mod.unescape(text).replace("\u00a0", " ")
+    return re.sub(r"[ \t]+", " ", text).strip()
+
+
+def _clean_lines(value):
+    """Clean each line of a newline-separated block, keeping "# heading" markers."""
+    return "\n".join(l for l in (_clean(x) for x in str(value).split("\n")) if l)
+
+
+_GENERIC_TITLES = {"ingredients", "instructions", "directions", "method", "steps", "notes", "preparation"}
+_PLUGIN_BLOCKS = {
+    # (ingredients, instructions, notes) container class prefixes for popular recipe plugins
+    "tasty": ("tasty-recipes-ingredients", "tasty-recipes-instructions", "tasty-recipes-notes"),
+    "mediavine": ("mv-create-ingredients", "mv-create-instructions", "mv-create-notes"),
+}
+
+
+def _extract_plugin_block(soup, class_name, with_headings=True):
+    """Lines from a recipe-plugin container: headings become "# Heading", <li>/<p> become lines."""
+    box = soup.find(lambda t: _has_class(t, class_name))
+    if not box:
+        return None
+    out = []
+    for el in box.find_all(["h2", "h3", "h4", "h5", "h6", "li", "p"]):
+        if el.name.startswith("h"):
+            name = _clean(el.get_text(" ", strip=True))
+            if with_headings and name and name.lower().rstrip(":") not in _GENERIC_TITLES:
+                out.append("# " + name.rstrip(":"))
+        elif el.name == "li" and el.find("li"):
+            continue  # a wrapper around nested items
+        elif el.name == "p" and el.find_parent("li"):
+            continue
+        else:
+            text = _clean(el.get_text(" ", strip=True))
+            if text:
+                out.append(text)
+    return "\n".join(out) if out else None
+
+
+def _extract_grouped(soup, kind):
+    """Ingredient/instruction lines with section headings, from WPRM, Tasty or Mediavine markup."""
+    found = _extract_wprm_groups(soup, kind)
+    if found and "# " in found:
+        return found
+    idx = 0 if kind == "ingredient" else 1
+    for blocks in _PLUGIN_BLOCKS.values():
+        found = _extract_plugin_block(soup, blocks[idx])
+        if found and "# " in found:
+            return found
+    return None
+
+
+def _extract_notes(soup):
+    """Recipe notes from WPRM, Tasty or Mediavine markup."""
+    notes = _extract_wprm_notes(soup)
+    if notes:
+        return notes
+    for blocks in _PLUGIN_BLOCKS.values():
+        found = _extract_plugin_block(soup, blocks[2], with_headings=False)
+        if found:
+            return found
+    return ""
 
 
 def _is_social_media_url(url):
@@ -65,144 +138,93 @@ def _extract_caption_from_html(html):
 
 
 def _parse_caption_into_recipe(caption):
-    """Parse a social media caption into structured recipe fields."""
+    """Kept for callers that want (description, ingredients, instructions)."""
+    parsed = parse_recipe_text(caption)
+    return caption or "", parsed["ingredients"], parsed["instructions"]
+
+
+_IG_CODE = re.compile(r"instagram\.com/(?:[\w.]+/)?(p|reel|reels|tv)/([\w-]+)", re.I)
+
+
+def _instagram_oembed(url, headers):
+    """Instagram's public oEmbed endpoint returns the full caption (as "title") without a login."""
+    from urllib.parse import quote
+    m = _IG_CODE.search(url)
+    if not m:
+        return "", ""
+    kind = "reel" if m.group(1).lower() in ("reel", "reels") else "p"
+    canonical = f"https://www.instagram.com/{kind}/{m.group(2)}/"
+    try:
+        resp = safe_get(f"https://www.instagram.com/api/v1/oembed/?url={quote(canonical, safe='')}",
+                        headers=headers, timeout=15)
+        data = json.loads(resp.text)
+    except Exception:
+        return "", ""
+    caption = (data.get("title") or "").strip() if isinstance(data, dict) else ""
+    thumb = data.get("thumbnail_url", "") if isinstance(data, dict) else ""
+    return caption, thumb
+
+
+def _instagram_embed_caption(url, headers):
+    """Caption + image for an Instagram post: oEmbed first, then the public embed page.
+
+    Both come back empty when Instagram refuses (private/removed posts, or blocked IPs).
+    """
+    caption, image = _instagram_oembed(url, headers)
+    if caption:
+        return caption, image
+    m = _IG_CODE.search(url)
+    if not m:
+        return "", ""
+    kind = "reel" if m.group(1).lower() in ("reel", "reels") else "p"
+    embed_url = f"https://www.instagram.com/{kind}/{m.group(2)}/embed/captioned/"
+    try:
+        page = safe_get(embed_url, headers=headers, timeout=15).text
+    except Exception:
+        return "", image
+    soup = BeautifulSoup(page, "html.parser")
+    cap_el = soup.find(lambda t: _has_class(t, "Caption"))
+    caption = ""
+    if cap_el:
+        for junk in cap_el.find_all(lambda t: _has_class(t, "CaptionUsername") or _has_class(t, "CaptionComments")):
+            junk.decompose()
+        for br in cap_el.find_all("br"):
+            br.replace_with("\n")
+        caption = re.sub(r"\n{3,}", "\n\n", cap_el.get_text()).strip()
     if not caption:
-        return "", "", ""
-
-    # Normalise: Instagram captions often use " . " as line breaks
-    # Split on " . " (space-dot-space) which is the Instagram paragraph separator
-    normalised = caption.replace(' . ', '\n')
-    # Also handle lone dots on their own line
-    normalised = re.sub(r'\n\s*\.\s*\n', '\n', normalised)
-
-    lines = [l.strip() for l in normalised.split('\n') if l.strip() and l.strip() != '.']
-    if not lines:
-        return "", "", ""
-
-    ingredients = []
-    instructions = []
-    section = None
-
-    ingredient_markers = [
-        'ingredient', 'you will need', "you'll need", 'what you need',
-        "what you'll need", 'shopping list', 'you need',
-    ]
-    instruction_markers = [
-        'instruction', 'direction', 'method', 'steps', 'how to make',
-        'preparation',
-    ]
-
-    for line in lines:
-        lower = line.lower().rstrip(':').rstrip('.')
-        # Detect section headers — must be short and look like a heading
-        if any(lower == m or lower == m + 's' for m in ingredient_markers) and len(line) < 40:
-            section = 'ingredients'
-            continue
-        if any(lower == m or lower == m + 's' for m in instruction_markers) and len(line) < 40:
-            section = 'instructions'
-            continue
-        # Also match "Method" specifically (common in UK/AU recipes)
-        if lower in ('method', 'methods'):
-            section = 'instructions'
-            continue
-
-        if section == 'ingredients':
-            ingredients.append(line)
-        elif section == 'instructions':
-            instructions.append(line)
-
-    # Post-process: split long ingredient lines that are actually multiple items
-    # (common when Instagram captions lose their line breaks)
-    split_ingredients = []
-    for item in ingredients:
-        if len(item) > 50:
-            # Split before quantity patterns: "500g", "2 tsp", "1 onion"
-            # Also before common non-quantity starters
-            parts = re.split(
-                r'(?<=\S)\s+(?='
-                r'\d+\s*(?:g|kg|ml|l|oz|lb|cup|cups|tbsp|tsp|tablespoon|teaspoon)\b'
-                r'|'
-                r'\d+\s+[a-zA-Z]'  # "1 onion", "2 cloves"
-                r'|'
-                r'(?:Spray oil|Salt and|Juice of|Zest of)\b'
-                r')',
-                item, flags=re.I
-            )
-            if len(parts) > 1:
-                split_ingredients.extend(p.strip() for p in parts if p.strip())
-            else:
-                split_ingredients.append(item)
-        else:
-            split_ingredients.append(item)
-    ingredients = split_ingredients
-
-    # Post-process: split long instruction blocks into individual steps
-    split_instructions = []
-    for item in instructions:
-        if len(item) > 120:
-            # Split on sentence boundaries ". " followed by a capital letter
-            sentences = re.split(r'\.\s+(?=[A-Z])', item)
-            for s in sentences:
-                s = s.strip()
-                if s and not s.endswith('.'):
-                    s += '.'
-                if s:
-                    split_instructions.append(s)
-        else:
-            split_instructions.append(item)
-    instructions = split_instructions
-
-    # If no clear sections, try heuristic: lines with measurements/quantities = ingredients
-    if not ingredients and not instructions:
-        measure_pattern = re.compile(
-            r'(\d+\s*(g|kg|ml|l|oz|lb|cup|cups|tbsp|tsp|tablespoon|teaspoon|bunch|clove|pinch|handful)s?\b)|'
-            r'(^\s*[-•●]\s)',
-            re.I
-        )
-        numbered_step = re.compile(r'^\d+[\.\)]\s')
-        for line in lines:
-            if measure_pattern.search(line):
-                ingredients.append(line.lstrip('-•● '))
-            elif numbered_step.match(line):
-                instructions.append(line)
-
-    return (
-        caption,
-        '\n'.join(ingredients),
-        '\n'.join(instructions),
-    )
+        caption = _extract_caption_from_html(page)
+    img = soup.find("img", class_="EmbeddedMediaImage")
+    return caption, image or (img.get("src", "") if img else _extract_meta(page, "image"))
 
 
-def _scrape_social_media(url, html):
+def _scrape_social_media(url, html, headers=None):
     """Extract recipe info from social media pages (Instagram, TikTok, etc.)."""
-    title = _html_unescape(_extract_meta(html, "title")) or "Imported Recipe"
+    title = _html_unescape(_extract_meta(html, "title")) or ""
     image = _extract_meta(html, "image")
-
-    # Try extracting caption from the page HTML
     caption = _extract_caption_from_html(html)
-    description, ingredients, instructions = _parse_caption_into_recipe(caption)
 
-    # If we got a long caption, use the first line as a better title
-    if caption and '\n' in caption:
-        first_line = caption.split('\n')[0].strip()
-        # Only use it if it looks like a title (not too long, not a hashtag dump)
-        if 5 < len(first_line) < 120 and not first_line.startswith('#'):
-            title = first_line
+    if "instagram.com" in url.lower():
+        embed_caption, embed_image = _instagram_embed_caption(url, headers or {})
+        if len(embed_caption) > len(caption):
+            caption = embed_caption
+        image = image or embed_image
 
-    # Strip hashtags from description for cleanliness
-    clean_desc = re.sub(r'#\w+', '', description).strip()
-    clean_desc = re.sub(r'\n{3,}', '\n\n', clean_desc)
+    parsed = parse_recipe_text(caption)
+    if not parsed["title"]:
+        parsed["title"] = title if title and title.lower() != "instagram" else "Imported Recipe"
 
     return {
-        "title": title,
-        "description": clean_desc,
-        "ingredients": ingredients,
-        "instructions": instructions or clean_desc,
-        "prep_time": "",
-        "cook_time": "",
-        "servings": "",
+        "title": parsed["title"],
+        "description": parsed["description"],
+        "ingredients": parsed["ingredients"],
+        "instructions": parsed["instructions"],
+        "notes": parsed["notes"],
+        "prep_time": parsed["prep_time"],
+        "cook_time": parsed["cook_time"],
+        "servings": parsed["servings"],
         "image_url": image,
         "source_type": "social",
+        "caption_found": bool(caption),
     }
 
 
@@ -366,10 +388,10 @@ def _extract_microdata_recipe(soup):
             instructions.append(text)
 
     return {
-        "title": _prop("name") or "Imported Recipe",
-        "description": _prop("description"),
-        "ingredients": "\n".join(ingredients),
-        "instructions": "\n".join(instructions),
+        "title": _clean(_prop("name")) or "Imported Recipe",
+        "description": _clean(_prop("description")),
+        "ingredients": "\n".join(c for c in (_clean(i) for i in ingredients) if c),
+        "instructions": "\n".join(c for c in (_clean(i) for i in instructions) if c),
         "prep_time": _parse_iso_duration(_prop("prepTime")),
         "cook_time": _parse_iso_duration(_prop("cookTime")),
         "servings": _prop("recipeYield"),
@@ -403,26 +425,26 @@ def scrape_recipe(url: str) -> dict:
 
     # Try social media extraction first for known platforms
     if _is_social_media_url(url):
-        result = _scrape_social_media(url, html_text)
+        result = _scrape_social_media(url, html_text, headers)
         result["source_url"] = url
         return result
 
     # Parse once for WPRM group/notes extraction and the microdata fallback
     soup = BeautifulSoup(html_text, "html.parser")
-    notes = _extract_wprm_notes(soup)
+    notes = _extract_notes(soup)
 
     # Try JSON-LD structured data (most recipe sites use this)
     ld = _extract_json_ld_recipe(html_text)
     if ld:
         # Parse ingredients
-        raw_ing = ld.get("recipeIngredient", [])
+        raw_ing = ld.get("recipeIngredient") or ld.get("ingredients") or []
         if isinstance(raw_ing, list):
-            ingredients = "\n".join(str(i) for i in raw_ing)
+            ingredients = "\n".join(c for c in (_clean(i) for i in raw_ing) if c)
         else:
-            ingredients = str(raw_ing)
+            ingredients = _clean_lines(raw_ing)
 
         # Parse instructions (handles HowToStep, nested HowToSection, strings)
-        instructions = _parse_instructions(ld.get("recipeInstructions", ""))
+        instructions = _clean_lines(_parse_instructions(ld.get("recipeInstructions", "")))
 
         # Parse image — can be a string URL, dict (ImageObject), or list of either
         raw_img = ld.get("image", "")
@@ -451,24 +473,24 @@ def scrape_recipe(url: str) -> dict:
 
         # Prefer grouped sections from WPRM markup when they add structure.
         # JSON-LD ingredients are always flat, so any WPRM grouping wins.
-        wprm_ing = _extract_wprm_groups(soup, "ingredient")
-        if wprm_ing and "# " in wprm_ing:
-            ingredients = wprm_ing
+        grouped_ing = _extract_grouped(soup, "ingredient")
+        if grouped_ing:
+            ingredients = grouped_ing
         # For instructions, JSON-LD HowToSection may already give headings;
         # only fall back to WPRM if JSON-LD didn't provide any.
         if "# " not in instructions:
-            wprm_inst = _extract_wprm_groups(soup, "instruction")
-            if wprm_inst and "# " in wprm_inst:
-                instructions = wprm_inst
+            grouped_inst = _extract_grouped(soup, "instruction")
+            if grouped_inst:
+                instructions = grouped_inst
 
         return {
-            "title": ld.get("name", "Imported Recipe"),
-            "description": description,
+            "title": _clean(ld.get("name")) or "Imported Recipe",
+            "description": _clean(description),
             "ingredients": ingredients,
             "instructions": instructions,
             "prep_time": _parse_iso_duration(ld.get("prepTime", "")),
             "cook_time": _parse_iso_duration(ld.get("cookTime", "")),
-            "servings": servings,
+            "servings": _clean(servings),
             "image_url": image,
             "notes": notes,
         }
@@ -512,48 +534,8 @@ def parse_pdf_recipe(file_storage):
     if not text.strip():
         return None
 
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
-    if not lines:
+    parsed = parse_recipe_text(text)
+    if not parsed["title"]:
         return None
-
-    # Heuristic parsing: first line is title, look for ingredient/instruction sections
-    title = lines[0]
-    ingredients = []
-    instructions = []
-    current_section = None
-
-    ingredient_markers = ['ingredient', 'you will need', 'you\'ll need', 'what you need']
-    instruction_markers = ['instruction', 'direction', 'method', 'steps', 'preparation', 'how to']
-
-    for line in lines[1:]:
-        lower = line.lower()
-        if any(m in lower for m in ingredient_markers):
-            current_section = 'ingredients'
-            continue
-        elif any(m in lower for m in instruction_markers):
-            current_section = 'instructions'
-            continue
-
-        if current_section == 'ingredients':
-            ingredients.append(line)
-        elif current_section == 'instructions':
-            instructions.append(line)
-
-    # If no sections detected, try splitting: short lines = ingredients, long = instructions
-    if not ingredients and not instructions and len(lines) > 2:
-        for line in lines[1:]:
-            if len(line) < 60 and not line.endswith('.'):
-                ingredients.append(line)
-            else:
-                instructions.append(line)
-
-    return {
-        "title": title,
-        "description": "",
-        "ingredients": "\n".join(ingredients),
-        "instructions": "\n".join(instructions),
-        "prep_time": "",
-        "cook_time": "",
-        "servings": "",
-        "image_url": "",
-    }
+    parsed["image_url"] = ""
+    return parsed

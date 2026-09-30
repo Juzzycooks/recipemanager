@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=asset_v) }}">
     {% block head %}{% endblock %}
 </head>
-<body>
+<body data-url-recipes="{{ url_for('recipes.index') }}" data-url-collections="{{ url_for('collections.index') }}" data-url-plan="{{ url_for('mealplan.index') }}" data-url-shop="{{ url_for('shopping.index') }}" data-url-new="{{ url_for('recipes.add') if current_user.is_authenticated else '' }}">
     {% set ep = request.endpoint or '' %}
     <header class="masthead">
       <nav class="masthead-inner" aria-label="Main">
@@ -33,7 +33,7 @@
                     <div class="menu-panel">
                         <a href="{{ url_for('calculators.index') }}">Calculators</a>
                         <a href="{{ url_for('recipes.unit_converter') }}">Unit converter</a>
-                        <a href="{{ url_for('extras.index') }}">Guides &amp; extras</a>
+                        <a href="{{ url_for('extras.index') }}">Guides</a>
                     </div>
                 </details>
             {% else %}
@@ -57,6 +57,7 @@
                     <div class="menu-panel right">
                         <a href="{{ url_for('auth.profile') }}">Profile</a>
                         {% if current_user.is_admin %}<a href="{{ url_for('admin.dashboard') }}">Admin</a>{% endif %}
+                        <button type="button" class="menu-item" data-open-shortcuts>Keyboard shortcuts</button>
                         <hr>
                         <a href="{{ url_for('auth.logout') }}">Log out</a>
                     </div>
@@ -73,7 +74,17 @@
     <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% for category, message in messages %}
+                {% if category == 'undo' %}
+                {% set parts = message.split('|') %}
+                <div class="flash success flash-undo" role="status">
+                    <span>{{ parts[0] }}</span>
+                    {% if parts|length > 1 and parts[1] %}
+                    <form method="POST" action="{{ url_for('recipes.restore', token=parts[1]) }}"><button type="submit" class="btn btn-sm btn-secondary">Undo</button></form>
+                    {% endif %}
+                </div>
+                {% else %}
                 <div class="flash {{ category }}" role="{{ 'alert' if category == 'error' else 'status' }}">{{ message }}</div>
+                {% endif %}
             {% endfor %}
         {% endwith %}
         {% block content %}{% endblock %}
@@ -94,6 +105,26 @@
             <span>Add</span></a>
     </nav>
     {% endif %}
+    <div id="offline-notice" class="offline-notice" role="status" hidden>You're offline. Showing pages saved on this device.</div>
+    <div id="install-hint" class="install-hint" hidden>
+        <p data-install-text>Install this app for quick access in the kitchen.</p>
+        <button type="button" class="btn btn-primary btn-sm" data-install-action hidden>Install</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-install-dismiss>Not now</button>
+    </div>
+    <dialog id="shortcuts-dialog" class="shortcuts-dialog" aria-labelledby="shortcuts-title">
+        <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+        <dl class="shortcut-list">
+            <div><dt><kbd>/</kbd></dt><dd>Search recipes</dd></div>
+            <div><dt><kbd>n</kbd></dt><dd>Write a new recipe</dd></div>
+            <div><dt><kbd>g</kbd> then <kbd>r</kbd></dt><dd>Go to Recipes</dd></div>
+            <div><dt><kbd>g</kbd> then <kbd>c</kbd></dt><dd>Go to Collections</dd></div>
+            <div><dt><kbd>g</kbd> then <kbd>p</kbd></dt><dd>Go to the meal plan</dd></div>
+            <div><dt><kbd>g</kbd> then <kbd>s</kbd></dt><dd>Go to the shopping list</dd></div>
+            <div><dt><kbd>?</kbd></dt><dd>Show this list</dd></div>
+        </dl>
+        <div class="dialog-actions"><button type="button" class="btn btn-primary" data-close>Done</button></div>
+    </dialog>
+    <script src="{{ url_for('static', filename='js/app.js', v=asset_v) }}" defer></script>
     <script>
     // Auto-inject CSRF token into all forms
     document.querySelectorAll('form').forEach(function(f){

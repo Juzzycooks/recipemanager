@@ -88,17 +88,17 @@ def setup():
         confirm = request.form.get("confirm", "")
         email = request.form.get("email", "").strip()
         if not username or not password:
-            flash("Username and password are required.", "error")
+            flash("Enter a username and a password to continue.", "error")
             return redirect(url_for("auth.setup"))
         if password != confirm:
-            flash("Passwords do not match.", "error")
+            flash("Those passwords don't match. Type them again to confirm.", "error")
             return redirect(url_for("auth.setup"))
         pw_error = _validate_password(password)
         if pw_error:
             flash(pw_error, "error")
             return redirect(url_for("auth.setup"))
         if email and not is_valid_email(email):
-            flash("Invalid email address.", "error")
+            flash("That email address doesn't look right. Check it for typos.", "error")
             return redirect(url_for("auth.setup"))
         user = User(username=username, email=email, is_admin=True)
         user.set_password(password)
@@ -120,7 +120,7 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         if _is_rate_limited(ip, username):
-            flash("Too many login attempts. Please wait a few minutes.", "error")
+            flash("Too many tries. Wait a few minutes, then try again.", "error")
             return redirect(url_for("auth.login"))
 
         user = User.query.filter_by(username=username).first()
@@ -142,7 +142,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash("Logged out.", "success")
+    flash("You're signed out. See you next time.", "success")
     return redirect(url_for("auth.login"))
 
 
@@ -157,7 +157,7 @@ def profile():
         if action == "email":
             email = request.form.get("email", "").strip()
             if email and not is_valid_email(email):
-                flash("Invalid email address.", "error")
+                flash("That email address doesn't look right. Check it for typos.", "error")
                 return redirect(url_for("auth.profile"))
             current_user.email = email
             db.session.commit()
@@ -169,10 +169,10 @@ def profile():
             new_pw = request.form.get("new_password", "")
             confirm = request.form.get("confirm_password", "")
             if not current_user.check_password(current_pw):
-                flash("Current password is incorrect.", "error")
+                flash("That isn't your current password. Try again.", "error")
                 return redirect(url_for("auth.profile"))
             if new_pw != confirm:
-                flash("New passwords do not match.", "error")
+                flash("The new passwords don't match. Type them again to confirm.", "error")
                 return redirect(url_for("auth.profile"))
             pw_error = _validate_password(new_pw)
             if pw_error:
@@ -200,7 +200,7 @@ def forgot_password():
     if request.method == "POST":
         ip = request.remote_addr or "unknown"
         if _is_rate_limited(ip):
-            flash("Too many attempts. Please wait a few minutes.", "error")
+            flash("Too many tries. Wait a few minutes, then try again.", "error")
             return redirect(url_for("auth.forgot_password"))
         _record_attempt(ip)  # count reset requests against the limiter
 
@@ -241,7 +241,7 @@ def reset_password(token):
         new_pw = request.form.get("new_password", "")
         confirm = request.form.get("confirm_password", "")
         if new_pw != confirm:
-            flash("Passwords do not match.", "error")
+            flash("Those passwords don't match. Type them again to confirm.", "error")
             return redirect(url_for("auth.reset_password", token=token))
         pw_error = _validate_password(new_pw)
         if pw_error:

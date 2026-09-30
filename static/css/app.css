@@ -235,3 +235,40 @@ label { display: block; font-weight: 600; margin-bottom: 0.3rem; margin-top: 1re
     .tabbar a.active { color: var(--accent); background: var(--accent-subtle); }
 }
 @media (pointer: coarse) { .back-link { min-height: 44px; } }
+
+/* ── Undo flash, offline notice, install hint, shortcuts dialog ── */
+.flash-undo { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.flash-undo form { margin: 0; }
+.menu-panel .menu-item { display: block; width: 100%; text-align: left; padding: 0.5rem 0.75rem; border: none; background: none; cursor: pointer;
+        border-radius: var(--radius); font-size: var(--fs-sm); font-weight: 500; color: var(--text-primary); }
+.menu-panel .menu-item:hover { background: var(--accent-subtle); color: var(--accent); }
+.offline-notice { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(1rem + env(safe-area-inset-bottom)); z-index: 200;
+        background: var(--text-primary); color: var(--bg); padding: 0.55rem 1rem; border-radius: var(--radius-pill); font-size: var(--fs-sm);
+        font-weight: 600; box-shadow: var(--shadow-md); max-width: calc(100vw - 2rem); text-align: center; }
+.offline-notice[hidden], .install-hint[hidden] { display: none; }
+.install-hint { position: fixed; left: 0.75rem; right: 0.75rem; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 95; display: flex; align-items: center;
+        gap: 0.5rem; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md); padding: 0.75rem 0.9rem; }
+.install-hint p { flex: 1 1 200px; font-size: var(--fs-sm); margin: 0; }
+.shortcuts-dialog { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); color: var(--text-primary);
+        padding: 1.5rem; width: min(420px, calc(100vw - 2rem)); box-shadow: var(--shadow-md); }
+.shortcuts-dialog::backdrop { background: rgba(20, 24, 29, 0.55); }
+.shortcuts-dialog h2 { font-size: var(--fs-lg); margin-bottom: 0.75rem; }
+.shortcut-list > div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px solid var(--rule); font-size: var(--fs-sm); }
+.shortcut-list dt { white-space: nowrap; } .shortcut-list dd { margin: 0; color: var(--text-secondary); text-align: right; }
+kbd { font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 600; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: var(--radius);
+      padding: 0.05rem 0.4rem; background: var(--bg); }
+.dialog-actions { display: flex; justify-content: flex-end; margin-top: 1rem; }
+
+/* ── Print: the recipe only, no chrome ── */
+@media print {
+    body { background: #fff; color: #000; padding: 0; }
+    .masthead, .tabbar, .install-hint, .offline-notice, .flash, .back-link, .recipe-actions, .scale-group, .theme-toggle, .filters-toggle { display: none !important; }
+    .container { max-width: none; padding: 0; }
+    .detail-hero { max-height: 220px; box-shadow: none; }
+    .recipe-spread { display: block !important; }
+    .recipe-spread .spread-side { position: static; max-height: none; overflow: visible; }
+    .ingredient-list li, .instruction-list li { break-inside: avoid; border-bottom-color: #ccc; }
+    .detail-section { break-inside: auto; }
+    a { color: inherit; text-decoration: none; }
+}

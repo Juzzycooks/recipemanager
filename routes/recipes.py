@@ -1,13 +1,18 @@
+import json
 import os
 import random
 import re
 import secrets
+import time
+from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request, make_response, jsonify, current_app
 from flask_login import login_required, current_user
-from models import db, Recipe, Category, Favorite, Rating, Comment, CookLog, Collection
+from models import db, User, Recipe, Category, Favorite, Rating, Comment, CookLog, Collection
 from scraper import scrape_recipe, parse_pdf_recipe, _parse_caption_into_recipe
-from security import FetchError
-from images import save_uploaded_image
+from recipe_text import parse_recipe_text
+from ocr import images_to_text, ocr_available, OcrError
+from security import FetchError, safe_get
+from images import save_uploaded_image, delete_image
 from nutrition import estimate_recipe
 
 recipes_bp = Blueprint("recipes", __name__)
@@ -21,11 +26,110 @@ def _save_uploaded_image(file):
     return save_uploaded_image(file, uploads_dir, prefix="recipe")
 
 
+def _first_ingredient_match(ingredients, term):
+    """First ingredient line containing term (case-insensitive), skipping '# ' section headings."""
+    needle = (term or "").strip().lower()
+    if not needle:
+        return ""
+    for line in (ingredients or "").splitlines():
+        line = line.strip()
+        if not line or line.startswith("# "):
+            continue
+        if needle in line.lower():
+            return line
+    return ""
+
+
+def _relative_cooked(when, now=None):
+    """'today', 'yesterday', '3 days ago', '2 weeks ago' ... for a CookLog timestamp."""
+    if when is None:
+        return ""
+    now = now or datetime.now(timezone.utc)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    days = (now.date() - when.date()).days
+    if days <= 0:
+        return "today"
+    if days == 1:
+        return "yesterday"
+    if days < 14:
+        return f"{days} days ago"
+    if days < 60:
+        return f"{days // 7} weeks ago"
+    if days < 730:
+        return f"{max(days // 30, 2)} months ago"
+    return f"{days // 365} years ago"
+
+
+def _recently_cooked(user_id, limit=6):
+    """Up to `limit` distinct recipes the user cooked, newest first, as (recipe, label) pairs."""
+    seen, out = set(), []
+    logs = (CookLog.query.filter_by(user_id=user_id)
+            .order_by(CookLog.cooked_at.desc(), CookLog.id.desc()).all())
+    for log in logs:
+        if log.recipe_id in seen or log.recipe is None:
+            continue
+        seen.add(log.recipe_id)
+        out.append((log.recipe, _relative_cooked(log.cooked_at)))
+        if len(out) >= limit:
+            break
+    return out
+
+
+# ── Trash (undo delete) ──
+
+TRASH_MAX_AGE = 24 * 3600
+_TRASH_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{8,32}$")
+
+
+def _data_dir():
+    return current_app.config.get("DATA_DIR", os.environ.get("DATA_DIR", "/app/data"))
+
+
+def _trash_dir():
+    path = os.path.join(_data_dir(), "trash")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _purge_trash():
+    """Remove trash entries older than 24h, and their image files if no recipe still uses them."""
+    trash = _trash_dir()
+    now = time.time()
+    for name in os.listdir(trash):
+        if not name.endswith(".json"):
+            continue
+        path = os.path.join(trash, name)
+        try:
+            with open(path, encoding="utf-8") as f:
+                entry = json.load(f)
+            age = now - float(entry.get("deleted_at", 0))
+        except (OSError, ValueError):
+            try:
+                age = now - os.path.getmtime(path)
+            except OSError:
+                continue
+            entry = {}
+        if age < TRASH_MAX_AGE:
+            continue
+        image = (entry.get("recipe") or {}).get("image_url") or ""
+        try:
+            os.remove(path)
+        except OSError:
+            continue
+        if image and not image.startswith(("http://", "https://", "//", "/")):
+            if not Recipe.query.filter_by(image_url=image).first():
+                delete_image(os.path.join(_data_dir(), "uploads"), image)
+
+
 @recipes_bp.route("/")
 @login_required
 def index():
     search = request.args.get("q", "").strip()
-    cat_id = request.args.get("cat", type=int)
+    active_cats = []
+    for c in request.args.getlist("cat", type=int):
+        if c not in active_cats:
+            active_cats.append(c)
     favorites_only = request.args.get("favorites") == "1"
     ingredient_search = request.args.get("ingredient", "").strip()
     sort = request.args.get("sort", "newest")
@@ -39,8 +143,8 @@ def index():
         query = query.filter(db.or_(Recipe.title.ilike(f"%{search}%"), Recipe.ingredients.ilike(f"%{search}%")))
     if ingredient_search:
         query = query.filter(Recipe.ingredients.ilike(f"%{ingredient_search}%"))
-    if cat_id:
-        query = query.filter(Recipe.categories.any(Category.id == cat_id))
+    for cid in active_cats:
+        query = query.filter(Recipe.categories.any(Category.id == cid))
     if coll_id:
         coll = Collection.query.get(coll_id)
         if coll:
@@ -69,10 +173,32 @@ def index():
     
     # Get user's favorites for star display
     user_favs = set(f.recipe_id for f in Favorite.query.filter_by(user_id=current_user.id).all())
-    
+
+    # Why did each result match? Show the first ingredient line when the title doesn't contain the term.
+    match_lines, match_terms = {}, {}
+    for term, is_q in ((search, True), (ingredient_search, False)):
+        if not term:
+            continue
+        for r in recipes:
+            if r.id in match_lines or (is_q and term.lower() in (r.title or "").lower()):
+                continue
+            line = _first_ingredient_match(r.ingredients, term)
+            if line:
+                match_lines[r.id] = line
+                match_terms[r.id] = term
+
+    filtered = bool(search or active_cats or favorites_only or ingredient_search or coll_id)
+    recently_cooked = []
+    if page == 1 and not filtered:
+        recently_cooked = _recently_cooked(current_user.id)
+    total_recipes = Recipe.query.count() if not recipes and not filtered else pagination.total
+
     return render_template("recipes/index.html", recipes=recipes,
                            search=search, categories=categories,
-                           active_cat=cat_id, user_favs=user_favs,
+                           active_cat=(active_cats[0] if active_cats else None),
+                           active_cats=active_cats, match_lines=match_lines, match_terms=match_terms,
+                           recently_cooked=recently_cooked, total_recipes=total_recipes,
+                           filtered=filtered, user_favs=user_favs,
                            favorites_only=favorites_only,
                            ingredient_search=ingredient_search,
                            sort=sort, view_mode=view_mode,
@@ -143,7 +269,7 @@ def add():
 def edit(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("recipes.index"))
     categories = Category.query.order_by(Category.name).all()
     if request.method == "POST":
@@ -179,12 +305,92 @@ def edit(recipe_id):
 def delete(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("recipes.index"))
+    try:
+        _purge_trash()
+    except OSError:
+        current_app.logger.warning("Trash purge failed", exc_info=True)
+    token = secrets.token_urlsafe(12)
+    entry = {
+        "deleted_by": current_user.id,
+        "deleted_at": time.time(),
+        "recipe": {
+            "title": recipe.title, "description": recipe.description,
+            "ingredients": recipe.ingredients, "instructions": recipe.instructions,
+            "notes": recipe.notes, "servings": recipe.servings,
+            "prep_time": recipe.prep_time, "cook_time": recipe.cook_time,
+            "source_url": recipe.source_url, "image_url": recipe.image_url,
+            "user_id": recipe.user_id,
+            "categories": [c.name for c in recipe.categories],
+            "created_at": recipe.created_at.isoformat() if recipe.created_at else None,
+        },
+    }
+    try:
+        with open(os.path.join(_trash_dir(), f"{token}.json"), "w", encoding="utf-8") as f:
+            json.dump(entry, f)
+    except OSError:
+        current_app.logger.error("Could not write trash entry", exc_info=True)
+        flash("Couldn't set that recipe aside safely, so it wasn't deleted. Please try again.", "error")
+        return redirect(url_for("recipes.view", recipe_id=recipe_id))
+    title = recipe.title
     db.session.delete(recipe)
     db.session.commit()
-    flash("Recipe deleted.", "success")
+    flash(f"Deleted \u201c{title}\u201d.|{token}", "undo")
     return redirect(url_for("recipes.index"))
+
+
+@recipes_bp.route("/recipe/restore/<token>", methods=["POST"])
+@login_required
+def restore(token):
+    if not _TRASH_TOKEN_RE.match(token or ""):
+        flash("That undo link isn't valid. The recipe can't be restored from it.", "error")
+        return redirect(url_for("recipes.index"))
+    path = os.path.join(_trash_dir(), f"{token}.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            entry = json.load(f)
+        age = time.time() - float(entry.get("deleted_at", 0))
+    except (OSError, ValueError):
+        entry, age = None, 0
+    if not entry or age >= TRASH_MAX_AGE:
+        flash("Sorry, that recipe can't be restored. Undo is only available for 24 hours after deleting.", "error")
+        return redirect(url_for("recipes.index"))
+    if entry.get("deleted_by") != current_user.id and not current_user.is_admin:
+        flash("Access denied. Only the person who deleted a recipe can restore it.", "error")
+        return redirect(url_for("recipes.index"))
+    data = entry.get("recipe") or {}
+    owner_id = data.get("user_id")
+    if not User.query.get(owner_id):
+        owner_id = current_user.id
+    recipe = Recipe(
+        title=data.get("title") or "Untitled recipe", description=data.get("description") or "",
+        ingredients=data.get("ingredients") or "", instructions=data.get("instructions") or "",
+        notes=data.get("notes") or "", servings=data.get("servings") or "",
+        prep_time=data.get("prep_time") or "", cook_time=data.get("cook_time") or "",
+        source_url=data.get("source_url") or "", image_url=data.get("image_url") or "",
+        user_id=owner_id,
+    )
+    if data.get("created_at"):
+        try:
+            recipe.created_at = datetime.fromisoformat(data["created_at"])
+        except ValueError:
+            pass
+    with db.session.no_autoflush:
+        for name in data.get("categories") or []:
+            cat = Category.query.filter_by(name=name).first()
+            if not cat:
+                cat = Category(name=name)
+                db.session.add(cat)
+            recipe.categories.append(cat)
+    db.session.add(recipe)
+    db.session.commit()
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+    flash(f"Restored \u201c{recipe.title}\u201d.", "success")
+    return redirect(url_for("recipes.view", recipe_id=recipe.id))
 
 
 @recipes_bp.route("/recipe/<int:recipe_id>/duplicate", methods=["POST"])
@@ -215,6 +421,40 @@ def duplicate(recipe_id):
 _URL_RE = re.compile(r"https?://\S+")
 
 
+def _render_import_preview(data, source_url="", image_name="", kind="url", raw_text="", error=None, status=200):
+    """Render the 'Check what we found' page for a parsed recipe (nothing is saved yet)."""
+    fields = {k: (data.get(k) or "") for k in
+              ("title", "description", "ingredients", "instructions", "notes", "servings", "prep_time", "cook_time")}
+    ing = bool(fields["ingredients"].strip())
+    met = bool(fields["instructions"].strip())
+    fix = "Check the original text below and paste them in." if raw_text else "Add them in the boxes below."
+    if not ing and not met:
+        warning = "We couldn't find ingredients or a method. " + fix
+    elif not ing:
+        warning = "We found the method but no ingredients. " + fix
+    elif not met:
+        warning = "We found the ingredients but no method. " + fix
+    else:
+        warning = ""
+    return render_template("recipes/import_preview.html", f=fields, source_url=source_url,
+                           image_name=image_name or "", kind=kind, raw_text=raw_text,
+                           warning=warning, error=error), status
+
+
+def _localise_remote_image(url):
+    """Download a remote image (SSRF-guarded, size-capped) and store it in uploads. '' on failure."""
+    import io
+    from werkzeug.datastructures import FileStorage
+    try:
+        resp = safe_get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+        content = resp.content
+        if not content:
+            return ""
+        return _save_uploaded_image(FileStorage(io.BytesIO(content), filename="remote.jpg"))
+    except Exception:
+        return ""
+
+
 @recipes_bp.route("/recipe/import", methods=["GET", "POST"])
 @login_required
 def import_url():
@@ -230,15 +470,45 @@ def import_url():
             urls = [single_url]
 
         if not urls:
-            flash("Please enter at least one URL.", "error")
+            flash("Paste at least one recipe link to import.", "error")
             return redirect(url_for("recipes.import_url"))
+
+        if len(urls) == 1:
+            url = urls[0]
+            try:
+                data = scrape_recipe(url)
+            except FetchError as e:
+                flash(f"Couldn't import that link: {e} Check the address, or paste the recipe text below.", "error")
+                return redirect(url_for("recipes.import_url"))
+            except Exception:
+                flash("Couldn't read a recipe from that link. Check the address, or paste the recipe text below.", "error")
+                return redirect(url_for("recipes.import_url"))
+            if data.get("source_type") == "social" and not data.get("caption_found"):
+                flash("Couldn't read the caption from that post: Instagram and TikTok often block this. "
+                      "Paste the caption or upload a screenshot below instead.", "error")
+                return redirect(url_for("recipes.import_url"))
+            image_url = data.get("image_url", "") or ""
+            if image_url.startswith("http"):
+                # Keep our own copy so signed/expiring CDN links don't break the preview
+                local = _localise_remote_image(image_url)
+                image_url = local or ("" if data.get("source_type") == "social" else image_url)
+            return _render_import_preview(data, source_url=url, image_name=image_url, kind="url")
 
         imported = 0
         failed = 0
         first_error = ""
+        no_caption = []
         for url in urls:
             try:
                 data = scrape_recipe(url)
+                if data.get("source_type") == "social" and not data.get("caption_found"):
+                    # Don't save an empty draft: the caller is told to paste the caption or a screenshot
+                    no_caption.append(url)
+                    continue
+                image_url = data.get("image_url", "")
+                if data.get("source_type") == "social" and image_url.startswith("http"):
+                    # Social CDN links are signed and expire: keep our own copy
+                    image_url = _localise_remote_image(image_url) or ""
                 recipe = Recipe(
                     title=data.get("title", "Imported Recipe"),
                     description=data.get("description", ""),
@@ -248,7 +518,7 @@ def import_url():
                     cook_time=data.get("cook_time", ""),
                     servings=data.get("servings", ""),
                     source_url=url,
-                    image_url=data.get("image_url", ""),
+                    image_url=image_url,
                     notes=data.get("notes", ""),
                     user_id=current_user.id,
                 )
@@ -267,7 +537,14 @@ def import_url():
             flash("Recipe imported.", "success")
             return redirect(url_for("recipes.view", recipe_id=last.id))
 
+        if no_caption and not imported and not failed:
+            flash("Couldn't read the caption from that post: Instagram and TikTok often block this. "
+                  "Paste the caption or upload a screenshot below instead.", "error")
+            return redirect(url_for("recipes.import_url"))
+
         msg = f"Imported {imported} recipe(s)."
+        if no_caption:
+            msg += f" {len(no_caption)} social post(s) had no readable caption (paste it or upload a screenshot)."
         if failed:
             msg += f" {failed} failed."
             if first_error:
@@ -283,7 +560,7 @@ def import_url():
         if m:
             shared = m.group(0)
             break
-    return render_template("recipes/import.html", shared_url=shared)
+    return render_template("recipes/import.html", shared_url=shared, ocr_ok=ocr_available())
 
 
 @recipes_bp.route("/recipe/import-pdf", methods=["POST"])
@@ -291,10 +568,31 @@ def import_url():
 def import_pdf():
     """Import recipe(s) from uploaded PDF files."""
     if "pdf_files" not in request.files:
-        flash("No files uploaded.", "error")
+        flash("Choose a PDF file to import.", "error")
         return redirect(url_for("recipes.import_url"))
 
     files = request.files.getlist("pdf_files")
+    real_files = [f for f in files if f and f.filename]
+    if len(real_files) == 1 and real_files[0].filename.lower().endswith(".pdf"):
+        # Single PDF: show a preview instead of saving straight away
+        import io
+        from werkzeug.datastructures import FileStorage
+        blob = real_files[0].read()
+        try:
+            data = parse_pdf_recipe(FileStorage(io.BytesIO(blob), filename="recipe.pdf"))
+        except Exception:
+            data = None
+        if not data or not data.get("title"):
+            flash("Couldn't find readable text in that PDF. Scanned PDFs need the photo import instead.", "error")
+            return redirect(url_for("recipes.import_url"))
+        raw_text = ""
+        try:
+            from pypdf import PdfReader
+            raw_text = "\n".join((p.extract_text() or "") for p in PdfReader(io.BytesIO(blob)).pages).strip()
+        except Exception:
+            pass
+        return _render_import_preview(data, kind="pdf", raw_text=raw_text)
+
     imported = 0
     failed = 0
 
@@ -312,6 +610,7 @@ def import_pdf():
                 description=data.get("description", ""),
                 ingredients=data.get("ingredients", ""),
                 instructions=data.get("instructions", ""),
+                notes=data.get("notes", ""),
                 prep_time=data.get("prep_time", ""),
                 cook_time=data.get("cook_time", ""),
                 servings=data.get("servings", ""),
@@ -337,6 +636,34 @@ def import_pdf():
     return redirect(url_for("recipes.index"))
 
 
+@recipes_bp.route("/recipe/import-photo", methods=["POST"])
+@login_required
+def import_photo():
+    """Import one recipe from photos or screenshots (several images = one recipe, in order)."""
+    files = [f for f in request.files.getlist("photos") if f and f.filename]
+    if not files:
+        flash("Choose at least one photo or screenshot.", "error")
+        return redirect(url_for("recipes.import_url"))
+    blobs = [f.read() for f in files]
+    try:
+        text = images_to_text(blobs)
+    except OcrError as e:
+        flash(str(e), "error")
+        return redirect(url_for("recipes.import_url"))
+    if len(text) < 20:
+        flash("Couldn't find readable text in that image. Try a sharper, straight-on photo.", "error")
+        return redirect(url_for("recipes.import_url"))
+
+    parsed = parse_recipe_text(text, title=request.form.get("photo_title", "").strip() or None)
+    image_name = ""
+    if request.form.get("use_as_cover"):
+        files[0].stream.seek(0)
+        image_name = _save_uploaded_image(files[0])
+
+    parsed["title"] = parsed.get("title") or "Recipe from photo"
+    return _render_import_preview(parsed, image_name=image_name, kind="photo", raw_text=text)
+
+
 @recipes_bp.route("/recipe/import-caption", methods=["POST"])
 @login_required
 def import_caption():
@@ -345,31 +672,52 @@ def import_caption():
     title_override = request.form.get("caption_title", "").strip()
 
     if not caption:
-        flash("Please paste a caption.", "error")
+        flash("Paste the post's caption first, then import.", "error")
         return redirect(url_for("recipes.import_url"))
 
-    description, ingredients, instructions = _parse_caption_into_recipe(caption)
+    parsed = parse_recipe_text(caption, title=title_override or None)
+    parsed["title"] = parsed.get("title") or "Imported Recipe"
+    return _render_import_preview(parsed, kind="caption", raw_text=caption)
 
-    # Derive title: user override > first line of caption > fallback
-    if not title_override:
-        first_line = caption.split('\n')[0].strip()
-        if 3 < len(first_line) < 120 and not first_line.startswith('#'):
-            title_override = first_line
-        else:
-            title_override = "Imported Recipe"
+
+@recipes_bp.route("/recipe/import-save", methods=["POST"])
+@login_required
+def import_save():
+    """Create a recipe from the (possibly edited) import preview form."""
+    form = request.form
+    data = {k: form.get(k, "").strip() for k in
+            ("title", "description", "ingredients", "instructions", "notes", "servings", "prep_time", "cook_time")}
+    source_url = form.get("source_url", "").strip()
+    image_name = form.get("image_name", "").strip()
+    kind = form.get("kind", "url")
+    raw_text = form.get("raw_text", "")
+    # Only accept an image we could have produced: an uploads filename or an http(s) link
+    if image_name and not (image_name.startswith(("http://", "https://")) or re.fullmatch(r"[\w.\-]+", image_name)):
+        image_name = ""
+    use_image = bool(form.get("use_image")) if image_name else False
+
+    if not data["title"]:
+        return _render_import_preview(data, source_url=source_url, image_name=image_name, kind=kind,
+                                      raw_text=raw_text, status=400,
+                                      error="Give the recipe a title before saving. Everything else you typed is still here.")
 
     recipe = Recipe(
-        title=title_override,
-        description=description,
-        ingredients=ingredients,
-        instructions=instructions,
+        title=data["title"][:200],
+        description=data["description"],
+        ingredients=data["ingredients"],
+        instructions=data["instructions"],
+        notes=data["notes"],
+        servings=data["servings"][:50],
+        prep_time=data["prep_time"][:50],
+        cook_time=data["cook_time"][:50],
+        source_url=source_url[:500],
+        image_url=image_name if use_image else "",
         user_id=current_user.id,
     )
     db.session.add(recipe)
     db.session.commit()
-
-    flash("Recipe imported from caption. Review and edit as needed.", "success")
-    return redirect(url_for("recipes.edit", recipe_id=recipe.id))
+    flash("Recipe saved.", "success")
+    return redirect(url_for("recipes.view", recipe_id=recipe.id))
 
 
 # ── Favorites ──
@@ -379,13 +727,18 @@ def import_caption():
 def toggle_favorite(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     fav = Favorite.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
+    wants_json = (request.headers.get("X-Requested-With") == "fetch"
+                  or request.accept_mimetypes.best == "application/json")
     if fav:
         db.session.delete(fav)
-        flash("Removed from favorites.", "success")
+        favorited = False
     else:
         db.session.add(Favorite(user_id=current_user.id, recipe_id=recipe_id))
-        flash("Added to favorites.", "success")
+        favorited = True
     db.session.commit()
+    if wants_json:
+        return jsonify(favorited=favorited)
+    flash("Added to favorites." if favorited else "Removed from favorites.", "success")
     return redirect(request.referrer or url_for("recipes.view", recipe_id=recipe_id))
 
 
@@ -397,7 +750,7 @@ def rate(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     score = request.form.get("score", type=int) or 0
     if score < 1 or score > 5:
-        flash("Invalid rating.", "error")
+        flash("Choose a rating from 1 to 5 stars.", "error")
         return redirect(url_for("recipes.view", recipe_id=recipe_id))
     
     rating = Rating.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
@@ -419,7 +772,7 @@ def add_comment(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     text = request.form.get("text", "").strip()
     if not text:
-        flash("Comment cannot be empty.", "error")
+        flash("Write something before posting your comment.", "error")
         return redirect(url_for("recipes.view", recipe_id=recipe_id))
     
     comment = Comment(user_id=current_user.id, recipe_id=recipe_id, text=text)
@@ -434,7 +787,7 @@ def add_comment(recipe_id):
 def delete_comment(comment_id):
     comment = Comment.query.get_or_404(comment_id)
     if comment.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("recipes.index"))
     recipe_id = comment.recipe_id
     db.session.delete(comment)
@@ -450,7 +803,7 @@ def delete_comment(comment_id):
 def save_notes(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("recipes.view", recipe_id=recipe_id))
     recipe.notes = request.form.get("notes", "").strip()
     db.session.commit()
@@ -465,7 +818,7 @@ def save_notes(recipe_id):
 def create_share_link(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("recipes.view", recipe_id=recipe_id))
     
     if not recipe.share_token:
@@ -481,7 +834,7 @@ def create_share_link(recipe_id):
 def remove_share_link(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.user_id != current_user.id and not current_user.is_admin:
-        flash("Access denied.", "error")
+        flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("recipes.view", recipe_id=recipe_id))
     
     recipe.share_token = None
@@ -560,7 +913,7 @@ def made_it(recipe_id):
     db.session.add(log)
     db.session.commit()
     count = CookLog.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).count()
-    flash(f"Logged! You've made this {count} time(s).", "success")
+    flash(f"Logged. You've made this {count} time{'' if count == 1 else 's'}.", "success")
     return redirect(url_for("recipes.view", recipe_id=recipe_id))
 
 
@@ -583,14 +936,14 @@ def email_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     to_email = request.form.get("email", "").strip()
     if not is_valid_email(to_email):
-        flash("Please enter a valid email address.", "error")
+        flash("Enter a valid email address to send the recipe to.", "error")
         return redirect(url_for("recipes.view", recipe_id=recipe_id))
 
     sent = send_recipe_email(to_email, recipe, current_user.username)
     if sent:
         flash(f"Recipe emailed to {to_email}.", "success")
     else:
-        flash("Failed to send email. Check SMTP settings.", "error")
+        flash("The email couldn't be sent. Ask an admin to check the email settings.", "error")
     return redirect(url_for("recipes.view", recipe_id=recipe_id))
 
 
@@ -618,7 +971,7 @@ def random_recipe():
     
     recipes = query.all()
     if not recipes:
-        flash("No recipes to pick from.", "error")
+        flash("You don't have any recipes yet. Add one first, then try Surprise me.", "error")
         return redirect(url_for("recipes.index"))
     
     pick = random.choice(recipes)

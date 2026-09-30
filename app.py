@@ -156,9 +156,11 @@ def create_app():
                 g._site_settings = {row.key: row.value for row in SiteSetting.query.all()}
             return g._site_settings.get(key, default)
 
-        css_dir = os.path.join(app.static_folder, "css")
         try:
-            asset_v = int(max(os.path.getmtime(os.path.join(css_dir, n)) for n in os.listdir(css_dir) if n.endswith(".css")))
+            asset_v = int(max(
+                os.path.getmtime(os.path.join(app.static_folder, d, n))
+                for d in ("css", "js") if os.path.isdir(os.path.join(app.static_folder, d))
+                for n in os.listdir(os.path.join(app.static_folder, d)) if n.endswith((".css", ".js"))))
         except (OSError, ValueError):
             asset_v = 0
         return dict(get_setting=get_setting, asset_v=asset_v)

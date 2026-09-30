@@ -30,6 +30,30 @@
             <div class="form-hint">Upload a logo image (PNG, JPG, SVG, WebP). Displayed in the top-right corner.</div>
         </div>
         
+        <fieldset class="settings-group">
+            <legend>Sharing</legend>
+            <label class="check-row">
+                <input type="checkbox" name="public_show_author" value="1"{% if public_show_author %} checked{% endif %}>
+                Show the cook's name on shared pages
+            </label>
+            <div class="form-hint">Show the recipe owner's username on shared pages. Off by default.</div>
+        </fieldset>
+
+        <fieldset class="settings-group">
+            <legend>Shopping</legend>
+            <div class="form-group">
+                <label for="store_name">Store name</label>
+                <input type="text" id="store_name" name="store_name" value="{{ store_name }}" maxlength="60" placeholder="Woolworths">
+                <div class="form-hint">Used for the "Find at ..." button on each shopping list item.</div>
+            </div>
+            <div class="form-group">
+                <label for="store_search_url">Store search link</label>
+                <input type="text" inputmode="url" id="store_search_url" name="store_search_url" value="{{ store_search_url }}" maxlength="500" placeholder="https://www.example.com/search?q={q}">
+                <div class="form-hint">{q} is replaced by the item name. It must start with http:// or https://. Leave this blank to hide the button.
+                    Examples: https://www.google.com/search?q={q}+groceries or https://duckduckgo.com/?q={q}</div>
+            </div>
+        </fieldset>
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Save settings</button>
         </div>
