@@ -7,9 +7,14 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
     CODE_SIGN_STYLE: Automatic
+    # Set your Apple Developer Team here (or choose it once in Xcode → Signing & Capabilities):
+    # DEVELOPMENT_TEAM: ABCDE12345
+    TARGETED_DEVICE_FAMILY: "1"                 # iPhone only (the iPad layout has not been designed or tested)
+    SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO   # don't offer the iPhone app on Apple-silicon Macs ...
+    SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO    # ... or Apple Vision Pro until it has been tried there
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 targets:
   RecipeManager:
@@ -28,10 +33,13 @@ targets:
     info:
       path: RecipeManager/Resources/Info.plist
       properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Spoonmate
-        UILaunchScreen: {}
-        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
-        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UILaunchScreen:
+          UIColorName: Background                # the cream/dark ground, so there is no white flash at launch
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSLocalNetworkUsageDescription: Spoonmate connects to the recipe server you choose. If it runs on your home network, iOS asks for this permission so the app can reach it.
         ITSAppUsesNonExemptEncryption: false
         NSSupportsLiveActivities: true
         NSAlarmKitUsageDescription: Kitchen timers ring like the Clock app, even when your phone is on silent.
@@ -40,9 +48,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager
+        TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        TARGETED_DEVICE_FAMILY: "1,2"
   RecipeManagerTimerWidget:
     type: app-extension
     platform: iOS
@@ -50,12 +58,15 @@ targets:
     info:
       path: TimerWidget/Info.plist
       properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Kitchen Timer
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager.TimerWidget
+        TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         SKIP_INSTALL: YES
   RecipeManagerShare:
@@ -74,7 +85,10 @@ targets:
     info:
       path: ShareExtension/Info.plist
       properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Spoonmate
+        NSLocalNetworkUsageDescription: Spoonmate connects to the recipe server you choose. If it runs on your home network, iOS asks for this permission so the app can reach it.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         NSExtension:
@@ -87,6 +101,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager.Share
+        TARGETED_DEVICE_FAMILY: "1"
         SKIP_INSTALL: YES
   RecipeManagerTests:
     type: bundle.unit-test
@@ -97,6 +112,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManagerTests
+        TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
 schemes:
   RecipeManager:

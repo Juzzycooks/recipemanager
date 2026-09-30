@@ -107,6 +107,24 @@ class TestAuth(Api):
         self.assertEqual(self.post("/me/password", token=tok_a,
                                    json={"current_password": "wrong", "new_password": "An0ther-pass-9"}).status_code, 403)
 
+    def test_delete_own_account(self):
+        tok = self.signup("leaver")
+        rid = self.post("/recipes", token=tok, json={"title": "Leaver's dish"}).get_json()["id"]
+        self.assertEqual(self.delete("/me", token=tok, json={"password": "wrong"}).status_code, 403)
+        self.assertEqual(self.delete("/me", token=tok, json={}).status_code, 403)
+        self.assertEqual(self.get("/me", token=tok).status_code, 200)            # still there
+        self.assertEqual(self.delete("/me", token=tok, json={"password": PW}).status_code, 204)
+        self.assertEqual(self.get("/me", token=tok).status_code, 401)             # token died with the account
+        self.assertEqual(self.get(f"/recipes/{rid}").status_code, 404)            # their recipes went too
+        login = self.c.post(f"{V1}/auth/login", json={"username": "leaver", "password": PW})
+        self.assertEqual(login.status_code, 401)
+
+    def test_last_admin_cannot_delete_themselves(self):
+        r = self.delete("/me", json={"password": PW})
+        self.assertEqual(r.status_code, 422)
+        self.assertIn("only admin", r.get_json()["error"]["message"])
+        self.assertEqual(self.get("/me").status_code, 200)
+
     def test_update_me_email(self):
         self.assertEqual(self.patch("/me", json={"email": "bad"}).status_code, 422)
         self.assertEqual(self.patch("/me", json={"email": "a@b.co"}).get_json()["email"], "a@b.co")

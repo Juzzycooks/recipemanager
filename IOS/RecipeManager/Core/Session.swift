@@ -115,6 +115,9 @@ final class Session {
         Outbox.shared.clear()
     }
 
+    /// The server deleted this account: forget everything on this phone too.
+    func accountDeleted() { signOutLocally() }
+
     // MARK: Offline
 
     /// Sends the request; if there's no connection, queues `op` to replay later and applies it to the local copy.

@@ -35,6 +35,7 @@ Code: `routes/api_v1.py`. Tests: `tests/test_api_v1.py`.
 | `GET /auth/tokens`, `DELETE /auth/tokens/{id}` | list / revoke devices |
 | `GET /me`, `PATCH /me` | `{email}` |
 | `POST /me/password` | `{current_password, new_password}` |
+| `DELETE /me` | `{password}` deletes your account and everything you added; 422 for the last admin |
 
 ### Recipes
 | | |

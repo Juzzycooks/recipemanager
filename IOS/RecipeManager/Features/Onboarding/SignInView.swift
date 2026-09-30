@@ -16,6 +16,11 @@ struct SignInView: View {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("Sign in").font(AppTypography.largeTitle).foregroundStyle(AppColors.textPrimary)
                     Text("Connect to your Spoonmate server.").foregroundStyle(AppColors.textSecondary)
+                    Text("Spoonmate works with a server you run yourself, so your recipes stay yours.")
+                        .font(.footnote).foregroundStyle(AppColors.textSecondary)
+                    if let help = URL(string: "https://github.com/Juzzycooks/recipemanager#quick-start") {
+                        Link("New here? See how to set one up", destination: help).font(.footnote.weight(.medium))
+                    }
                 }
                 VStack(spacing: Spacing.s) {
                     field("Server", prompt: "recipes.example.com") {

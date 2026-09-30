@@ -9,11 +9,11 @@
   </Branch>
   <Network>bridge</Network>
   <Privileged>false</Privileged>
-  <Support/>
+  <Support>https://github.com/Juzzycooks/recipemanager/issues</Support>
   <Overview>A self-hosted recipe manager with URL importing, Mealie migration, shopping lists with Woolworths price lookup, calculators, user management, and SMTP notifications.</Overview>
   <Category>Productivity: HomeAutomation:</Category>
   <WebUI>http://[IP]:[PORT:8114]</WebUI>
-  <Icon>https://raw.githubusercontent.com/Spoonmate/recipemanager/main/icon.png</Icon>
+  <Icon>https://raw.githubusercontent.com/Juzzycooks/recipemanager/main/static/icon-512.png</Icon>
   <ExtraParams>--restart=unless-stopped</ExtraParams>
   <DateInstalled/>
   <Description>A self-hosted recipe manager with URL importing, Mealie migration, shopping lists with Woolworths price lookup, calculators, user management, and SMTP notifications. On first launch visit the web UI to create your admin account.</Description>

@@ -427,6 +427,23 @@ def update_me():
     return jsonify(_user_full(me()))
 
 
+@api_v1_bp.route("/me", methods=["DELETE"])
+@api_auth()
+def delete_me():
+    """Delete your own account (App Store rule 5.1.1(v)). Needs your password. Like an admin deleting a user, this
+    removes the recipes you added, your ratings, comments, collections, meal plan and shopping list. The last admin
+    can't do it, since the server would be left with nobody to manage it."""
+    if not me().check_password(Body().get("password") or ""):
+        raise ApiError("invalid_credentials", "That isn't your password.", 403)
+    if me().is_admin and User.query.filter_by(is_admin=True).count() <= 1:
+        raise ApiError("validation", "You're the only admin. Make someone else an admin before deleting your account.", 422)
+    user = me()
+    ShoppingListItem.query.filter_by(user_id=user.id).delete()
+    db.session.delete(user)   # ORM delete so the cascades fire (tokens, recipes, ratings, ...)
+    db.session.commit()
+    return _no_content()
+
+
 @api_v1_bp.route("/me/password", methods=["POST"])
 @api_auth()
 def change_password():

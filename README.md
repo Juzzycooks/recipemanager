@@ -232,7 +232,7 @@ open RecipeManager.xcodeproj
 
 What it needs from the server: the JSON API described in [`API.md`](API.md), which ships in the same image. Keep the server and app reasonably up to date together.
 
-Details, architecture, the offline design and the share extension are documented in [`IOS/README.md`](IOS/README.md).
+Details, architecture, the offline design and the share extension are documented in [`IOS/README.md`](IOS/README.md). Planning to publish it yourself? [`IOS/APP_STORE.md`](IOS/APP_STORE.md) is a step-by-step App Store guide (iPhone only), and [`PRIVACY.md`](PRIVACY.md) is a ready-made privacy policy.
 
 **Good to know:** the ringing Clock-style timer and the Live Activity need iOS 26.1 or later and a real device (the simulator always denies AlarmKit); older iOS gets a repeating notification instead. Keychain Sharing is used so the Safari extension can see your sign-in.
 

@@ -108,6 +108,10 @@ All client-side; the server is unchanged.
 - **Signing out** erases the offline copy and the queue.
 - Settings → Offline shows what is stored, when it last updated and how many changes are waiting.
 
+## Publishing
+
+See [`APP_STORE.md`](APP_STORE.md) for the App Store checklist, listing text and review notes. The app is iPhone-only, portrait, iOS 18+, and ships with a privacy manifest, [`PRIVACY.md`](../PRIVACY.md) as its privacy policy, and in-app account deletion.
+
 ## App icon and name
 
 The name is **Spoonmate**. Its icon (a spoon whose bowl is a leaf) is drawn by `tools/generate_icons.py`, which writes both the iPhone icons

@@ -138,6 +138,8 @@ struct AccountSheet: View {
     @State private var new = ""
     @State private var message: String?
     @State private var error: String?
+    @State private var confirmingDelete = false
+    @State private var deletePassword = ""
 
     var body: some View {
         NavigationStack {
@@ -152,11 +154,23 @@ struct AccountSheet: View {
                     Button("Change password") { Task { await changePassword() } }.disabled(current.isEmpty || new.isEmpty)
                 } header: { Text("Password") } footer: { Text("At least 8 characters with letters and numbers. Other devices are signed out.") }
                 if let message { Section { Text(message).foregroundStyle(AppColors.primary) } }
+                Section {
+                    Button("Delete account…", role: .destructive) { confirmingDelete = true }
+                } footer: {
+                    Text("Removes your account from the server, along with the recipes you added, your ratings, comments, collections, meal plan and shopping list. This can't be undone.")
+                }
             }
             .appBackground()
             .navigationTitle("Account").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .onAppear { email = session.user?.email ?? "" }
+            .alert("Delete your account?", isPresented: $confirmingDelete) {
+                SecureField("Your password", text: $deletePassword)
+                Button("Delete", role: .destructive) { Task { await deleteAccount() } }
+                Button("Cancel", role: .cancel) { deletePassword = "" }
+            } message: {
+                Text("Enter your password to permanently delete your account and everything you added.")
+            }
             .errorAlert($error)
         }
     }
@@ -167,6 +181,18 @@ struct AccountSheet: View {
         do {
             let _: User = try await session.run { try await $0.send("PATCH", "/me", body: Body(email: value)) }
             await session.refreshUser(); message = "Email saved."
+        } catch { self.error = error.localizedDescription }
+    }
+
+    private func deleteAccount() async {
+        struct Body: Encodable, Sendable { let password: String }
+        let body = Body(password: deletePassword)
+        deletePassword = ""
+        do {
+            try await session.run { try await $0.send("DELETE", "/me", body: body) }
+            session.accountDeleted()
+        } catch let APIError.server(status, _, _) where status == 404 || status == 405 {
+            self.error = "This server is too old to delete accounts from the app. Update the server, or ask its admin to remove your account."
         } catch { self.error = error.localizedDescription }
     }
 
