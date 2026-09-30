@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// "Save to Recipes": a short sheet that shows what was found and saves it.
+/// "Save to Spoonmate": a short sheet that shows what was found and saves it.
 struct ShareView: View {
     @Bindable var model: ShareModel
     let finish: () -> Void
@@ -14,7 +14,7 @@ struct ShareView: View {
                 .padding(20)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .background(Color(.systemGroupedBackground))
-                .navigationTitle("Save to Recipes").navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("Save to Spoonmate").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: cancel) } }
         }
         .tint(green)
@@ -29,7 +29,7 @@ struct ShareView: View {
             status("Saving…", showsProgress: true)
         case .needsSignIn:
             message("Sign in first", symbol: "person.crop.circle.badge.exclamationmark",
-                    detail: "Open the Recipes app and sign in, then share this page again.")
+                    detail: "Open Spoonmate and sign in, then share this page again.")
         case .nothingToImport:
             message("Nothing to save", symbol: "link.badge.plus",
                     detail: "Share a page that has a recipe on it, or select the recipe text and share that.")

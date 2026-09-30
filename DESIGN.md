@@ -1,5 +1,5 @@
 ---
-name: Recipe Manager
+name: Spoonmate
 description: A well-used cookbook of index cards ruled in blue, marked in red pen; a chalkboard when the cook stands at the stove.
 colors:
   accent: "#b83a12"
@@ -115,7 +115,7 @@ components:
     height: "64px"
 ---
 
-# Design System: Recipe Manager
+# Design System: Spoonmate
 
 ## Overview
 

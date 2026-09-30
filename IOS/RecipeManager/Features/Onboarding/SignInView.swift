@@ -15,7 +15,7 @@ struct SignInView: View {
             VStack(alignment: .leading, spacing: Spacing.xl) {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("Sign in").font(AppTypography.largeTitle).foregroundStyle(AppColors.textPrimary)
-                    Text("Connect to your Recipe Manager server.").foregroundStyle(AppColors.textSecondary)
+                    Text("Connect to your Spoonmate server.").foregroundStyle(AppColors.textSecondary)
                 }
                 VStack(spacing: Spacing.s) {
                     field("Server", prompt: "recipes.example.com") {

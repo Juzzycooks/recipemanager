@@ -39,7 +39,6 @@
 		7257B5B92A67FBADE7CC18E0 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9A01A3F640470DD49448702 /* ShareView.swift */; };
 		7399DD2FA9847EB78BF7E6B4 /* TimerWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A56448785A6DA182C887052 /* TimerWidgetBundle.swift */; };
 		769CDCC783658C25B27CDEF3 /* OfflineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD720BDC4CD0FAA479B40A7C /* OfflineTests.swift */; };
-		7A1F5CAF22BEAE7B5770AE5C /* BotanicalIllustration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8450D0843FD40A5FC27C908F /* BotanicalIllustration.swift */; };
 		7B862571C89371F482E042E1 /* ShareModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7B9667AEEEFC22DADC9C718 /* ShareModel.swift */; };
 		8105CE082392874D3AE5DA20 /* RecipeImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06E925DF03DD34F754975F03 /* RecipeImage.swift */; };
 		81BBA4017466637038C9CE6B /* AddRecipeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E4A4323724CF0389CCBAA5 /* AddRecipeView.swift */; };
@@ -70,6 +69,7 @@
 		CE406D277B1CDE4DB53D4A3E /* Credentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F919A5584E9D59FF1A78BD /* Credentials.swift */; };
 		D1076B4A6CFC1BCA55526647 /* Credentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F919A5584E9D59FF1A78BD /* Credentials.swift */; };
 		D306B614EE8A7A78751D5226 /* RecipeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 328AA2D4F68B4FEDFF1983BC /* RecipeDetailView.swift */; };
+		D308305A21FA17282C2CC64E /* SpoonmateMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74BE647E325FD7DE9E51FDA /* SpoonmateMark.swift */; };
 		D6EDA15B0F26A64F54A57DF7 /* import_preview.json in Resources */ = {isa = PBXBuildFile; fileRef = 40E01BD9F2412E6E47017C3B /* import_preview.json */; };
 		DE437FA839DE554886B8AEEF /* ShoppingListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B474B442C9AF50773B42B7AF /* ShoppingListView.swift */; };
 		DE79C16A97AA2214B6EA97C4 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20F9A6250724BE7ED8FDAAE /* AppColors.swift */; };
@@ -159,7 +159,6 @@
 		7C19193D5736C8C199FC7C5F /* RecipeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeCard.swift; sourceTree = "<group>"; };
 		7E8A49DC49242004997251DF /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		81910F6F97C605556880D073 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		8450D0843FD40A5FC27C908F /* BotanicalIllustration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotanicalIllustration.swift; sourceTree = "<group>"; };
 		88645AE01726AFA77EB3F245 /* SmallComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallComponents.swift; sourceTree = "<group>"; };
 		8B3D6386D4204D7FFBBE9057 /* SystemTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemTimer.swift; sourceTree = "<group>"; };
 		8F0AD095E389303E7C283D67 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
@@ -190,6 +189,7 @@
 		DD339DDCAAEDEE693CE4878D /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		DE5D180814DA1C1DE2A17BAF /* RecipeManagerShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = RecipeManagerShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E37E901A7EBDC7511EC0EEA0 /* KitchenTimerLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KitchenTimerLiveActivity.swift; sourceTree = "<group>"; };
+		E74BE647E325FD7DE9E51FDA /* SpoonmateMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoonmateMark.swift; sourceTree = "<group>"; };
 		EBB741C47F215A85E9A737E9 /* shopping.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = shopping.json; sourceTree = "<group>"; };
 		EE0B7CA4C4635A7662E49275 /* mealplan.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = mealplan.json; sourceTree = "<group>"; };
 		F77FA09B68377C7128645BFC /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -253,7 +253,6 @@
 			isa = PBXGroup;
 			children = (
 				33DEE4ED41829A8CEA3B83ED /* AppTabBar.swift */,
-				8450D0843FD40A5FC27C908F /* BotanicalIllustration.swift */,
 				96E0894AAB542F1320D3E3D7 /* CollectionCard.swift */,
 				A8ECA1C666A3BACA15A7EA9F /* PrimaryButton.swift */,
 				7C19193D5736C8C199FC7C5F /* RecipeCard.swift */,
@@ -261,6 +260,7 @@
 				06E925DF03DD34F754975F03 /* RecipeImage.swift */,
 				118F4C66F17C633D33A6E588 /* RecipePickerSheet.swift */,
 				88645AE01726AFA77EB3F245 /* SmallComponents.swift */,
+				E74BE647E325FD7DE9E51FDA /* SpoonmateMark.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -639,7 +639,6 @@
 				2745D237CDF19CE78D5B0983 /* AppTabBar.swift in Sources */,
 				41CE6B6C7140E7D24BCE41BA /* AppTheme.swift in Sources */,
 				C65C4CDCECD371BB4C4D5B19 /* AppTypography.swift in Sources */,
-				7A1F5CAF22BEAE7B5770AE5C /* BotanicalIllustration.swift in Sources */,
 				412827060342DCD5F2717660 /* CollectionCard.swift in Sources */,
 				198906A9C1F5AFAD64EC68C9 /* CollectionDetailView.swift in Sources */,
 				0B2597BBD9BDE8B4B8E53BAB /* CollectionsView.swift in Sources */,
@@ -674,6 +673,7 @@
 				DE437FA839DE554886B8AEEF /* ShoppingListView.swift in Sources */,
 				A2E3E2BC88B45261DE7EA361 /* SignInView.swift in Sources */,
 				EEEF14D68CA2102E24F5CB77 /* SmallComponents.swift in Sources */,
+				D308305A21FA17282C2CC64E /* SpoonmateMark.swift in Sources */,
 				DFFE08F728780D11E723D2E8 /* SystemTimer.swift in Sources */,
 				2E71C14DF6896E959F42482B /* TimerMetadata.swift in Sources */,
 			);

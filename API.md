@@ -1,4 +1,4 @@
-# Recipe Manager JSON API (v1)
+# Spoonmate JSON API (v1)
 
 Base path `/api/v1`. For native apps and scripts; the web UI does not use it.
 Code: `routes/api_v1.py`. Tests: `tests/test_api_v1.py`.

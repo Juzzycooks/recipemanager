@@ -15,7 +15,7 @@ def send_welcome_email(to_email, username, password):
     site_url = request.url_root.rstrip('/')
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Welcome to Recipe Manager"
+    msg["Subject"] = "Welcome to Spoonmate"
     
     # Format From header as "Display Name <email>" if SMTP_FROM is set
     from_email = cfg["SMTP_USER"]
@@ -29,7 +29,7 @@ def send_welcome_email(to_email, username, password):
 
     text = (
         f"Hi {username},\n\n"
-        f"Your Recipe Manager account has been created.\n\n"
+        f"Your Spoonmate account has been created.\n\n"
         f"Username: {username}\n"
         f"Password: {password}\n\n"
         f"Log in here: {site_url}\n\n"
@@ -37,7 +37,7 @@ def send_welcome_email(to_email, username, password):
         f"Happy cooking!"
     )
     html = (
-        f"<h2>Welcome to Recipe Manager 🍳</h2>"
+        f"<h2>Welcome to Spoonmate 🍳</h2>"
         f"<p>Hi <strong>{username}</strong>,</p>"
         f"<p>Your account has been created. Here are your login details:</p>"
         f"<table style='border-collapse:collapse;'>"
@@ -83,7 +83,7 @@ def send_password_reset_email(to_email, username, reset_url):
         return False
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Reset your Recipe Manager password"
+    msg["Subject"] = "Reset your Spoonmate password"
 
     from_email = cfg["SMTP_USER"]
     from_name = cfg.get("SMTP_FROM", "").strip()
@@ -95,14 +95,14 @@ def send_password_reset_email(to_email, username, reset_url):
 
     text = (
         f"Hi {username},\n\n"
-        f"A password reset was requested for your Recipe Manager account.\n\n"
+        f"A password reset was requested for your Spoonmate account.\n\n"
         f"Reset your password here (link valid for 1 hour):\n{reset_url}\n\n"
         f"If you didn't request this, you can ignore this email."
     )
     html = (
         f"<h2>Password reset</h2>"
         f"<p>Hi <strong>{username}</strong>,</p>"
-        f"<p>A password reset was requested for your Recipe Manager account.</p>"
+        f"<p>A password reset was requested for your Spoonmate account.</p>"
         f"<p><a href='{reset_url}' style='display:inline-block;padding:10px 20px;"
         f"background:#c0440e;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;'>"
         f"Reset password</a></p>"
@@ -162,7 +162,7 @@ def send_recipe_email(to_email, recipe, sender_name):
         f"Prep: {recipe.prep_time or 'N/A'} | Cook: {recipe.cook_time or 'N/A'} | Servings: {recipe.servings or 'N/A'}\n\n"
         f"Ingredients:\n{ingredients}\n\n"
         f"Instructions:\n{instructions}\n\n"
-        f"---\nSent from Recipe Manager"
+        f"---\nSent from Spoonmate"
     )
 
     ing_html = "".join(f"<li>{line.strip()}</li>" for line in recipe.ingredients.split("\n") if line.strip())
@@ -183,7 +183,7 @@ def send_recipe_email(to_email, recipe, sender_name):
         f"<h3 style='color:#c0440e;text-transform:uppercase;font-size:13px;letter-spacing:0.04em;margin-top:24px;'>Instructions</h3>"
         f"<ol style='padding-left:20px;'>{ins_html}</ol>"
         f"<hr style='border:none;border-top:1px solid #e5e5e3;margin-top:24px;'>"
-        f"<p style='font-size:12px;color:#999;'>Sent from <a href='{site_url}' style='color:#c0440e;'>Recipe Manager</a></p>"
+        f"<p style='font-size:12px;color:#999;'>Sent from <a href='{site_url}' style='color:#c0440e;'>Spoonmate</a></p>"
         f"</div>"
     )
 

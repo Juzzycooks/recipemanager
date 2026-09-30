@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Forgot Password - Recipe Manager{% endblock %}
+{% block title %}Forgot Password - {{ app_name() }}{% endblock %}
 {% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="auth-wrapper">

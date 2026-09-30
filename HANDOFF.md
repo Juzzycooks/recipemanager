@@ -1,6 +1,6 @@
 # Handoff
 
-Everything a new person (or a fresh Claude session) needs to keep working on Recipe Manager.
+Everything a new person (or a fresh Claude session) needs to keep working on Spoonmate.
 Product truth lives in `PRODUCT.md`; the visual system lives in `DESIGN.md` and `.impeccable/design.json`; the direction contract lives in `.impeccable/surfaces/app.md`. This file covers how the project is put together, how to run and ship it, what changed recently, and what is still unverified.
 
 ## What it is

@@ -1,6 +1,6 @@
-# Recipe Manager for iPhone
+# Spoonmate for iPhone
 
-SwiftUI app (iOS 18+, Swift 6, Observation) for the Recipe Manager server in this repo. It talks to the JSON API
+SwiftUI app (iOS 18+, Swift 6, Observation) for the Spoonmate server in this repo. It talks to the JSON API
 described in [`../API.md`](../API.md): no mock data, everything you see is your real library.
 
 ## Run it
@@ -107,3 +107,10 @@ All client-side; the server is unchanged.
   the meal plan, collections) needs a connection and says "You're offline".
 - **Signing out** erases the offline copy and the queue.
 - Settings → Offline shows what is stored, when it last updated and how many changes are waiting.
+
+## App icon and name
+
+The name is **Spoonmate**. Its icon (a spoon whose bowl is a leaf) is drawn by `tools/generate_icons.py`, which writes both the iPhone icons
+(light, dark and tinted) and the web icons (`static/icon-*.png`, maskable, apple-touch, favicon) so they always match. Change the drawing or
+colours there and run `python3 tools/generate_icons.py`. The web name comes from `APP_NAME` in `app.py` (an admin can override it under
+Admin → Site settings); the iPhone name is `CFBundleDisplayName` in `project.yml`.

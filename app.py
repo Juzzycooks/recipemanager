@@ -8,6 +8,9 @@ from models import db, User, SiteSetting
 
 csrf = CSRFProtect()
 
+# The name shown wherever the admin has not set one (Admin → Site settings).
+APP_NAME = "Spoonmate"
+
 
 def create_app():
     app = Flask(__name__)
@@ -166,7 +169,10 @@ def create_app():
                 for n in os.listdir(os.path.join(app.static_folder, d)) if n.endswith((".css", ".js"))))
         except (OSError, ValueError):
             asset_v = 0
-        return dict(get_setting=get_setting, asset_v=asset_v)
+        def app_name():
+            return (get_setting("site_name", "") or "").strip() or APP_NAME
+
+        return dict(get_setting=get_setting, app_name=app_name, asset_v=asset_v)
 
     @app.template_filter('recipe_image')
     def recipe_image_filter(image_url):

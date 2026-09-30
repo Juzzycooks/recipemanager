@@ -1,4 +1,4 @@
-# Recipe Manager — Security & Code Review
+# Spoonmate — Security & Code Review
 *Reviewed 2026-06-12 — **all security items below were fixed the same day**, along with the high-value features (profile/password reset, scaling, smart shopping list, nutrition estimates, thumbnails, backup/export, PWA share target).*
 
 A solid foundation: CSRF protection is global, templates autoescape (no `|safe` anywhere), passwords use scrypt, open redirects are blocked, share tokens use `secrets`, the secret key persists correctly, and the Dockerfile is multi-stage. The items below are what's left.

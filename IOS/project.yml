@@ -28,7 +28,7 @@ targets:
     info:
       path: RecipeManager/Resources/Info.plist
       properties:
-        CFBundleDisplayName: Recipes
+        CFBundleDisplayName: Spoonmate
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
@@ -74,7 +74,7 @@ targets:
     info:
       path: ShareExtension/Info.plist
       properties:
-        CFBundleDisplayName: Save to Recipes
+        CFBundleDisplayName: Spoonmate
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         NSExtension:

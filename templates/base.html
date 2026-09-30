@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>{% block title %}{{ get_setting('site_name', 'Recipe Manager') or 'Recipe Manager' }}{% endblock %}</title>
+    <title>{% block title %}{{ app_name() }}{% endblock %}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#f3f2ee">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32.png') }}">
     <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css', v=asset_v) }}">
     <script>(function(){var t=null;try{t=localStorage.getItem('theme');}catch(e){}if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);})();</script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css', v=asset_v) }}">
@@ -19,7 +21,7 @@
     {% set ep = request.endpoint or '' %}
     <header class="masthead">
       <nav class="masthead-inner" aria-label="Main">
-        <a href="/" class="brand">{{ get_setting('site_name', 'Recipe Manager') or 'Recipe Manager' }}</a>
+        <a href="/" class="brand">{{ app_name() }}</a>
         <button class="hamburger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-links"
                 onclick="var o=document.getElementById('nav-links').classList.toggle('open');this.setAttribute('aria-expanded',o)"><span></span></button>
         <div class="nav-links" id="nav-links">

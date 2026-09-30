@@ -6,8 +6,10 @@ struct OnboardingView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                Text("SPOONMATE").font(.system(.footnote, design: .serif, weight: .semibold)).tracking(3)
+                    .foregroundStyle(AppColors.secondary).accessibilityAddTraits(.isHeader)
                 Spacer(minLength: Spacing.xl)
-                BotanicalIllustration().frame(width: 190, height: 190)
+                SpoonmateMark().frame(width: 250, height: 250)
                     .padding(.bottom, Spacing.xl)
                 Text("Your Recipes,\nYour Way")
                     .font(.system(.largeTitle, design: .serif, weight: .regular)).multilineTextAlignment(.center)

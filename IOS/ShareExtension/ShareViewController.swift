@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Entry point of the "Save to Recipes" share extension: hosts the SwiftUI screen.
+/// Entry point of the "Save to Spoonmate" share extension: hosts the SwiftUI screen.
 final class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()

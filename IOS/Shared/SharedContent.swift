@@ -1,6 +1,6 @@
 import Foundation
 
-/// What was shared to the "Save to Recipes" extension.
+/// What was shared to the "Save to Spoonmate" extension.
 enum SharedSource: Equatable, Sendable {
     case link(URL)
     case text(String)

@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">Recipe Manager</h1>
+  <h1 align="center">Spoonmate</h1>
   <p align="center">
     A self-hosted recipe management app built with Flask for Docker and Unraid.
     <br />
@@ -11,7 +11,7 @@
 
 ## About
 
-Recipe Manager is a lightweight, self-hosted web app for storing, organising, and sharing your recipes. Import from any recipe website, plan your weekly meals, build public collections for social media, and cook hands-free with step-by-step cook mode.
+Spoonmate is a lightweight, self-hosted web app for storing, organising, and sharing your recipes. Import from any recipe website, plan your weekly meals, build public collections for social media, and cook hands-free with step-by-step cook mode.
 
 Built for home servers and Unraid — just pull the Docker image and go.
 

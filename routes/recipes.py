@@ -949,7 +949,7 @@ def export(recipe_id):
 {recipe.instructions}
 
 ---
-Exported from Recipe Manager
+Exported from Spoonmate
 """
     if recipe.source_url:
         content += f"Source: {recipe.source_url}\n"
