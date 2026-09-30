@@ -1,22 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Extras{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="page-header">
-<h2>Extras</h2>
+<h1>Extras</h1>
 </div>
-<p style="color:var(--text-secondary);font-size:var(--fs-sm);margin:-0.5rem 0 1.25rem;">Recipes, calculators and guides — each opens on its own page.</p>
+<p class="muted page-intro">Recipes, calculators and guides. Each opens on its own page.</p>
 {% if pages %}
 <div class="recipe-grid">
 {% for page in pages %}
-<a href="{{ url_for('extras.view', slug=page.slug) }}" style="text-decoration:none;color:inherit;">
-<div class="card recipe-card" style="padding:0;">
-<div class="recipe-card-placeholder" style="height:100px;font-size:2.5rem;">{{ page.icon }}</div>
+<a href="{{ url_for('extras.view', slug=page.slug) }}" class="card recipe-card tool-card">
+<div class="recipe-card-placeholder tool-tile tint-{{ loop.index0 % 4 + 1 }}" data-mono="{{ page.name[:1]|upper }}" aria-hidden="true"></div>
 <div class="recipe-card-body">
 <h3>{{ page.name }}</h3>
 {% if page.description %}
-<p style="color:var(--text-secondary);font-size:var(--fs-xs);margin-top:0.2rem;">{{ page.description }}</p>
+<p class="hint-sm">{{ page.description }}</p>
 {% endif %}
-</div>
 </div>
 </a>
 {% endfor %}

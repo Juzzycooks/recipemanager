@@ -1,34 +1,35 @@
 {% extends "base.html" %}
 {% block title %}My Profile - Recipe Manager{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
-<div style="max-width:480px;margin:0 auto;">
-<div class="page-header"><h2>My Profile</h2></div>
+<div class="form-narrow center-col">
+<div class="page-header"><h1>My Profile</h1></div>
 
 <div class="card">
-    <h3 style="font-size:var(--fs-base);margin-bottom:0.75rem;">Account</h3>
-    <p style="font-size:var(--fs-sm);color:var(--text-secondary);margin-bottom:1rem;">
+    <h3 class="card-title card-title-gap">Account</h3>
+    <p class="muted import-lead">
         Logged in as <strong>{{ current_user.username }}</strong>
-        {% if current_user.is_admin %}<span class="badge badge-accent" style="margin-left:0.3rem;">Admin</span>{% endif %}
+        {% if current_user.is_admin %}<span class="badge badge-accent">Admin</span>{% endif %}
     </p>
     <form method="POST">
         <input type="hidden" name="action" value="email">
         <div class="form-group">
-            <label for="email" style="margin-top:0;">Email address</label>
-            <input type="email" id="email" name="email" value="{{ current_user.email or '' }}" placeholder="you@example.com">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" autocomplete="email" value="{{ current_user.email or '' }}" placeholder="you@example.com">
             <div class="form-hint">Used for password resets.</div>
         </div>
-        <div class="actions" style="margin-top:1rem;">
+        <div class="form-actions">
             <button type="submit" class="btn btn-primary btn-sm">Save email</button>
         </div>
     </form>
 </div>
 
 <div class="card">
-    <h3 style="font-size:var(--fs-base);margin-bottom:0.75rem;">Change password</h3>
+    <h3 class="card-title card-title-gap">Change password</h3>
     <form method="POST">
         <input type="hidden" name="action" value="password">
         <div class="form-group">
-            <label for="current_password" style="margin-top:0;">Current password</label>
+            <label for="current_password">Current password</label>
             <input type="password" id="current_password" name="current_password" required autocomplete="current-password">
         </div>
         <div class="form-group">
@@ -40,7 +41,7 @@
             <label for="confirm_password">Confirm new password</label>
             <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
         </div>
-        <div class="actions" style="margin-top:1.25rem;">
+        <div class="form-actions">
             <button type="submit" class="btn btn-primary">Change password</button>
         </div>
     </form>

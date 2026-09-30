@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ recipe.title }}</title>
+    <meta name="theme-color" content="#f3f2ee">
     <meta property="og:title" content="{{ recipe.title }}">
     <meta property="og:description" content="{{ recipe.description or (recipe.title ~ ' - Prep: ' ~ (recipe.prep_time or 'N/A') ~ ', Cook: ' ~ (recipe.cook_time or 'N/A')) }}">
     {% if recipe.image_url %}
@@ -13,82 +14,37 @@
     <meta property="og:image" content="{{ request.host_url }}admin/uploads/{{ recipe.image_url }}">
         {% endif %}
     {% endif %}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css', v=asset_v) }}">
+    <script>(function(){var t=null;try{t=localStorage.getItem('theme');}catch(e){}if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',t);})();</script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css', v=asset_v) }}">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', -apple-system, system-ui, sans-serif;
-               background: var(--bg); color: var(--text-primary); line-height: 1.6;
-               -webkit-font-smoothing: antialiased; }
-        .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
-        .hero { width: 100%; max-height: 400px; object-fit: cover; border-radius: var(--radius-lg); margin-bottom: 1.5rem; }
-        .card { background: var(--surface); border-radius: var(--radius-lg); padding: 2rem;
-                border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-        h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
-        .description { color: var(--text-secondary); margin-bottom: 1rem; font-size: var(--fs-base); }
-        .tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1rem; }
-        .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: var(--fs-2xs);
-               font-weight: 600; background: var(--accent-subtle); color: var(--accent); }
-        .meta { display: flex; gap: 2rem; flex-wrap: wrap; padding: 1rem 0;
-                border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 1rem 0; }
-        .meta-item .label { font-size: var(--fs-2xs); text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
-        .meta-item .value { font-size: var(--fs-base); font-weight: 700; }
-        h2 { font-size: var(--fs-sm); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-             margin: 1.5rem 0 0.75rem; color: var(--text-primary); }
-        ul { list-style: none; }
-        ul li { padding: 0.4rem 0; border-bottom: 1px solid var(--border-light); padding-left: 1rem; position: relative; }
-        ul li::before { content: ""; position: absolute; left: 0; top: 50%; width: 5px; height: 5px;
-                        border-radius: 50%; background: var(--accent); transform: translateY(-50%); }
-        ol { list-style: none; counter-reset: step; }
-        ol li { padding: 0.6rem 0; border-bottom: 1px solid var(--border-light); display: flex; gap: 0.75rem; }
-        ol li::before { counter-increment: step; content: counter(step); color: var(--accent);
-                        font-weight: 700; min-width: 1.5rem; }
-        .footer { text-align: center; margin-top: 2rem; color: var(--text-tertiary); font-size: var(--fs-xs); }
-        .footer a { color: var(--accent); text-decoration: none; }
-        .theme-toggle { position: fixed; top: 1rem; right: 1rem; background: var(--surface); border: 1px solid var(--border);
-                        color: var(--text-secondary); width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
-                        display: flex; align-items: center; justify-content: center; font-size: var(--fs-md);
-                        transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s; z-index: 10; }
-        .theme-toggle:hover { background: var(--border-light); color: var(--text-primary); }
-        .ctrl-btn { padding: 0.25rem 0.6rem; border-radius: 6px; border: 1px solid var(--border);
-                    background: var(--surface); color: var(--text-primary); font-size: var(--fs-2xs);
-                    font-weight: 600; cursor: pointer; font-family: inherit; }
-        .ctrl-btn.active { background: var(--accent-solid); color: #fff; border-color: var(--accent-solid); }
-        @media (max-width: 600px) {
-            .container { padding: 1rem; }
-            .card { padding: 1.25rem; }
-            h1 { font-size: 1.5rem; }
-            .meta { gap: 1rem; }
-        }
-        @media (pointer: coarse) { .theme-toggle { width: 44px; height: 44px; } .ctrl-btn { min-height: 44px; min-width: 44px; } }
-        @media (prefers-reduced-motion: reduce) { .card, .card:hover { transform: none !important; } }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/public.css', v=asset_v) }}">
 </head>
 <body>
-    <div class="container">
-        {% if recipe.image_url %}
-            {% if recipe.image_url.startswith('http') %}
-                {% if '/api/media/recipes/' not in recipe.image_url %}
-                <img class="hero" src="{{ recipe.image_url }}" alt="{{ recipe.title }}">
-                {% endif %}
-            {% else %}
-                <img class="hero" src="/admin/uploads/{{ recipe.image_url }}" alt="{{ recipe.title }}">
-            {% endif %}
+    <div class="pub-mast"><a class="pub-brand" href="/">{{ get_setting('site_name', 'Recipe Manager') or 'Recipe Manager' }}</a></div>
+{% set rtint = recipe.id % 4 + 1 %}
+{% if recipe.image_url %}
+    {% if recipe.image_url.startswith('http') %}
+        {% if '/api/media/recipes/' not in recipe.image_url %}
+        {% set hero_src = recipe.image_url %}
         {% endif %}
+    {% else %}
+        {% set hero_src = '/admin/uploads/' ~ recipe.image_url %}
+    {% endif %}
+{% endif %}
+    <div class="hero-frame">
+        {% if hero_src %}
+        <img class="hero" fetchpriority="high" decoding="async" width="1200" height="514" src="{{ hero_src }}" alt="{{ recipe.title }}" onerror="var d=document.createElement('div');d.className='hero-band pub-mono tint-{{ rtint }}';d.setAttribute('data-mono','{{ recipe.title[:1]|upper|e }}');d.setAttribute('aria-hidden','true');this.replaceWith(d);">
+        {% else %}
+        <div class="hero-band pub-mono tint-{{ rtint }}" data-mono="{{ recipe.title[:1]|upper }}" aria-hidden="true"></div>
+        {% endif %}
+    </div>
 
-        <div class="card">
+    <main class="pub-main">
+        <header class="recipe-head">
             <h1>{{ recipe.title }}</h1>
-            {% if recipe.categories %}
-            <div class="tags">
-                {% for cat in recipe.categories %}<span class="tag">{{ cat.name }}</span>{% endfor %}
-            </div>
-            {% endif %}
             {% if recipe.description %}
             <p class="description">{{ recipe.description }}</p>
             {% endif %}
-
             {% if recipe.prep_time or recipe.cook_time or recipe.servings %}
             <div class="meta">
                 {% if recipe.prep_time %}
@@ -102,51 +58,67 @@
                 {% endif %}
             </div>
             {% endif %}
+                    {% if recipe.categories %}
+                <div class="tags">{% for cat in recipe.categories %}<span class="tag">{{ cat.name }}</span>{% endfor %}</div>
+                {% endif %}
+        </header>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                <h2 style="margin-bottom:0;">Ingredients</h2>
-                <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-top:1.5rem;">
-                    <span style="font-size:var(--fs-2xs);color:var(--text-tertiary);font-weight:600;">Scale</span>
-                    <button type="button" class="ctrl-btn scale-btn" data-scale="0.5">&half;&times;</button>
-                    <button type="button" class="ctrl-btn scale-btn active" data-scale="1">1&times;</button>
-                    <button type="button" class="ctrl-btn scale-btn" data-scale="2">2&times;</button>
+        <div class="recipe-spread">
+            <section class="spread-section spread-side">
+                <div class="section-head">
+                    <h2>Ingredients</h2>
+                    <div class="unit-controls">
+                        <span class="unit-label">Scale</span>
+                        <button type="button" class="ctrl-btn scale-btn" data-scale="0.5" aria-label="Half quantities">&frac12;&times;</button>
+                        <button type="button" class="ctrl-btn scale-btn active" data-scale="1">1&times;</button>
+                        <button type="button" class="ctrl-btn scale-btn" data-scale="2">2&times;</button>
+                    </div>
                 </div>
+                <ul class="ingredient-list" id="ingredient-list">
+                    {% for line in recipe.ingredients.split('\n') %}
+                    {% if line.strip().startswith('# ') %}<li class="rm-section">{{ line.strip()[2:] }}</li>
+                    {% elif line.strip() %}<li>{{ line.strip() }}</li>{% endif %}
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <div>
+                <section class="spread-section">
+                    <h2>Instructions</h2>
+                    <ol class="instruction-list">
+                        {% for line in recipe.instructions.split('\n') %}
+                        {% if line.strip().startswith('# ') %}<li class="rm-section">{{ line.strip()[2:] }}</li>
+                        {% elif line.strip() %}<li><span>{{ line.strip() }}</span></li>{% endif %}
+                        {% endfor %}
+                    </ol>
+                </section>
+
+                {% if recipe.notes %}
+                <section class="spread-section">
+                    <h2>Notes</h2>
+                    <ul class="note-list">
+                        {% for line in recipe.notes.split('\n') %}
+                        {% if line.strip() %}<li>{{ line.strip() }}</li>{% endif %}
+                        {% endfor %}
+                    </ul>
+                </section>
+                {% endif %}
+
+                {% if recipe.source_url %}
+                <p class="source">
+                    Source: <a href="{{ recipe.source_url }}" target="_blank" rel="noopener noreferrer">{{ recipe.source_url|truncate(50) }}</a>
+                </p>
+                {% endif %}
             </div>
-            <ul id="ingredient-list">
-                {% for line in recipe.ingredients.split('\n') %}
-                {% if line.strip().startswith('# ') %}<li class="rm-section">{{ line.strip()[2:] }}</li>
-                {% elif line.strip() %}<li>{{ line.strip() }}</li>{% endif %}
-                {% endfor %}
-            </ul>
-
-            <h2>Instructions</h2>
-            <ol class="rm-steps">
-                {% for line in recipe.instructions.split('\n') %}
-                {% if line.strip().startswith('# ') %}<li class="rm-section">{{ line.strip()[2:] }}</li>
-                {% elif line.strip() %}<li><span>{{ line.strip() }}</span></li>{% endif %}
-                {% endfor %}
-            </ol>
-
-            {% if recipe.notes %}
-            <h2>Notes</h2>
-            <ul>
-                {% for line in recipe.notes.split('\n') %}
-                {% if line.strip() %}<li>{{ line.strip() }}</li>{% endif %}
-                {% endfor %}
-            </ul>
-            {% endif %}
-
-            {% if recipe.source_url %}
-            <p style="margin-top:1.5rem;font-size:var(--fs-sm);color:var(--text-secondary);">
-                Source: <a href="{{ recipe.source_url }}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);">{{ recipe.source_url|truncate(50) }}</a>
-            </p>
-            {% endif %}
         </div>
-
-        <p class="footer">Shared from <a href="/">Recipe Manager</a></p>
-    </div>
-
-    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode"><span class="theme-icon">🌙</span></button>
+    </main>
+        <footer class="footer">
+            Shared from <a href="/">{{ get_setting('site_name', 'Recipe Manager') or 'Recipe Manager' }}</a>
+        </footer>
+    <button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
     <script>
     function getTheme() {
         var saved = null; try { saved = localStorage.getItem('theme'); } catch (e) {}
@@ -155,22 +127,11 @@
     function setTheme(t) {
         document.documentElement.setAttribute('data-theme', t);
         try { localStorage.setItem('theme', t); } catch (e) {}
-        document.querySelector('.theme-icon').textContent = t === 'dark' ? '☀️' : '🌙';
+        var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'dark' ? '#14181d' : '#f3f2ee';
     }
     function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
     setTheme(getTheme());
     </script>
-    <style>
-    .rm-section { list-style: none; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.04em; font-size: var(--fs-xs); color: var(--accent);
-        padding-top: 0.85rem; margin-bottom: 0.2rem; }
-    ol.rm-steps { list-style: none; padding-left: 0; counter-reset: step; }
-    ol.rm-steps > li:not(.rm-section) { counter-increment: step; position: relative; padding-left: 2rem; }
-    ol.rm-steps > li:not(.rm-section)::before { content: counter(step) "."; position: absolute;
-        left: 0; font-weight: 700; color: var(--accent); }
-    ol.rm-steps > li.rm-section { counter-reset: step; padding-left: 0; }
-    ol.rm-steps > li.rm-section::before { content: none; }
-    </style>
     <script src="/static/units.js"></script>
     <script>
     RecipeUnits.attach({ items: '#ingredient-list li:not(.rm-section)', scaleBtns: '.scale-btn' });

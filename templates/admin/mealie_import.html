@@ -1,27 +1,30 @@
 {% extends "base.html" %}
 {% block title %}Import from Mealie - Admin{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
-<div class="card" style="max-width:600px;margin:0 auto;">
-    <h2 style="font-size:var(--fs-md);margin-bottom:0.3rem;">Import from Mealie</h2>
-    <p style="color:var(--text-secondary);margin-bottom:1.25rem;font-size:var(--fs-sm);">Connect to your Mealie v4 instance to import all recipes. Categories will be created automatically.</p>
+<div class="form-narrow center-col">
+<div class="page-header"><h1>Import from Mealie</h1></div>
+<div class="card">
+    <p class="muted import-lead">Connect to your Mealie v4 instance to import all recipes. Categories will be created automatically.</p>
     <form method="POST">
         <div class="form-group">
             <label for="mealie_url">Mealie URL</label>
-            <input type="url" id="mealie_url" name="mealie_url" required placeholder="http://192.168.1.x:9000">
+            <input type="url" id="mealie_url" name="mealie_url" required autocomplete="off" placeholder="http://192.168.1.x:9000">
             <div class="form-hint">The base URL of your Mealie instance (no trailing slash).</div>
         </div>
         <div class="form-group">
             <label for="mealie_email">Mealie Email / Username</label>
-            <input type="text" id="mealie_email" name="mealie_email" required placeholder="admin@example.com">
+            <input type="text" id="mealie_email" name="mealie_email" required autocomplete="off" placeholder="admin@example.com">
         </div>
         <div class="form-group">
             <label for="mealie_password">Mealie Password</label>
-            <input type="password" id="mealie_password" name="mealie_password" required placeholder="Your Mealie password">
+            <input type="password" id="mealie_password" name="mealie_password" required autocomplete="off" placeholder="Your Mealie password">
         </div>
-        <div class="actions" style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <div class="form-actions form-actions-rule">
             <button type="submit" class="btn btn-primary">Start Import</button>
             <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
+</div>
 </div>
 {% endblock %}

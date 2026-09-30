@@ -1,23 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Reset Password - Recipe Manager{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="auth-wrapper">
-    <h2>Reset password</h2>
+    <div class="card auth-card">
+    <h1>Reset password</h1>
     <p class="auth-subtitle">Choose a new password for your account.</p>
-    <div class="card">
         <form method="POST">
             <div class="form-group">
-                <label for="new_password" style="margin-top:0;">New password</label>
-                <input type="password" id="new_password" name="new_password" required autocomplete="new-password" minlength="8">
+                <label for="new_password">New password</label>
+                <input type="password" id="new_password" name="new_password" required autocomplete="new-password" minlength="8" autofocus>
                 <div class="form-hint">At least 8 characters, with letters and numbers.</div>
             </div>
             <div class="form-group">
                 <label for="confirm_password">Confirm new password</label>
                 <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password">
             </div>
-            <div class="actions" style="margin-top:1.25rem;">
-                <button type="submit" class="btn btn-primary" style="width:100%;">Reset password</button>
-            </div>
+            <button type="submit" class="btn btn-primary btn-block">Reset password</button>
         </form>
     </div>
 </div>

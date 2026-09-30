@@ -1,88 +1,93 @@
 {% extends "base.html" %}
 {% block title %}Recipes{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/shelf.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h2>Recipes</h2>
-    <div style="display:flex;gap:0.4rem;">
+    <h1 class="page-title">Recipes</h1>
+    <div class="header-actions">
         <a href="{{ url_for('recipes.random_recipe') }}" class="btn btn-secondary" title="What should I cook?">Surprise me</a>
-        <a href="{{ url_for('recipes.import_url') }}" class="btn btn-secondary">Import</a>
         <a href="{{ url_for('recipes.add') }}" class="btn btn-primary">New recipe</a>
     </div>
 </div>
 
-<form class="search-bar" method="GET" action="{{ url_for('recipes.index') }}">
-    <input type="text" name="q" placeholder="Search by title..." value="{{ search }}" aria-label="Search recipes" style="flex:2;">
-    <input type="text" name="ingredient" placeholder="Search by ingredient..." value="{{ ingredient_search }}" aria-label="Search by ingredient" style="flex:2;">
+<form class="search-bar shelf-search" method="GET" action="{{ url_for('recipes.index') }}" role="search">
+    <input type="search" id="shelf-q" name="q" placeholder="Search titles and ingredients…" value="{{ search }}" aria-label="Search recipes">
+    {% if ingredient_search %}<input type="hidden" name="ingredient" value="{{ ingredient_search }}">{% endif %}
     {% if active_cat %}<input type="hidden" name="cat" value="{{ active_cat }}">{% endif %}
     {% if active_coll %}<input type="hidden" name="collection" value="{{ active_coll }}">{% endif %}
     {% if favorites_only %}<input type="hidden" name="favorites" value="1">{% endif %}
     <input type="hidden" name="sort" value="{{ sort }}">
     <input type="hidden" name="view" value="{{ view_mode }}">
-    <button type="submit" class="btn btn-secondary">Search</button>
+    <button type="submit" class="btn btn-primary">Search</button>
     {% if search or active_cat or favorites_only or ingredient_search or active_coll %}<a href="{{ url_for('recipes.index') }}" class="btn btn-secondary">Clear</a>{% endif %}
 </form>
 
-<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;">
-    <div class="filter-chips" style="margin-bottom:0;">
-        <a href="{{ url_for('recipes.index', q=search, cat=active_cat, sort=sort, view=view_mode) }}" class="chip {% if not favorites_only %}active{% endif %}">All</a>
-        <a href="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1, sort=sort, view=view_mode) }}" class="chip {% if favorites_only %}active{% endif %}">Favorites</a>
+<div class="shelf-controls">
+    <div class="filter-groups">
+        <div class="filter-group" role="group" aria-label="Show">
+            <a href="{{ url_for('recipes.index', q=search, ingredient=ingredient_search, cat=active_cat, collection=active_coll, sort=sort, view=view_mode) }}" class="chip {% if not favorites_only %}active{% endif %}">All</a>
+            <a href="{{ url_for('recipes.index', q=search, ingredient=ingredient_search, cat=active_cat, collection=active_coll, favorites=1, sort=sort, view=view_mode) }}" class="chip {% if favorites_only %}active{% endif %}">Favorites</a>
+        </div>
         {% if categories %}
-        <span style="width:1px;height:20px;background:var(--border);margin:0 0.25rem;"></span>
-        {% for cat in categories %}
-        <a href="{{ url_for('recipes.index', cat=cat.id, q=search, favorites=1 if favorites_only else None, sort=sort, view=view_mode) }}" class="chip {% if active_cat == cat.id %}active{% endif %}">{{ cat.name }}</a>
-        {% endfor %}
+        <div class="filter-group" role="group" aria-label="Category">
+            <span class="group-label">Category</span>
+            {% for cat in categories %}
+            <a href="{{ url_for('recipes.index', cat=cat.id, q=search, favorites=1 if favorites_only else None, sort=sort, view=view_mode) }}" class="chip {% if active_cat == cat.id %}active{% endif %}">{{ cat.name }}</a>
+            {% endfor %}
+        </div>
         {% endif %}
         {% if collections %}
-        <span style="width:1px;height:20px;background:var(--border);margin:0 0.25rem;"></span>
-        {% for coll in collections %}
-        <a href="{{ url_for('recipes.index', collection=coll.id, q=search, sort=sort, view=view_mode) }}" class="chip {% if active_coll == coll.id %}active{% endif %}">{{ coll.name }}</a>
-        {% endfor %}
+        <div class="filter-group" role="group" aria-label="Collection">
+            <span class="group-label">Collection</span>
+            {% for coll in collections %}
+            <a href="{{ url_for('recipes.index', collection=coll.id, q=search, sort=sort, view=view_mode) }}" class="chip {% if active_coll == coll.id %}active{% endif %}">{{ coll.name }}</a>
+            {% endfor %}
+        </div>
         {% endif %}
     </div>
-    <div style="display:flex;gap:0.4rem;align-items:center;">
-        <select onchange="window.location=this.value" style="width:auto;padding:0.3rem 0.5rem;font-size:var(--fs-xs);" aria-label="Sort recipes">
+    <div class="shelf-view">
+        <label class="sr-only" for="sort-select">Sort recipes</label>
+        <select id="sort-select" onchange="window.location=this.value">
             <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='newest', view=view_mode, collection=active_coll) }}" {% if sort=='newest' %}selected{% endif %}>Newest</option>
             <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='oldest', view=view_mode, collection=active_coll) }}" {% if sort=='oldest' %}selected{% endif %}>Oldest</option>
-            <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='title_az', view=view_mode, collection=active_coll) }}" {% if sort=='title_az' %}selected{% endif %}>A-Z</option>
-            <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='title_za', view=view_mode, collection=active_coll) }}" {% if sort=='title_za' %}selected{% endif %}>Z-A</option>
+            <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='title_az', view=view_mode, collection=active_coll) }}" {% if sort=='title_az' %}selected{% endif %}>A to Z</option>
+            <option value="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort='title_za', view=view_mode, collection=active_coll) }}" {% if sort=='title_za' %}selected{% endif %}>Z to A</option>
         </select>
-        <a href="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view='grid', collection=active_coll) }}" class="btn btn-sm {% if view_mode=='grid' %}btn-primary{% else %}btn-secondary{% endif %}" title="Grid view">Grid</a>
-        <a href="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view='list', collection=active_coll) }}" class="btn btn-sm {% if view_mode=='list' %}btn-primary{% else %}btn-secondary{% endif %}" title="List view">List</a>
+        <div class="view-toggle" role="group" aria-label="View">
+            <a href="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view='grid', collection=active_coll) }}" class="{% if view_mode=='grid' %}active{% endif %}" aria-label="Grid view" title="Grid view" {% if view_mode=='grid' %}aria-current="true"{% endif %}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg>
+            </a>
+            <a href="{{ url_for('recipes.index', q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view='list', collection=active_coll) }}" class="{% if view_mode=='list' %}active{% endif %}" aria-label="List view" title="List view" {% if view_mode=='list' %}aria-current="true"{% endif %}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+            </a>
+        </div>
     </div>
 </div>
 
 {% if recipes %}
     {% if view_mode == 'list' %}
-    <div class="card" style="padding:0;">
+    <div class="card shelf-list">
         <table class="table">
             <thead>
-                <tr>
-                    <th></th>
-                    <th>Title</th>
-                    <th>Category</th>
-                    <th>Rating</th>
-                    <th>Prep</th>
-                </tr>
+                <tr><th><span class="sr-only">Photo</span></th><th>Recipe</th><th>Category</th><th>Rating</th><th>Prep</th></tr>
             </thead>
             <tbody>
                 {% for recipe in recipes %}
-                <tr style="cursor:pointer;" onclick="window.location='{{ url_for('recipes.view', recipe_id=recipe.id) }}'">
-                    <td style="width:50px;padding:0.3rem;">
+                <tr>
+                    <td class="thumb-cell">
                         {% if recipe.image_url %}
-                        <img src="{{ recipe.image_url|recipe_thumb }}" alt="" width="44" height="44" loading="lazy" decoding="async" style="width:44px;height:44px;object-fit:cover;border-radius:4px;" loading="lazy" decoding="async">
+                        <img src="{{ recipe.image_url|recipe_thumb }}" alt="" width="44" height="44" loading="lazy" decoding="async" class="row-thumb">
                         {% else %}
-                        <div style="width:44px;height:44px;background:var(--border-light);border-radius:4px;"></div>
+                        <div class="row-thumb recipe-card-placeholder tint-{{ recipe.id % 4 + 1 }}" data-mono="{{ recipe.title[:1]|upper }}" aria-hidden="true"></div>
                         {% endif %}
                     </td>
                     <td>
-                        <span style="font-weight:600;">{{ recipe.title }}</span>
-                        {% if recipe.id in user_favs %}<span style="color:var(--accent);margin-left:0.25rem;">★</span>{% endif %}
+                        <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" class="row-title">{{ recipe.title }}</a>
+                        {% if recipe.id in user_favs %}<span class="fav" title="Favorite"><svg class="star" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg><span class="sr-only">Favorite</span></span>{% endif %}
                     </td>
-                    <td>
-                        {% for cat in recipe.categories %}<span class="tag">{{ cat.name }}</span> {% endfor %}
-                    </td>
-                    <td>{% if recipe.avg_rating() %}{{ "%.1f"|format(recipe.avg_rating()) }} ★{% endif %}</td>
-                    <td style="font-size:var(--fs-xs);color:var(--text-secondary);">{{ recipe.prep_time or '' }}</td>
+                    <td>{% for cat in recipe.categories %}<span class="tag">{{ cat.name }}</span>{% endfor %}</td>
+                    <td>{% if recipe.avg_rating() %}{{ "%.1f"|format(recipe.avg_rating()) }}{% endif %}</td>
+                    <td class="muted">{{ recipe.prep_time or '' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -91,35 +96,22 @@
     {% else %}
     <div class="recipe-grid">
         {% for recipe in recipes %}
-        <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" style="text-decoration:none;color:inherit;">
+        <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" class="card-link">
             <div class="card recipe-card">
                 {% if recipe.image_url %}
-                    <img class="recipe-card-img" src="{{ recipe.image_url|recipe_thumb }}" alt="{{ recipe.title }}" loading="lazy" decoding="async">
+                    <img class="recipe-card-img" data-rid="{{ recipe.id }}" data-mono="{{ recipe.title[:1]|upper }}" src="{{ recipe.image_url|recipe_thumb }}" alt="" loading="lazy" decoding="async">
                 {% else %}
-                    <div class="recipe-card-placeholder">No image</div>
+                    <div class="recipe-card-placeholder tint-{{ recipe.id % 4 + 1 }}" data-mono="{{ recipe.title[:1]|upper }}" aria-hidden="true"></div>
                 {% endif %}
                 <div class="recipe-card-body">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                        <h3 style="flex:1;">{{ recipe.title }}</h3>
-                        {% if recipe.id in user_favs %}
-                        <span style="color:var(--accent);font-size:var(--fs-base);">★</span>
-                        {% endif %}
-                    </div>
+                    <h3>{{ recipe.title }}{% if recipe.id in user_favs %} <span class="fav" title="Favorite"><svg class="star" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg><span class="sr-only">Favorite</span></span>{% endif %}</h3>
                     {% if recipe.categories %}
-                    <div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-bottom:0.35rem;">
-                        {% for cat in recipe.categories %}
-                        <span class="tag">{{ cat.name }}</span>
-                        {% endfor %}
-                    </div>
+                    <div class="card-tags below">{% for cat in recipe.categories %}<span class="tag">{{ cat.name }}</span>{% endfor %}</div>
                     {% endif %}
                     <div class="recipe-meta">
-                        {% if recipe.avg_rating() %}
-                        <span>{{ "%.1f"|format(recipe.avg_rating()) }} ★</span>
-                        {% endif %}
-                        {% if recipe.author and recipe.user_id != current_user.id %}
-                        <span>By {{ recipe.author.username }}</span>
-                        {% endif %}
+                        {% if recipe.avg_rating() %}<span>{{ "%.1f"|format(recipe.avg_rating()) }} / 5</span>{% endif %}
                         {% if recipe.prep_time %}<span>{{ recipe.prep_time }}</span>{% endif %}
+                        {% if recipe.author and recipe.user_id != current_user.id %}<span>By {{ recipe.author.username }}</span>{% endif %}
                     </div>
                 </div>
             </div>
@@ -129,32 +121,32 @@
     {% endif %}
 
     {% if pagination.pages > 1 %}
-    <div style="display:flex;justify-content:center;gap:0.35rem;margin-top:1.5rem;flex-wrap:wrap;">
+    <nav class="pager" aria-label="Pages">
         {% if pagination.has_prev %}
-        <a href="{{ url_for('recipes.index', page=pagination.prev_num, q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view=view_mode, collection=active_coll) }}" class="btn btn-secondary btn-sm">Previous</a>
+        <a href="{{ url_for('recipes.index', page=pagination.prev_num, q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view=view_mode, collection=active_coll) }}" class="btn btn-sm btn-secondary">Previous</a>
         {% endif %}
         {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
             {% if p %}
-                <a href="{{ url_for('recipes.index', page=p, q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view=view_mode, collection=active_coll) }}" class="btn btn-sm {% if p == page %}btn-primary{% else %}btn-secondary{% endif %}">{{ p }}</a>
+                <a href="{{ url_for('recipes.index', page=p, q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view=view_mode, collection=active_coll) }}" class="btn btn-sm {% if p == page %}btn-primary{% else %}btn-secondary{% endif %}" {% if p == page %}aria-current="page"{% endif %}>{{ p }}</a>
             {% else %}
-                <span style="padding:0.3rem 0.4rem;color:var(--text-tertiary);">...</span>
+                <span class="pager-gap" aria-hidden="true">…</span>
             {% endif %}
         {% endfor %}
         {% if pagination.has_next %}
-        <a href="{{ url_for('recipes.index', page=pagination.next_num, q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view=view_mode, collection=active_coll) }}" class="btn btn-secondary btn-sm">Next</a>
+        <a href="{{ url_for('recipes.index', page=pagination.next_num, q=search, cat=active_cat, favorites=1 if favorites_only else None, ingredient=ingredient_search, sort=sort, view=view_mode, collection=active_coll) }}" class="btn btn-sm btn-secondary">Next</a>
         {% endif %}
-    </div>
+    </nav>
     {% endif %}
 {% else %}
 <div class="card empty-state">
     {% if search or active_cat or favorites_only or ingredient_search or active_coll %}
-        <p>No recipes match your filters.</p>
+        <p>Nothing on the shelf matches those filters.</p>
         <a href="{{ url_for('recipes.index') }}" class="btn btn-secondary">Clear filters</a>
     {% else %}
-        <p>No recipes yet. Add your first one to get started.</p>
-        <div style="display:flex;gap:0.4rem;justify-content:center;">
-            <a href="{{ url_for('recipes.add') }}" class="btn btn-primary">New recipe</a>
-            <a href="{{ url_for('recipes.import_url') }}" class="btn btn-secondary">Import from URL</a>
+        <p>Your recipe shelf is empty. Write your first recipe, or bring some in from a link, a file or Mealie.</p>
+        <div class="empty-actions">
+            <a href="{{ url_for('recipes.add') }}" class="btn btn-primary">Write a recipe</a>
+            <a href="{{ url_for('recipes.import_url') }}" class="btn btn-secondary">Import from a link</a>
         </div>
     {% endif %}
 </div>

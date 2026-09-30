@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ "Edit" if calc else "Add" }} Calculator - Admin{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
-<div class="card" style="max-width:600px;margin:0 auto;">
-    <h2 style="font-size:var(--fs-md);margin-bottom:0.3rem;">{{ "Edit" if calc else "Add" }} Calculator</h2>
-    <p style="color:var(--text-secondary);margin-bottom:1.25rem;font-size:var(--fs-sm);">Calculators are embedded as iframes so users can interact with them directly.</p>
+<div class="form-narrow center-col">
+<div class="page-header"><h1>{{ "Edit" if calc else "Add" }} calculator</h1></div>
+<div class="card">
+    <p class="muted import-lead">Calculators are embedded as iframes so users can interact with them directly.</p>
     <form method="POST">
         <div class="form-group">
             <label for="name">Name</label>
@@ -17,10 +19,10 @@
             <label for="description">Description</label>
             <textarea id="description" name="description" rows="2" placeholder="A short description...">{{ calc.description if calc else '' }}</textarea>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-grid-2">
             <div class="form-group">
-                <label for="icon">Icon (emoji)</label>
-                <input type="text" id="icon" name="icon" value="{{ calc.icon if calc else '' }}" placeholder="Optional" style="font-size:1.5rem;text-align:center;">
+                <label for="icon">Icon <span class="opt">(a single emoji or character, optional)</span></label>
+                <input type="text" id="icon" name="icon" value="{{ calc.icon if calc else '' }}" placeholder="Optional" class="icon-input">
             </div>
             <div class="form-group">
                 <label for="sort_order">Sort Order</label>
@@ -28,10 +30,11 @@
                 <div class="form-hint">Lower numbers appear first.</div>
             </div>
         </div>
-        <div class="actions" style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <div class="form-actions form-actions-rule">
             <button type="submit" class="btn btn-primary">{{ "Update" if calc else "Add Calculator" }}</button>
             <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
+</div>
 </div>
 {% endblock %}

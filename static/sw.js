@@ -1,7 +1,7 @@
 /* Minimal service worker: enables PWA install + share target.
    Network-first so the app always shows fresh data; offline fallback
    for previously visited pages via a small runtime cache. */
-const CACHE = 'recipemanager-v1';
+const CACHE = 'recipemanager-v2';
 const MAX_ENTRIES = 300;
 
 self.addEventListener('install', (event) => {

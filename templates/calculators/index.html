@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Calculators{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="page-header">
-<h2>Calculators</h2>
+<h1>Calculators</h1>
 {% if current_user.is_admin %}
 <a href="{{ url_for('admin.add_calculator') }}" class="btn btn-primary btn-sm">Add calculator</a>
 {% endif %}
@@ -10,15 +11,13 @@
 {% if calculators %}
 <div class="recipe-grid">
 {% for calc in calculators %}
-<a href="{{ url_for('calculators.view', calc_id=calc.id) }}" style="text-decoration:none;color:inherit;">
-<div class="card recipe-card" style="padding:0;">
-<div class="recipe-card-placeholder" style="height:100px;font-size:2.5rem;">{{ calc.icon }}</div>
+<a href="{{ url_for('calculators.view', calc_id=calc.id) }}" class="card recipe-card tool-card">
+<div class="recipe-card-placeholder tool-tile tint-{{ calc.id % 4 + 1 }}" data-mono="{{ calc.name[:1]|upper }}" aria-hidden="true"></div>
 <div class="recipe-card-body">
 <h3>{{ calc.name }}</h3>
 {% if calc.description %}
-<p style="color:var(--text-secondary);font-size:var(--fs-xs);margin-top:0.2rem;">{{ calc.description }}</p>
+<p class="hint-sm">{{ calc.description }}</p>
 {% endif %}
-</div>
 </div>
 </a>
 {% endfor %}
@@ -26,6 +25,7 @@
 {% else %}
 <div class="card empty-state">
 <p>No calculators added yet.</p>
+{% if current_user.is_admin %}<a href="{{ url_for('admin.add_calculator') }}" class="btn btn-primary">Add a calculator</a>{% endif %}
 </div>
 {% endif %}
 {% endblock %}

@@ -1,30 +1,31 @@
 {% extends "base.html" %}
 {% block title %}Setup{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="auth-wrapper">
-    <div class="card">
-        <h2>Setup</h2>
+    <div class="card auth-card">
+        <h1>Set up your kitchen</h1>
         <p class="auth-subtitle">Create the admin account to get started</p>
         <form method="POST">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" required autocomplete="username">
+                <input type="text" id="username" name="username" required autocomplete="username" autocapitalize="none" spellcheck="false" autofocus>
             </div>
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="Optional">
+                <input type="email" id="email" name="email" autocomplete="email" placeholder="Optional">
                 <div class="form-hint">Used for SMTP notifications</div>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required autocomplete="new-password">
+                <input type="password" id="password" name="password" required autocomplete="new-password" minlength="8">
                 <div class="form-hint">At least 8 characters, must include letters and numbers</div>
             </div>
             <div class="form-group">
                 <label for="confirm">Confirm password</label>
                 <input type="password" id="confirm" name="confirm" required autocomplete="new-password">
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1.25rem;">Create account</button>
+            <button type="submit" class="btn btn-primary btn-block">Create account</button>
         </form>
     </div>
 </div>

@@ -36,7 +36,7 @@ def index():
     
     query = Recipe.query
     if search:
-        query = query.filter(Recipe.title.ilike(f"%{search}%"))
+        query = query.filter(db.or_(Recipe.title.ilike(f"%{search}%"), Recipe.ingredients.ilike(f"%{search}%")))
     if ingredient_search:
         query = query.filter(Recipe.ingredients.ilike(f"%{ingredient_search}%"))
     if cat_id:

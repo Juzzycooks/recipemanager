@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Cook History - {{ recipe.title }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
-<div style="max-width:560px;margin:0 auto;">
+<div class="form-narrow center-col">
     <div class="page-header">
-        <h2>Cook History</h2>
+        <h1>Cook History</h1>
         <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" class="btn btn-secondary btn-sm">Back to recipe</a>
     </div>
-    <p style="color:var(--text-secondary);margin-bottom:1rem;font-size:var(--fs-sm);">{{ recipe.title }} - Made {{ logs|length }} time(s)</p>
+    <p class="muted import-lead">{{ recipe.title }}: made {{ logs|length }} time{{ "" if logs|length == 1 else "s" }}</p>
     {% if logs %}
     <div class="card">
         <table class="table">
-            <thead><tr><th>#</th><th>Date</th></tr></thead>
+            <thead><tr><th scope="col">#</th><th scope="col">Date</th></tr></thead>
             <tbody>
             {% for log in logs %}
             <tr>
@@ -24,6 +25,7 @@
     {% else %}
     <div class="card empty-state">
         <p>You haven't logged making this recipe yet.</p>
+        <a href="{{ url_for('recipes.view', recipe_id=recipe.id) }}" class="btn btn-primary">Open the recipe</a>
     </div>
     {% endif %}
 </div>

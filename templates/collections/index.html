@@ -1,33 +1,31 @@
 {% extends "base.html" %}
 {% block title %}Collections{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h2>Collections</h2>
+    <h1>Collections</h1>
     <a href="{{ url_for('collections.create') }}" class="btn btn-primary">New collection</a>
 </div>
 
 {% if collections %}
 <div class="recipe-grid">
     {% for coll in collections %}
-    <a href="{{ url_for('collections.view', coll_id=coll.id) }}" style="text-decoration:none;color:inherit;">
-        <div class="card recipe-card">
-            {% if coll.cover_image %}
-            <img class="recipe-card-img" src="/admin/uploads/{{ coll.cover_image }}" alt="{{ coll.name }}" loading="lazy" decoding="async">
-            {% else %}
-            <div class="recipe-card-placeholder" style="height:140px;font-size:2rem;">
-                {{ coll.get_all_recipes()|length }}
-            </div>
+    {% set n = coll.get_all_recipes()|length %}
+    <a href="{{ url_for('collections.view', coll_id=coll.id) }}" class="card recipe-card tool-card">
+        {% if coll.cover_image %}
+        <img class="recipe-card-img" src="/admin/uploads/{{ coll.cover_image }}" alt="" loading="lazy" decoding="async">
+        {% else %}
+        <div class="recipe-card-placeholder tint-{{ coll.id % 4 + 1 }}" data-mono="{{ coll.name[:1]|upper }}" aria-hidden="true"></div>
+        {% endif %}
+        <div class="recipe-card-body">
+            <h3>{{ coll.name }}</h3>
+            {% if coll.description %}
+            <p class="hint-sm">{{ coll.description|truncate(80) }}</p>
             {% endif %}
-            <div class="recipe-card-body">
-                <h3>{{ coll.name }}</h3>
-                {% if coll.description %}
-                <p style="font-size:var(--fs-xs);color:var(--text-secondary);margin-top:0.25rem;">{{ coll.description|truncate(80) }}</p>
-                {% endif %}
-                <div class="recipe-meta">
-                    <span>{{ coll.get_all_recipes()|length }} recipe{{ 's' if coll.get_all_recipes()|length != 1 }}</span>
-                    {% if coll.category %}<span class="tag" style="font-size:var(--fs-2xs);">{{ coll.category.name }}</span>{% endif %}
-                    {% if coll.share_token %}<span style="color:var(--success);font-size:var(--fs-2xs);">Public</span>{% endif %}
-                </div>
+            <div class="recipe-meta">
+                <span>{{ n }} recipe{{ 's' if n != 1 }}</span>
+                {% if coll.category %}<span class="tag">{{ coll.category.name }}</span>{% endif %}
+                {% if coll.share_token %}<span class="status-ok">Public</span>{% endif %}
             </div>
         </div>
     </a>

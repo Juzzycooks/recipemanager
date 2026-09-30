@@ -1,0 +1,31 @@
+/* Recipe shelf (recipes/index.html) */
+.page-title { font-size: clamp(1.9rem, 4.5vw, 2.75rem); letter-spacing: -0.01em; }
+.header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.shelf-search { align-items: center; flex-wrap: wrap; }
+.shelf-search input[type="search"] { flex: 1 1 260px; min-width: 0; }
+.shelf-controls { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.filter-groups { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; flex: 1 1 420px; }
+.filter-group { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.group-label { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-tertiary); min-width: 5.5rem; }
+.shelf-view { display: flex; gap: 0.5rem; align-items: center; }
+.shelf-view select { width: auto; padding: 0.4rem 0.6rem; font-size: var(--fs-sm); }
+.view-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+.view-toggle a { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 38px; color: var(--text-secondary); }
+.view-toggle a.active { background: var(--accent-subtle); color: var(--accent); }
+.card-link { text-decoration: none; color: inherit; display: block; min-width: 0; border-radius: var(--radius-lg); }
+.card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.card-tags { margin: 0 0 0.35rem; }
+.view-toggle a { width: 44px; height: 44px; }
+.recipe-card { margin-bottom: 0; height: 100%; }
+.fav { color: var(--accent); display: inline-flex; vertical-align: 0.05em; margin-left: 0.15rem; }
+.shelf-list { padding: 0; overflow-x: auto; }
+.thumb-cell { width: 56px; padding: 0.4rem 0.5rem; }
+.row-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: var(--radius); display: block; aspect-ratio: 1; }
+.row-thumb.recipe-card-placeholder::before { font-size: 1.6rem; }
+.row-title { font-family: var(--font-display); font-size: var(--fs-md); font-weight: 700; color: var(--text-primary); overflow-wrap: anywhere; }
+.row-title:hover { color: var(--accent); }
+.muted { color: var(--text-secondary); font-size: var(--fs-xs); }
+.pager { display: flex; justify-content: center; gap: 0.35rem; margin-top: 2rem; flex-wrap: wrap; align-items: center; }
+.pager-gap { padding: 0 0.3rem; color: var(--text-tertiary); }
+.empty-actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+@media (max-width: 640px) { .group-label { min-width: 100%; } }

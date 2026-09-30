@@ -1,43 +1,52 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Edit' if collection else 'New' }} Collection{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h2>{{ 'Edit' if collection else 'New' }} Collection</h2>
+    <h1>{{ 'Edit' if collection else 'New' }} Collection</h1>
 </div>
-<div class="card">
+<div class="card form-narrow">
     <form method="POST" enctype="multipart/form-data">
-        <label style="margin-top:0;">Name</label>
-        <input type="text" name="name" value="{{ collection.name if collection else '' }}" required placeholder="e.g. BBQ, Weeknight Dinners">
-
-        <label>Description</label>
-        <textarea name="description" rows="3" placeholder="Optional description...">{{ collection.description if collection else '' }}</textarea>
-
-        <label>Cover image</label>
-        {% if collection and collection.cover_image %}
-        <div style="margin-bottom:0.5rem;">
-            <img src="/admin/uploads/{{ collection.cover_image }}" alt="Cover" style="max-height:120px;border-radius:8px;">
-            <label style="display:inline-flex;align-items:center;gap:0.3rem;font-weight:400;font-size:var(--fs-xs);margin:0.5rem 0 0;">
-                <input type="checkbox" name="remove_cover" value="1" style="width:auto;"> Remove cover
-            </label>
+        <div class="form-group">
+            <label for="coll-name">Name</label>
+            <input type="text" id="coll-name" name="name" value="{{ collection.name if collection else '' }}" required placeholder="e.g. BBQ, Weeknight Dinners">
         </div>
-        {% endif %}
-        <input type="file" name="cover_image" accept="image/*">
-        <p class="form-hint">Shown on the collection card and public page header.</p>
 
-        <label>Custom URL slug</label>
-        <input type="text" name="slug" value="{{ collection.slug if collection and collection.slug else '' }}" placeholder="e.g. bbq-favourites">
-        <p class="form-hint">Public link will be <code>/collections/shared/your-slug</code> instead of a random token. Leave blank for auto-generated.</p>
+        <div class="form-group">
+            <label for="coll-desc">Description <span class="opt">(optional)</span></label>
+            <textarea id="coll-desc" name="description" rows="3" placeholder="Optional description...">{{ collection.description if collection else '' }}</textarea>
+        </div>
 
-        <label>Auto-populate from category</label>
-        <select name="category_id">
-            <option value="">None (manual only)</option>
-            {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if collection and collection.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-            {% endfor %}
-        </select>
-        <p class="form-hint">Recipes in the linked category will automatically appear in this collection.</p>
+        <div class="form-group">
+            <label for="coll-cover">Cover image</label>
+            {% if collection and collection.cover_image %}
+            <div class="cover-current">
+                <img src="/admin/uploads/{{ collection.cover_image }}" alt="Current cover">
+                <label class="check-row"><input type="checkbox" name="remove_cover" value="1"> Remove cover</label>
+            </div>
+            {% endif %}
+            <input type="file" id="coll-cover" name="cover_image" accept="image/*">
+            <p class="form-hint">Shown on the collection card and public page header.</p>
+        </div>
 
-        <div class="actions">
+        <div class="form-group">
+            <label for="coll-slug">Custom URL slug</label>
+            <input type="text" id="coll-slug" name="slug" value="{{ collection.slug if collection and collection.slug else '' }}" placeholder="e.g. bbq-favourites">
+            <p class="form-hint">Public link will be <code>/collections/shared/your-slug</code> instead of a random token. Leave blank for auto-generated.</p>
+        </div>
+
+        <div class="form-group">
+            <label for="coll-cat">Auto-populate from category</label>
+            <select id="coll-cat" name="category_id">
+                <option value="">None (manual only)</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if collection and collection.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+            <p class="form-hint">Recipes in the linked category will automatically appear in this collection.</p>
+        </div>
+
+        <div class="form-actions">
             <button type="submit" class="btn btn-primary">{{ 'Save' if collection else 'Create' }}</button>
             <a href="{{ url_for('collections.index') }}" class="btn btn-secondary">Cancel</a>
         </div>

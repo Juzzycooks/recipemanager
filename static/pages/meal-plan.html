@@ -5,140 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2-Week Meal Plan</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-            min-height: 100vh;
+        /* Meal plan: sections are ruled index cards on the flour ground; meals are ruled rows, not cards. */
+        body { max-width: 900px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+        .container { display: block; }
+        h1 { text-align: center; margin: 0.5rem 0 0.4rem; text-wrap: balance; }
+        .subtitle { text-align: center; color: var(--text-secondary); font-size: var(--fs-md); font-style: italic;
+            font-family: var(--font-display); margin-bottom: 1.5rem; }
+        .week-toggle { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .week-btn { min-height: 44px; padding: 0.5rem 1.75rem; font-size: var(--fs-base); font-weight: 700;
+            border: 1px solid var(--accent); background: var(--surface); color: var(--accent);
+            border-radius: var(--radius); cursor: pointer;
+            transition: background-color var(--duration-fast), color var(--duration-fast); }
+        .week-btn:hover { background: var(--accent-subtle); }
+        .week-btn.active { background: var(--accent-solid); border-color: var(--accent-solid); color: var(--on-accent); }
+        .week-content { display: none; }
+        .week-content.active { display: block; }
+
+        .daily-plan, .prep-section, .shopping-list {
+            background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm); padding: 1.25rem 1.5rem; margin: 0 0 1.25rem;
         }
-        .container {
-            background: var(--surface);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        h1 {
-            color: var(--accent);
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            text-align: center;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-        }
-        .week-toggle {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .week-btn {
-            padding: 12px 30px;
-            font-size: 16px;
-            font-weight: bold;
-            border: 3px solid var(--accent);
-            background: var(--surface);
-            color: var(--accent);
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .week-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-        .week-btn.active {
-            background: var(--accent);
-            color: white;
-        }
-        .week-content {
-            display: none;
-        }
-        .week-content.active {
-            display: block;
-        }
-        .daily-plan {
-            background: var(--bg);
-            border-left: 5px solid var(--accent);
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
-        .meal {
-            margin: 15px 0;
-            padding: 12px;
-            background: var(--surface);
-            border-radius: 6px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .meal-title {
-            font-weight: bold;
-            color: var(--accent);
-            margin-bottom: 5px;
-        }
-        .calories {
-            color: #ff6b6b;
-            font-weight: bold;
-            float: right;
-        }
-        .prep-section {
-            background: #fff3cd;
-            border-left: 5px solid #ffc107;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 8px;
-        }
-        .prep-section h2 {
-            color: #856404;
-            margin-top: 0;
-        }
-        .shopping-list {
-            background: #d1ecf1;
-            border-left: 5px solid #17a2b8;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 8px;
-        }
-        .shopping-list h2 {
-            color: #0c5460;
-            margin-top: 0;
-        }
-        ul {
-            line-height: 1.8;
-        }
-        .day-header {
-            color: var(--accent);
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .total-cal {
-            text-align: right;
-            font-weight: bold;
-            color: var(--success);
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px solid var(--border);
-        }
-        .pro-tips {
-            background: #d4edda;
-            border-left: 5px solid var(--success);
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
+        .day-header { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+            color: var(--accent); padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule); margin-bottom: 0.25rem; }
+        .meal { padding: 0.9rem 0; border-bottom: 1px solid var(--rule); line-height: 1.7; overflow: hidden; }
+        .meal-title { font-family: var(--font-display); font-size: var(--fs-md); font-weight: 700;
+            color: var(--text-primary); margin-bottom: 0.3rem; letter-spacing: 0.02em; }
+        .calories { color: var(--accent); font-weight: 700; float: right; font-variant-numeric: tabular-nums; }
+        .total-cal { text-align: right; font-weight: 700; color: var(--success); margin-top: 0.85rem;
+            font-variant-numeric: tabular-nums; }
+
+        .prep-section h2, .shopping-list h2 { margin: 0 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule); }
+        .prep-section ul, .shopping-list ul { list-style: none; margin: 0.4rem 0 1rem; padding: 0; }
+        .prep-section li, .shopping-list li { position: relative; padding: 0.4rem 0 0.4rem 1.1rem;
+            border-bottom: 1px solid var(--rule); }
+        .prep-section li::before, .shopping-list li::before { content: ""; position: absolute; left: 0; top: 1.05em;
+            width: 0.55rem; height: 2px; background: var(--accent); }
+        .prep-section li:last-child, .shopping-list li:last-child { border-bottom: 0; }
+        .shopping-list strong { display: block; margin-top: 0.75rem; font-size: var(--fs-2xs); letter-spacing: 0.08em;
+            text-transform: uppercase; color: var(--accent); }
+
+        .pro-tips { margin-top: 1.25rem; }
+        .pro-tips ul { margin: 0.5rem 0 0; }
+        .pro-tips li { padding-right: 0.25rem; }
+
+        @media (max-width: 520px) {
+            .daily-plan, .prep-section, .shopping-list { padding: 1rem; }
+            .calories { float: none; display: block; }
         }
     </style>
 
 <link rel="stylesheet" href="/static/pages/_theme.css">
-<style id="jf-theme">.prep-section,.shopping-list,.pro-tips{background:var(--surface)!important;border:1px solid var(--border)!important;}.prep-section{border-left:5px solid var(--accent)!important;}.shopping-list{border-left:5px solid var(--accent)!important;}.pro-tips{border-left:5px solid var(--success)!important;}.prep-section,.prep-section *,.shopping-list,.shopping-list *,.pro-tips,.pro-tips *{color:var(--text-primary)!important;}.prep-section h3,.shopping-list h3,.pro-tips h3{color:var(--accent)!important;}.calories{background:transparent!important;color:var(--accent)!important;}.total-cal{color:var(--success)!important;}</style>
 <script>(function(){try{var t=localStorage.getItem("theme")||((window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light");document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
 <body>
     <div class="container">
-        <h1>🍽️ Alternating 2-Week Meal Prep Plan</h1>
+        <h1>Alternating 2-Week Meal Prep Plan</h1>
         <div class="subtitle">Target: ~2000 cal/day | Weight Loss Plan</div>
 
         <div class="week-toggle">
@@ -152,14 +73,14 @@
                 <div class="day-header">EVERY DAY (Mon-Sun)</div>
                 
                 <div class="meal">
-                    <div class="meal-title">🍳 BREAKFAST <span class="calories">~450 cal</span></div>
+                    <div class="meal-title">BREAKFAST <span class="calories">~450 cal</span></div>
                     • 3 scrambled eggs (cooked with butter)<br>
                     • 2 slices toast with butter<br>
                     • 1 piece of fruit (banana/apple)
                 </div>
 
                 <div class="meal">
-                    <div class="meal-title">🍗 LUNCH <span class="calories">~550 cal</span></div>
+                    <div class="meal-title">LUNCH <span class="calories">~550 cal</span></div>
                     • 150g chicken thigh (cooked weight)<br>
                     • 150g <strong>cooked</strong> rice<br>
                     • 200g mixed veggies<br>
@@ -167,7 +88,7 @@
                 </div>
 
                 <div class="meal">
-                    <div class="meal-title">🍝 DINNER (Rotate)</div>
+                    <div class="meal-title">DINNER (Rotate)</div>
                     <strong>Days 1, 3, 5, 7:</strong> Beef Mince Pasta <span class="calories">~650 cal</span><br>
                     • 150g beef mince<br>
                     • 100g <strong>cooked</strong> pasta<br>
@@ -179,7 +100,7 @@
                 </div>
 
                 <div class="meal">
-                    <div class="meal-title">🥜 SNACKS <span class="calories">~300-350 cal</span></div>
+                    <div class="meal-title">SNACKS <span class="calories">~300-350 cal</span></div>
                     <strong>Fruit (pick 2):</strong><br>
                     • 1 medium banana (~100 cal)<br>
                     • 1 medium apple (~80 cal)<br>
@@ -196,7 +117,7 @@
             </div>
 
             <div class="prep-section">
-                <h2>📅 SUNDAY MEAL PREP (Mon-Wed)</h2>
+                <h2>SUNDAY MEAL PREP (Mon-Wed)</h2>
                 <strong>Make 3 portions each:</strong>
                 <ul>
                     <li>Chicken & rice bowls (lunch) - 450g chicken thighs, 450g cooked rice, 600g frozen veggies</li>
@@ -209,7 +130,7 @@
             </div>
 
             <div class="prep-section">
-                <h2>📅 WEDNESDAY EVENING PREP (Thu-Sun)</h2>
+                <h2>WEDNESDAY EVENING PREP (Thu-Sun)</h2>
                 <strong>Make 4 portions each:</strong>
                 <ul>
                     <li>Chicken & rice bowls (lunch) - 600g chicken thighs, 600g cooked rice, 800g frozen veggies</li>
@@ -222,7 +143,7 @@
             </div>
 
             <div class="shopping-list">
-                <h2>🛒 WEEK 1 SHOPPING LIST ($60-75 AUD)</h2>
+                <h2>WEEK 1 SHOPPING LIST ($60-75 AUD)</h2>
                 <strong>Proteins:</strong>
                 <ul>
                     <li>2 dozen eggs</li>
@@ -263,14 +184,14 @@
                 <div class="day-header">EVERY DAY (Mon-Sun)</div>
                 
                 <div class="meal">
-                    <div class="meal-title">🍳 BREAKFAST <span class="calories">~450 cal</span></div>
+                    <div class="meal-title">BREAKFAST <span class="calories">~450 cal</span></div>
                     • 3 scrambled eggs (cooked with butter)<br>
                     • 2 slices toast with butter<br>
                     • 1 piece of fruit (banana/apple)
                 </div>
 
                 <div class="meal">
-                    <div class="meal-title">🍗 LUNCH <span class="calories">~550 cal</span></div>
+                    <div class="meal-title">LUNCH <span class="calories">~550 cal</span></div>
                     • 150g chicken breast or thigh (cooked weight)<br>
                     • 200g sweet potato (baked/roasted)<br>
                     • 200g mixed veggies or salad<br>
@@ -278,7 +199,7 @@
                 </div>
 
                 <div class="meal">
-                    <div class="meal-title">🥘 DINNER (Rotate)</div>
+                    <div class="meal-title">DINNER (Rotate)</div>
                     <strong>Days 1, 3, 5, 7:</strong> Beef Stir-fry with Noodles <span class="calories">~650 cal</span><br>
                     • 150g beef strips<br>
                     • 100g <strong>cooked</strong> egg noodles or rice noodles<br>
@@ -293,7 +214,7 @@
                 </div>
 
                 <div class="meal">
-                    <div class="meal-title">🥜 SNACKS <span class="calories">~300-350 cal</span></div>
+                    <div class="meal-title">SNACKS <span class="calories">~300-350 cal</span></div>
                     <strong>Fruit (pick 2):</strong><br>
                     • 1 medium banana (~100 cal)<br>
                     • 1 medium apple (~80 cal)<br>
@@ -310,7 +231,7 @@
             </div>
 
             <div class="prep-section">
-                <h2>📅 SUNDAY MEAL PREP (Mon-Wed)</h2>
+                <h2>SUNDAY MEAL PREP (Mon-Wed)</h2>
                 <strong>Make 3 portions each:</strong>
                 <ul>
                     <li>Chicken & sweet potato bowls (lunch) - 450g chicken, 600g sweet potato, veggies</li>
@@ -323,7 +244,7 @@
             </div>
 
             <div class="prep-section">
-                <h2>📅 WEDNESDAY EVENING PREP (Thu-Sun)</h2>
+                <h2>WEDNESDAY EVENING PREP (Thu-Sun)</h2>
                 <strong>Make 4 portions each:</strong>
                 <ul>
                     <li>Chicken & sweet potato bowls (lunch) - 600g chicken, 800g sweet potato, veggies</li>
@@ -336,7 +257,7 @@
             </div>
 
             <div class="shopping-list">
-                <h2>🛒 WEEK 2 SHOPPING LIST ($60-75 AUD)</h2>
+                <h2>WEEK 2 SHOPPING LIST ($60-75 AUD)</h2>
                 <strong>Proteins:</strong>
                 <ul>
                     <li>2 dozen eggs</li>
@@ -373,9 +294,11 @@
             </div>
         </div>
 
-        <div class="pro-tips">
-            <strong>💡 Pro Tips:</strong>
-            <ul style="margin: 10px 0;">
+        <div class="pro-tips callout">
+            <span class="callout-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></span>
+            <div class="callout-body">
+            <h2 class="callout-title">Pro Tips</h2>
+            <ul class="ruled-list">
                 <li>Alternate weeks to keep variety and avoid boredom</li>
                 <li>Label containers with day of the week</li>
                 <li>Store meals in fridge for 3-4 days max (that's why we prep twice!)</li>
@@ -385,6 +308,7 @@
                 <li>To cook rice/pasta in bulk: 100g dry rice becomes ~250g cooked, 100g dry pasta becomes ~200-250g cooked</li>
                 <li>Expected weight loss: 0.7-1kg per week</li>
             </ul>
+        </div>
         </div>
     </div>
 

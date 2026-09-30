@@ -1,38 +1,40 @@
 {% extends "base.html" %}
 {% block title %}{{ page.name }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-<div style="display:flex;align-items:center;gap:0.5rem;">
-<a href="{{ url_for('extras.index') }}" class="btn btn-secondary btn-sm">&larr;</a>
-<h2 style="font-size:var(--fs-md);">{{ page.icon }} {{ page.name }}</h2>
+<div class="frame-head">
+<div class="row-tools">
+<a href="{{ url_for('extras.index') }}" class="btn btn-secondary btn-sm" aria-label="Back to extras">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Extras</a>
+<h2>{{ page.name }}</h2>
 </div>
 <a href="{{ url_for('static', filename=page.file) }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">Open in new tab</a>
 </div>
-<div class="card" style="padding:0;overflow:hidden;">
-<iframe src="{{ url_for('static', filename=page.file) }}" style="width:100%;height:82vh;border:none;display:block;"
-title="{{ page.name }}" loading="lazy"
+<div class="card frame-card">
+<iframe src="{{ url_for('static', filename=page.file) }}" class="tool-frame" title="{{ page.name }}" loading="lazy"
 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
 </div>
 
 <!-- Share externally -->
-<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border);">
-<p style="font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-tertiary);margin-bottom:0.5rem;">Share externally</p>
+<section class="share-panel" aria-labelledby="share-h">
+<h3 id="share-h" class="section-title">Share externally</h3>
 {% if share %}
-<div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-<input type="text" id="share-url" value="{{ url_for('extras.view_shared', token=share.token, _external=True) }}" readonly style="flex:1;min-width:200px;font-size:var(--fs-sm);background:var(--bg);cursor:text;">
+<div class="row-tools">
+<label for="share-url" class="sr-only">Public link</label>
+<input type="text" id="share-url" class="share-input" value="{{ url_for('extras.view_shared', token=share.token, _external=True) }}" readonly>
 <button type="button" class="btn btn-secondary btn-sm" onclick="copyShareLink()">Copy link</button>
-<form method="POST" action="{{ url_for('extras.remove_share_link', slug=page.slug) }}" style="display:inline;">
+<form method="POST" action="{{ url_for('extras.remove_share_link', slug=page.slug) }}" class="inline-form">
 <button type="submit" class="btn btn-danger btn-sm">Remove link</button>
 </form>
 </div>
-<p style="font-size:var(--fs-xs);color:var(--text-tertiary);margin-top:0.4rem;">Anyone with this link can open this page without logging in.</p>
+<p class="hint-sm">Anyone with this link can open this page without logging in.</p>
 {% else %}
 <form method="POST" action="{{ url_for('extras.create_share_link', slug=page.slug) }}">
 <button type="submit" class="btn btn-secondary">Generate public link</button>
 </form>
-<p style="font-size:var(--fs-xs);color:var(--text-tertiary);margin-top:0.4rem;">Create a link anyone can use to open this page without an account.</p>
+<p class="hint-sm">Create a link anyone can use to open this page without an account.</p>
 {% endif %}
-</div>
+</section>
 
 <script>
 function copyShareLink() {

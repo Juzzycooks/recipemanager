@@ -1,32 +1,35 @@
 {% extends "base.html" %}
 {% block title %}Admin{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
-<div class="page-header"><h2>Admin</h2></div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem;">
+<div class="page-header"><h1>Admin</h1></div>
+<div class="stat-grid">
 <div class="card stat"><div class="stat-value">{{ user_count }}</div><div class="stat-label">Users</div></div>
 <div class="card stat"><div class="stat-value">{{ recipe_count }}</div><div class="stat-label">Recipes</div></div>
 <div class="card stat"><div class="stat-value">{{ categories|length }}</div><div class="stat-label">Categories</div></div>
 </div>
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-<h3 style="font-size:var(--fs-base);">Users</h3>
+
+<section class="card" aria-labelledby="users-h">
+<div class="card-head">
+<h3 id="users-h" class="card-title">Users</h3>
 <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary btn-sm">Add user</a>
 </div>
+<div class="table-wrap">
 <table class="table">
-<thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Recipes</th><th>Actions</th></tr></thead>
+<thead><tr><th scope="col">Username</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Recipes</th><th scope="col">Actions</th></tr></thead>
 <tbody>
 {% for user in users %}
 <tr>
-<td style="font-weight:600;">{{ user.username }}</td>
-<td style="color:var(--text-tertiary);">{{ user.email or '—' }}</td>
+<th scope="row" class="cell-primary"><a href="{{ url_for('admin.edit_user', user_id=user.id) }}">{{ user.username }}</a></th>
+<td class="cell-muted">{{ user.email or 'None' }}</td>
 <td>{% if user.is_admin %}<span class="badge badge-accent">Admin</span>{% else %}<span class="badge badge-muted">User</span>{% endif %}</td>
 <td>{{ user.recipes|length }}</td>
 <td>
-<div style="display:flex;gap:0.3rem;">
+<div class="row-tools">
 <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-secondary btn-sm">Edit</a>
 {% if user.id != current_user.id %}
 <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
-onsubmit="return confirm('Delete {{ user.username }}?');" style="display:inline;">
+onsubmit="return confirm('Delete {{ user.username }}?');">
 <button type="submit" class="btn btn-danger btn-sm">Delete</button>
 </form>
 {% endif %}
@@ -37,50 +40,55 @@ onsubmit="return confirm('Delete {{ user.username }}?');" style="display:inline;
 </tbody>
 </table>
 </div>
+</section>
 
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-<h3 style="font-size:var(--fs-base);">Categories</h3>
+<section class="card" aria-labelledby="cats-h">
+<div class="card-head">
+<h3 id="cats-h" class="card-title">Categories</h3>
 </div>
-<form method="POST" action="{{ url_for('admin.add_category') }}" style="display:flex;gap:0.5rem;margin-bottom:1rem;">
-<input type="text" name="name" placeholder="New category name" required style="flex:1;">
+<form method="POST" action="{{ url_for('admin.add_category') }}" class="add-item-form cat-add">
+<label for="new-cat" class="sr-only">New category name</label>
+<input type="text" id="new-cat" name="name" placeholder="New category name" required>
 <button type="submit" class="btn btn-primary btn-sm">Add</button>
 </form>
 {% if categories %}
-<div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+<ul class="cat-list">
 {% for cat in categories %}
-<div style="display:inline-flex;align-items:center;gap:0.3rem;background:var(--accent-subtle);padding:0.25rem 0.5rem 0.25rem 0.65rem;border-radius:20px;">
-<span style="font-size:var(--fs-xs);font-weight:500;color:var(--accent);">{{ cat.name }}</span>
-<span style="font-size:var(--fs-2xs);color:var(--text-tertiary);margin-left:0.1rem;">{{ cat.recipes|length }}</span>
-<form method="POST" action="{{ url_for('admin.delete_category', cat_id=cat.id) }}" style="display:inline;" onsubmit="return confirm('Delete {{ cat.name }}?');">
-<button type="submit" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:var(--fs-2xs);padding:0 0.15rem;line-height:1;">&times;</button>
+<li class="cat-pill">
+<span class="cat-pill-name">{{ cat.name }}</span>
+<span class="cat-pill-count">{{ cat.recipes|length }}</span>
+<form method="POST" action="{{ url_for('admin.delete_category', cat_id=cat.id) }}" onsubmit="return confirm('Delete {{ cat.name }}?');">
+<button type="submit" class="cat-pill-x" aria-label="Delete category {{ cat.name }}">
+<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+</button>
 </form>
-</div>
+</li>
 {% endfor %}
-</div>
+</ul>
 {% else %}
-<p style="color:var(--text-tertiary);font-size:var(--fs-sm);">No categories yet.</p>
+<p class="hint-sm">No categories yet. Add one above to start grouping recipes.</p>
 {% endif %}
-</div>
+</section>
 
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-<h3 style="font-size:var(--fs-base);">Calculators</h3>
+<section class="card" aria-labelledby="calcs-h">
+<div class="card-head">
+<h3 id="calcs-h" class="card-title">Calculators</h3>
 <a href="{{ url_for('admin.add_calculator') }}" class="btn btn-primary btn-sm">Add calculator</a>
 </div>
 {% if calculators %}
+<div class="table-wrap">
 <table class="table">
-<thead><tr><th>Name</th><th>URL</th><th>Order</th><th>Actions</th></tr></thead>
+<thead><tr><th scope="col">Name</th><th scope="col">URL</th><th scope="col">Order</th><th scope="col">Actions</th></tr></thead>
 <tbody>
 {% for calc in calculators %}
 <tr>
-<td style="font-weight:600;">{{ calc.name }}</td>
-<td style="color:var(--text-tertiary);font-size:var(--fs-xs);">{{ calc.url|truncate(40) }}</td>
+<th scope="row" class="cell-primary"><a href="{{ url_for('admin.edit_calculator', calc_id=calc.id) }}">{{ calc.name }}</a></th>
+<td class="cell-muted">{{ calc.url|truncate(40) }}</td>
 <td>{{ calc.sort_order }}</td>
 <td>
-<div style="display:flex;gap:0.3rem;">
+<div class="row-tools">
 <a href="{{ url_for('admin.edit_calculator', calc_id=calc.id) }}" class="btn btn-secondary btn-sm">Edit</a>
-<form method="POST" action="{{ url_for('admin.delete_calculator', calc_id=calc.id) }}" onsubmit="return confirm('Delete {{ calc.name }}?');" style="display:inline;">
+<form method="POST" action="{{ url_for('admin.delete_calculator', calc_id=calc.id) }}" onsubmit="return confirm('Delete {{ calc.name }}?');">
 <button type="submit" class="btn btn-danger btn-sm">Delete</button>
 </form>
 </div>
@@ -89,43 +97,41 @@ onsubmit="return confirm('Delete {{ user.username }}?');" style="display:inline;
 {% endfor %}
 </tbody>
 </table>
-{% else %}
-<p style="color:var(--text-tertiary);font-size:var(--fs-sm);">No calculators added yet.</p>
-{% endif %}
 </div>
+{% else %}
+<p class="hint-sm">No calculators added yet.</p>
+{% endif %}
+</section>
 
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;">
+<section class="card card-link">
 <div>
-<h3 style="font-size:var(--fs-base);">Site Settings</h3>
-<p style="color:var(--text-tertiary);font-size:var(--fs-xs);margin-top:0.2rem;">Customize logo, site name, and branding.</p>
+<h3 class="card-title">Site settings</h3>
+<p class="hint-sm">Customize logo, site name, and branding.</p>
 </div>
 <a href="{{ url_for('admin.settings') }}" class="btn btn-secondary btn-sm">Settings</a>
-</div>
-</div>
+</section>
 
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;">
+<section class="card card-link">
 <div>
-<h3 style="font-size:var(--fs-base);">Mealie Import</h3>
-<p style="color:var(--text-tertiary);font-size:var(--fs-xs);margin-top:0.2rem;">Import recipes from a Mealie v4 instance.</p>
+<h3 class="card-title">Mealie import</h3>
+<p class="hint-sm">Import recipes from a Mealie v4 instance.</p>
 </div>
 <a href="{{ url_for('admin.mealie_import_page') }}" class="btn btn-secondary btn-sm">Import</a>
-</div>
-</div>
+</section>
 
-<div class="card">
-<h3 style="font-size:var(--fs-base);margin-bottom:0.25rem;">Backup &amp; Restore</h3>
-<p style="color:var(--text-tertiary);font-size:var(--fs-xs);margin-bottom:1rem;">Export your recipes and images, or download a database snapshot.</p>
-<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+<section class="card" aria-labelledby="backup-h">
+<h3 id="backup-h" class="card-title">Backup &amp; restore</h3>
+<p class="hint-sm backup-lead">Export your recipes and images, or download a database snapshot.</p>
+<div class="row-tools backup-links">
 <a href="{{ url_for('admin.export_zip') }}" class="btn btn-primary btn-sm">Full backup (zip)</a>
 <a href="{{ url_for('admin.export_json') }}" class="btn btn-secondary btn-sm">Recipes (JSON)</a>
 <a href="{{ url_for('admin.export_db') }}" class="btn btn-secondary btn-sm">Database snapshot</a>
 </div>
-<form method="POST" action="{{ url_for('admin.import_backup') }}" enctype="multipart/form-data" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-<input type="file" name="backup_file" accept=".json,.zip" required style="flex:1;min-width:200px;">
+<form method="POST" action="{{ url_for('admin.import_backup') }}" enctype="multipart/form-data" class="row-tools backup-form">
+<label for="backup_file" class="sr-only">Backup file to import</label>
+<input type="file" id="backup_file" name="backup_file" accept=".json,.zip" required>
 <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Import recipes from this backup? Duplicate titles will be skipped.');">Import backup</button>
 </form>
-</div>
+</section>
 
 {% endblock %}

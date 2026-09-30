@@ -1,76 +1,86 @@
 {% extends "base.html" %}
 {% block title %}Shopping List - Recipe Manager{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h2>Shopping List</h2>
-    <div style="display:flex;gap:0.5rem;align-items:center;">
-        {% if unchecked or checked %}
-        <form method="POST" action="{{ url_for('shopping.clear_checked') }}" style="display:inline;">
+    <h1>Shopping List</h1>
+    {% if unchecked or checked %}
+    <div class="row-tools">
+        <form method="POST" action="{{ url_for('shopping.clear_checked') }}">
             <button type="submit" class="btn btn-secondary btn-sm">Clear checked</button>
         </form>
-        <form method="POST" action="{{ url_for('shopping.clear') }}" style="display:inline;" onsubmit="return confirm('Clear entire shopping list?');">
+        <form method="POST" action="{{ url_for('shopping.clear') }}" onsubmit="return confirm('Clear entire shopping list?');">
             <button type="submit" class="btn btn-danger btn-sm">Clear all</button>
         </form>
-        {% endif %}
     </div>
+    {% endif %}
 </div>
 
-<div class="card" style="margin-bottom:1.25rem;">
-    <form method="POST" action="{{ url_for('shopping.add_item') }}" style="display:flex;gap:0.5rem;">
-        <input type="text" name="name" placeholder="Add an item..." required style="flex:1;">
-        <button type="submit" class="btn btn-primary">Add</button>
+<div class="card">
+    <form method="POST" action="{{ url_for('shopping.add_item') }}" class="add-item-form">
+        <label for="item-name" class="sr-only">Item name</label>
+        <input type="text" id="item-name" name="name" placeholder="Add an item..." required autocomplete="off">
+        <button type="submit" class="btn btn-primary">Add item</button>
     </form>
 </div>
 
 {% if unchecked %}
+<section aria-label="To buy">
 {% for aisle, items in aisle_groups %}
-<p style="font-size:var(--fs-xs);color:var(--text-tertiary);font-weight:600;margin:1rem 0 0.5rem;">{{ aisle }} ({{ items|length }})</p>
-<div class="card" style="padding:0;">
+<h3 class="aisle-name">{{ aisle }} <span class="aisle-count">{{ items|length }}</span></h3>
+<ul class="card shop-list">
     {% for item in items %}
-    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1.25rem;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
-        <form method="POST" action="{{ url_for('shopping.toggle', item_id=item.id) }}" style="display:flex;flex-shrink:0;">
-            <button type="submit" style="background:none;border:2px solid var(--border);width:20px;height:20px;border-radius:4px;cursor:pointer;" aria-label="Check off {{ item.name }}"></button>
+    <li class="shop-row">
+        <form method="POST" action="{{ url_for('shopping.toggle', item_id=item.id) }}">
+            <button type="submit" class="shop-check" aria-label="Check off {{ item.name }}"><span class="shop-box"></span></button>
         </form>
-        <div style="flex:1;min-width:0;">
-            <div style="font-size:var(--fs-sm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ item.name }}</div>
+        <div class="shop-name">
+            <span>{{ item.name }}</span>
+            {% if item.recipe %}<span class="badge badge-muted">{{ item.recipe.title }}</span>{% endif %}
         </div>
-        {% if item.recipe %}
-        <span class="badge badge-muted" style="flex-shrink:0;">{{ item.recipe.title|truncate(18) }}</span>
-        {% endif %}
-        <a href="https://www.woolworths.com.au/shop/search/products?searchTerm={{ quote_plus(item.name) }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="flex-shrink:0;font-size:var(--fs-2xs);padding:0.2rem 0.45rem;">Woolworths</a>
-        <form method="POST" action="{{ url_for('shopping.remove', item_id=item.id) }}" style="display:flex;flex-shrink:0;">
-            <button type="submit" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:var(--fs-sm);padding:0.1rem 0.3rem;line-height:1;" aria-label="Remove {{ item.name }}">&times;</button>
+        <a href="https://www.woolworths.com.au/shop/search/products?searchTerm={{ quote_plus(item.name) }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm shop-find" aria-label="Find {{ item.name }} at Woolworths">Find at Woolworths</a>
+        <form method="POST" action="{{ url_for('shopping.remove', item_id=item.id) }}">
+            <button type="submit" class="shop-remove" aria-label="Remove {{ item.name }}">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
         </form>
-    </div>
+    </li>
     {% endfor %}
-</div>
+</ul>
 {% endfor %}
+</section>
 {% endif %}
 
 {% if checked %}
-<div style="margin-top:1rem;">
-<p style="font-size:var(--fs-xs);color:var(--text-tertiary);font-weight:600;margin-bottom:0.5rem;">Checked off ({{ checked|length }})</p>
-<div class="card" style="padding:0;opacity:0.55;">
+<section class="checked-off" aria-label="Checked off">
+<h3 class="aisle-name">Checked off <span class="aisle-count">{{ checked|length }}</span></h3>
+<ul class="card shop-list is-done">
     {% for item in checked %}
-    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 1.25rem;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
-        <form method="POST" action="{{ url_for('shopping.toggle', item_id=item.id) }}" style="display:flex;flex-shrink:0;">
-            <button type="submit" style="background:var(--accent);border:2px solid var(--accent);width:20px;height:20px;border-radius:4px;cursor:pointer;position:relative;" aria-label="Uncheck {{ item.name }}">
-                <span style="color:#fff;font-size:var(--fs-2xs);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">&#10003;</span>
+    <li class="shop-row">
+        <form method="POST" action="{{ url_for('shopping.toggle', item_id=item.id) }}">
+            <button type="submit" class="shop-check" aria-label="Uncheck {{ item.name }}">
+                <span class="shop-box is-checked"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
             </button>
         </form>
-        <span style="flex:1;font-size:var(--fs-sm);text-decoration:line-through;color:var(--text-tertiary);">{{ item.name }}</span>
-        <form method="POST" action="{{ url_for('shopping.remove', item_id=item.id) }}" style="display:flex;flex-shrink:0;">
-            <button type="submit" style="background:none;border:none;color:var(--text-tertiary);cursor:pointer;font-size:var(--fs-sm);padding:0.1rem 0.3rem;line-height:1;" aria-label="Remove {{ item.name }}">&times;</button>
+        <div class="shop-name"><span>{{ item.name }}</span></div>
+        <form method="POST" action="{{ url_for('shopping.remove', item_id=item.id) }}">
+            <button type="submit" class="shop-remove" aria-label="Remove {{ item.name }}">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
         </form>
-    </div>
+    </li>
     {% endfor %}
-</div>
-</div>
+</ul>
+</section>
 {% endif %}
 
 {% if not unchecked and not checked %}
-<div class="empty-state">
-    <p>Your shopping list is empty. Add items manually or from a recipe.</p>
+<div class="card empty-state">
+    <p>Your shopping list is empty. Add an item above, or pull the ingredients from a recipe or your meal plan.</p>
+    <div class="row-tools row-center">
+        <a href="{{ url_for('recipes.index') }}" class="btn btn-primary">Browse recipes</a>
+        <a href="{{ url_for('mealplan.index') }}" class="btn btn-secondary">Open meal plan</a>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

@@ -4,91 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{{ recipe.title }} - Cook Mode</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css', v=asset_v) }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css', v=asset_v) }}">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--cook-bg); color: var(--cook-text);
-               overflow-x: hidden; }
-        .header { position: sticky; top: 0; z-index: 10; padding: 1rem; background: var(--cook-bar);
-                  display: flex; justify-content: space-between; align-items: center;
-                  border-bottom: 1px solid var(--cook-line); gap: 0.75rem; }
-        .header h1 { font-size: var(--fs-md); font-weight: 600; overflow: hidden; text-overflow: ellipsis;
-                     white-space: nowrap; min-width: 0; }
-        .close-btn { background: var(--cook-surface); color: var(--cook-text); border: none; padding: 0.5rem 1rem;
-                     border-radius: 6px; cursor: pointer; font-size: var(--fs-sm); text-decoration: none;
-                     flex-shrink: 0; }
-        .tabs { position: sticky; top: 54px; z-index: 10; display: flex; background: var(--cook-bar);
-                border-bottom: 1px solid var(--cook-line); }
-        .tab { flex: 1; padding: 0.85rem 0.5rem; text-align: center; cursor: pointer; font-weight: 500;
-               color: var(--cook-muted); border-bottom: 2px solid transparent; font-size: var(--fs-sm); }
-        .tab.active { color: var(--cook-text); border-bottom-color: var(--cook-accent); }
-        .progress { position: sticky; top: 98px; z-index: 10; height: 4px; background: var(--cook-surface); }
-        .progress-bar { height: 100%; background: var(--cook-accent); }
-        .content { padding: 1rem; padding-bottom: 90px; }
-        .step { display: none; }
-        .step.active { display: block; }
-        .ingredient-item { padding: 0.85rem 0; border-bottom: 1px solid var(--cook-line); font-size: var(--fs-md);
-                           display: flex; align-items: flex-start; gap: 0.75rem; line-height: 1.4; }
-        .ingredient-item input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--cook-accent);
-                                                   flex-shrink: 0; margin-top: 2px; }
-        .ingredient-item.checked { color: var(--cook-done); text-decoration: line-through; }
-        .instruction-step { margin-bottom: 1.5rem; }
-        .step-number { font-size: 2rem; font-weight: 700; color: var(--cook-accent); margin-bottom: 0.25rem; }
-        .step-text { font-size: var(--fs-md); line-height: 1.6; word-wrap: break-word; }
-        .nav-buttons { position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
-                       display: none; gap: 0.75rem; padding: 1rem;
-                       background: var(--cook-bar); border-top: 1px solid var(--cook-line); }
-        .nav-btn { flex: 1; padding: 0.85rem; font-size: var(--fs-base); font-weight: 600; border: none;
-                   border-radius: 8px; cursor: pointer; min-height: 48px; }
-        .nav-btn.prev { background: var(--cook-surface); color: var(--cook-text); }
-        .nav-btn.next { background: var(--cook-accent-solid); color: var(--cook-text); }
-        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .ctrl-btn { padding: 0.3rem 0.65rem; border-radius: 6px; border: 1px solid var(--cook-surface-raised);
-                    background: var(--cook-surface); color: var(--cook-text); font-size: var(--fs-xs); font-weight: 600;
-                    cursor: pointer; font-family: inherit; min-height: 36px; }
-        .ctrl-btn.active { background: var(--cook-accent-solid); border-color: var(--cook-accent-solid); }
-
-        /* Touch + safe-area adaptation */
-        .tab { background: none; border-top: 0; border-left: 0; border-right: 0; font-family: inherit;
-               color-scheme: dark; min-height: 48px; }
-        .tab:focus-visible, .nav-btn:focus-visible, .ctrl-btn:focus-visible, button:focus-visible, .close-btn:focus-visible
-            { outline: 2px solid var(--cook-text); outline-offset: 2px; }
-        .close-btn { min-height: 44px; display: inline-flex; align-items: center; }
-        .ctrl-btn { min-height: 44px; min-width: 44px; }
-        .content button { min-height: 44px; }
-        .nav-buttons { padding-bottom: max(1rem, env(safe-area-inset-bottom));
-                       padding-left: max(1rem, env(safe-area-inset-left));
-                       padding-right: max(1rem, env(safe-area-inset-right)); }
-        .content { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
-        @media (max-height: 480px) and (orientation: landscape) {
-            .step-text { font-size: var(--fs-base); }
-            .nav-buttons { padding-top: 0.5rem; padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
-            .nav-btn { min-height: 44px; padding: 0.5rem; }
-            .content { padding-bottom: calc(70px + env(safe-area-inset-bottom)); }
-        }
-
-        /* Motion: progress fill, step arrival, check-off, press feedback */
-        .progress-bar { width: 100% !important; transform-origin: left center; transform: scaleX(0);
-                         transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes step-in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
-        .instruction-step { animation: step-in 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
-        .ingredient-item { transition: color 0.2s; }
-        .nav-btn, .ctrl-btn, .tab { transition: transform 0.1s, background-color 0.15s, color 0.15s; }
-        .nav-btn:active:not(:disabled), .ctrl-btn:active { transform: scale(0.97); }
-        @keyframes pulse-3 { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
-        @media (prefers-reduced-motion: reduce) {
-            .instruction-step { animation: step-in-fade 0.2s linear; }
-            @keyframes step-in-fade { from { opacity: 0; } to { opacity: 1; } }
-            .progress-bar { transition: transform 0.15s linear; }
-            .nav-btn:active:not(:disabled), .ctrl-btn:active { transform: none; }
-            [style*="animation:pulse"] { animation: none !important; }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cook.css', v=asset_v) }}">
 </head>
 <body>
     <div class="header">
         <h1>{{ recipe.title }}</h1>
-        <a href="{{ url_for('collections.view_shared_recipe', token=collection.public_url_token, recipe_id=recipe.id) }}" class="close-btn">Exit</a>
+        <a href="{{ url_for('collections.view_shared_recipe', token=collection.public_url_token, recipe_id=recipe.id) }}" class="close-btn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>Exit</span></a>
     </div>
     <div class="tabs" role="tablist">
         <button type="button" class="tab active" role="tab" aria-selected="true" onclick="showTab('ingredients')">Ingredients</button>
@@ -97,11 +20,13 @@
     <div class="progress"><div class="progress-bar" id="progress"></div></div>
     <div class="content">
         <div class="step active" id="ingredients-tab">
-            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;padding:0.25rem 0 0.75rem;border-bottom:1px solid var(--cook-line);">
-                <span style="font-size:var(--fs-2xs);color:var(--cook-muted);font-weight:600;text-transform:uppercase;">Scale</span>
-                <button type="button" class="ctrl-btn scale-btn" data-scale="0.5">&half;&times;</button>
-                <button type="button" class="ctrl-btn scale-btn active" data-scale="1">1&times;</button>
-                <button type="button" class="ctrl-btn scale-btn" data-scale="2">2&times;</button>
+            <div class="scale-row">
+                <span class="scale-label" id="scale-label">Scale</span>
+                <div class="seg-group" role="group" aria-labelledby="scale-label">
+                    <button type="button" class="seg scale-btn" data-scale="0.5">&frac12;&times;</button>
+                    <button type="button" class="seg scale-btn active" data-scale="1">1&times;</button>
+                    <button type="button" class="seg scale-btn" data-scale="2">2&times;</button>
+                </div>
             </div>
             {% for line in recipe.ingredients.split('\n') %}
             {% if line.strip().startswith('# ') %}
@@ -129,8 +54,9 @@
         </div>
     </div>
     <div class="nav-buttons" id="step-nav">
-        <button class="nav-btn prev" onclick="prevStep()">Previous</button>
-        <button class="nav-btn next" onclick="nextStep()">Next</button>
+        <div class="step-count" aria-live="polite">Step <b id="step-cur">1</b> of <span id="step-total">0</span></div>
+        <button type="button" class="nav-btn prev" onclick="prevStep()"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Previous</button>
+        <button type="button" class="nav-btn next" onclick="nextStep()">Next<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
     </div>
     <script>
     let currentStep=1;
@@ -144,6 +70,7 @@
     function showStep(n){
         currentStep=Math.max(1,Math.min(n,totalSteps));
         document.querySelectorAll('.instruction-step').forEach(s=>{s.style.display=s.dataset.step==currentStep?'block':'none';});
+        document.getElementById('step-cur').textContent=currentStep;document.getElementById('step-total').textContent=totalSteps;
         document.getElementById('progress').style.transform='scaleX('+(currentStep/totalSteps)+')';
         document.querySelector('.nav-btn.prev').disabled=currentStep===1;
         document.querySelector('.nav-btn.next').disabled=currentStep===totalSteps;
@@ -153,10 +80,6 @@
     function nextStep(){showStep(currentStep+1);}
     if('wakeLock' in navigator)navigator.wakeLock.request('screen').catch(()=>{});
     </script>
-    <style>
-    .cook-section { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-        font-size: var(--fs-xs); color: var(--cook-accent); padding: 0.85rem 0 0.25rem; }
-    </style>
     <script src="/static/units.js"></script>
     <script>
     RecipeUnits.attach({ items: '.ingredient-item .ing-text', scaleBtns: '.scale-btn' });

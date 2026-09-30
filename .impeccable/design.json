@@ -4,84 +4,52 @@
   "title": "Design System: Recipe Manager",
   "extensions": {
     "colorMeta": {
-      "terracotta-ember": {
-        "role": "primary",
-        "displayName": "Terracotta Ember",
-        "canonical": "#c0440e",
-        "tonalRamp": [
-          "#3a1304",
-          "#5c1f06",
-          "#7f2b09",
-          "#a33a0b",
-          "#c0440e",
-          "#e0794a",
-          "#f1b59a",
-          "#fdf0eb"
-        ]
-      },
-      "flour": {
-        "role": "neutral",
-        "displayName": "Flour",
-        "canonical": "#f7f7f5",
-        "tonalRamp": [
-          "#1a1a1a",
-          "#3a3a38",
-          "#595959",
-          "#6b6b6b",
-          "#c9c9c6",
-          "#e5e5e3",
-          "#f0f0ee",
-          "#f7f7f5"
-        ]
-      }
+      "accent": { "role": "primary", "displayName": "Red-Pen Terracotta", "canonical": "#b83a12", "tonalRamp": ["#3a1305", "#5e1e08", "#8a2c0d", "#b83a12", "#d6653d", "#e9977a", "#f5c9b8", "#fbebe3"] },
+      "accent-ember": { "role": "primary", "displayName": "Ember", "canonical": "#f0784a", "tonalRamp": ["#3d1808", "#6b2c12", "#a4431c", "#c8501a", "#f0784a", "#f68d64", "#f9b9a0", "#fde3d8"] },
+      "ink": { "role": "neutral", "displayName": "Fountain-Pen Ink", "canonical": "#1b2431", "tonalRamp": ["#0b0f15", "#1b2431", "#2f3b4d", "#4a5566", "#5a6577", "#8a93a0", "#c3c9d1", "#e6e9ed"] },
+      "flour": { "role": "neutral", "displayName": "Flour", "canonical": "#f3f2ee", "tonalRamp": ["#8f8d85", "#b5b3ab", "#d9d7cf", "#e4e2db", "#ebe9e2", "#f3f2ee", "#f8f7f4", "#ffffff"] },
+      "card-stock": { "role": "neutral", "displayName": "Card Stock", "canonical": "#ffffff", "tonalRamp": ["#d9d7cf", "#e4e2db", "#ebe9e2", "#f3f2ee", "#f8f7f4", "#fbfbf9", "#fdfdfc", "#ffffff"] },
+      "rule-blue": { "role": "neutral", "displayName": "Ruled-Line Blue", "canonical": "#cfdde8", "tonalRamp": ["#3e5a70", "#5c7a92", "#7f9db4", "#a4bccd", "#cfdde8", "#dce7ef", "#e9f0f5", "#f5f8fa"] },
+      "chalkboard": { "role": "neutral", "displayName": "Chalkboard", "canonical": "#14181d", "tonalRamp": ["#0a0c0f", "#0f1216", "#14181d", "#1b2027", "#262d36", "#323b46", "#5b6572", "#a6adb8"] },
+      "chalk": { "role": "neutral", "displayName": "Chalk", "canonical": "#e9e6df", "tonalRamp": ["#6e6b64", "#8f8c85", "#b5b2ab", "#cfccc5", "#e9e6df", "#f0eee8", "#f4f1ea", "#faf9f6"] },
+      "success": { "role": "status", "displayName": "Garden Green", "canonical": "#1a7f37", "tonalRamp": ["#0b3319", "#11552a", "#1a7f37", "#3fb950", "#6fd07f", "#aceebb", "#dafbe1", "#effdf2"] },
+      "error": { "role": "status", "displayName": "Correction Red", "canonical": "#b42318", "tonalRamp": ["#3b0d09", "#661610", "#b42318", "#f85149", "#fa8a84", "#f4b8b2", "#fdecea", "#fef6f5"] },
+      "tint-1": { "role": "tertiary", "displayName": "Terracotta Monogram Wash", "canonical": "#f6e3d8", "tonalRamp": ["#4d1a08", "#7a2a0c", "#9a300e", "#c5583a", "#e09578", "#eeb9a2", "#f6e3d8", "#fbf1ea"] },
+      "tint-2": { "role": "tertiary", "displayName": "Herb Monogram Wash", "canonical": "#e2ecd9", "tonalRamp": ["#1e3315", "#2c4d1e", "#3d6a2a", "#6f9a5a", "#9bc088", "#c0d8b2", "#e2ecd9", "#f1f6ec"] },
+      "tint-3": { "role": "tertiary", "displayName": "Butter Monogram Wash", "canonical": "#f3e8c6", "tonalRamp": ["#3d2d05", "#5c4508", "#7a5c0d", "#a88322", "#cfaa4e", "#e3cb88", "#f3e8c6", "#faf4e3"] },
+      "tint-4": { "role": "tertiary", "displayName": "Slate Monogram Wash", "canonical": "#dde6ee", "tonalRamp": ["#1a2b3a", "#274257", "#3a5670", "#617f99", "#8fa8bc", "#b9cad8", "#dde6ee", "#eef3f7"] }
     },
     "typographyMeta": {
-      "headline": {
-        "displayName": "Headline",
-        "purpose": "Page titles."
-      },
-      "title": {
-        "displayName": "Title",
-        "purpose": "Recipe card titles."
-      },
-      "body": {
-        "displayName": "Body",
-        "purpose": "Ingredients, instructions, forms."
-      },
-      "label": {
-        "displayName": "Label",
-        "purpose": "Uppercase meta labels, table headers."
-      }
+      "display": { "displayName": "Display", "purpose": "Recipe titles, covers, page titles in Alegreya 700." },
+      "headline": { "displayName": "Headline", "purpose": "Section headings, stat values, empty-state lines." },
+      "title": { "displayName": "Card Title", "purpose": "Recipe card titles, two-line clamp." },
+      "reading": { "displayName": "Reading", "purpose": "Ingredient and method lists in Alegreya, max 68ch." },
+      "body": { "displayName": "Body / UI", "purpose": "System sans for forms and prose." },
+      "label": { "displayName": "Label", "purpose": "Buttons, nav, menu items in system sans 600." },
+      "meta": { "displayName": "Meta", "purpose": "Meta lines, hints, tags; tabular numerals." }
     },
     "shadows": [
-      {
-        "name": "resting",
-        "value": "0 1px 2px rgba(0,0,0,0.04)",
-        "purpose": "Cards at rest."
-      },
-      {
-        "name": "standard",
-        "value": "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
-        "purpose": "Raised elements."
-      },
-      {
-        "name": "lifted",
-        "value": "0 4px 12px rgba(0,0,0,0.08)",
-        "purpose": "Recipe card hover, mobile nav dropdown."
-      }
+      { "name": "shadow-sm", "value": "0 1px 0 rgba(27,36,49,0.05), 0 1px 3px rgba(27,36,49,0.05)", "purpose": "Card at rest." },
+      { "name": "shadow", "value": "0 1px 0 rgba(27,36,49,0.05), 0 2px 8px rgba(27,36,49,0.07)", "purpose": "Detail hero image." },
+      { "name": "shadow-md", "value": "0 1px 0 rgba(27,36,49,0.06), 0 8px 24px rgba(27,36,49,0.12)", "purpose": "Open menus, hovered cards, mobile nav sheet." },
+      { "name": "focus-ring", "value": "0 0 0 3px rgba(184,58,18,0.18)", "purpose": "Field focus, paired with an accent border." },
+      { "name": "shadow-sm-dark", "value": "0 1px 2px rgba(0,0,0,0.3)", "purpose": "Card at rest on the chalkboard theme." },
+      { "name": "shadow-md-dark", "value": "0 8px 24px rgba(0,0,0,0.5)", "purpose": "Menus and hovered cards on the chalkboard theme." }
     ],
     "motion": [
-      {
-        "name": "quick",
-        "value": "0.15s all",
-        "purpose": "Hover and focus transitions on buttons, chips, nav links, inputs."
-      }
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Flash entry, step entry, progress bar." },
+      { "name": "duration-fast", "value": "0.15s", "purpose": "Color, border, and background state changes." },
+      { "name": "card-lift", "value": "0.2s box-shadow, transform (translateY -3px)", "purpose": "Recipe card hover on pointer devices only." },
+      { "name": "press", "value": "0.1s transform scale(0.97 to 0.98)", "purpose": "Button and cook-mode control active state." },
+      { "name": "step-in", "value": "0.28s ease-out, translateX(14px) to 0", "purpose": "Cook-mode step change; reduced-motion swaps to a 0.2s fade." }
     ],
     "breakpoints": [
-      {
-        "name": "mobile",
-        "value": "700px"
-      }
+      { "name": "narrow", "value": "480px" },
+      { "name": "form-collapse", "value": "560px" },
+      { "name": "public-narrow", "value": "600px" },
+      { "name": "nav-collapse", "value": "860px" },
+      { "name": "recipe-spread", "value": "900px" },
+      { "name": "meal-plan", "value": "1000px" }
     ]
   },
   "components": [
@@ -89,108 +57,107 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Main action; Terracotta fill.",
-      "html": "<button class=\"ds-btn-primary\">Save recipe</button>",
-      "css": ".ds-btn-primary{background:#c0440e;color:#fff;border:1px solid #c0440e;border-radius:8px;padding:.5rem 1rem;font:600 .84rem Inter,system-ui,sans-serif;cursor:pointer;transition:all .15s}.ds-btn-primary:hover{background:#a33a0b;border-color:#a33a0b}.ds-btn-primary:focus-visible{outline:2px solid #c0440e;outline-offset:2px}"
+      "description": "The single primary action on a surface, e.g. Start cooking.",
+      "html": "<button class=\"ds-btn-primary\">Start cooking</button>",
+      "css": ".ds-btn-primary { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 0.875rem; font-weight: 600; line-height: 1.4; padding: 0.5rem 1rem; background: var(--accent-solid, #b83a12); color: #fff; border: 1px solid var(--accent-solid, #b83a12); border-radius: 4px; cursor: pointer; transition: background-color 0.15s, border-color 0.15s, transform 0.1s; } .ds-btn-primary:hover { background: var(--accent-solid-hover, #9a300e); border-color: var(--accent-solid-hover, #9a300e); } .ds-btn-primary:active { transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #b83a12); outline-offset: 2px; }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Neutral action on a white surface.",
-      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
-      "css": ".ds-btn-secondary{background:#fff;color:#1a1a1a;border:1px solid #e5e5e3;border-radius:8px;padding:.5rem 1rem;font:600 .84rem Inter,system-ui,sans-serif;cursor:pointer;transition:all .15s}.ds-btn-secondary:hover{background:#f0f0ee}.ds-btn-secondary:focus-visible{outline:2px solid #c0440e;outline-offset:2px}"
+      "description": "Card-stock button for menus and supporting actions (Share, More).",
+      "html": "<button class=\"ds-btn-secondary\">Share</button>",
+      "css": ".ds-btn-secondary { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 0.875rem; font-weight: 600; line-height: 1.4; padding: 0.5rem 1rem; background: var(--surface, #fff); color: var(--text-primary, #1b2431); border: 1px solid var(--border, #d9d7cf); border-radius: 4px; cursor: pointer; transition: background-color 0.15s, border-color 0.15s; } .ds-btn-secondary:hover { background: var(--border-light, #ebe9e2); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--accent, #b83a12); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Card-stock field with an accent border and soft ring on focus.",
+      "html": "<input class=\"ds-input\" type=\"search\" placeholder=\"Search titles and ingredients\">",
+      "css": ".ds-input { width: 100%; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 1rem; padding: 0.55rem 0.75rem; background: var(--input-bg, #fff); color: var(--text-primary, #1b2431); border: 1px solid var(--border, #d9d7cf); border-radius: 4px; transition: border-color 0.15s, box-shadow 0.15s; } .ds-input::placeholder { color: var(--text-tertiary, #5a6577); } .ds-input:focus { outline: none; border-color: var(--accent, #b83a12); box-shadow: var(--focus-ring, 0 0 0 3px rgba(184,58,18,0.18)); }"
     },
     {
       "name": "Filter Chip",
       "kind": "chip",
       "refersTo": "chip",
-      "description": "Pill filter; solid Terracotta when active.",
+      "description": "Pill filter; the active chip is the only filled pill.",
       "html": "<span class=\"ds-chip\">Dinner</span> <span class=\"ds-chip ds-chip-active\">Baking</span>",
-      "css": ".ds-chip{display:inline-block;padding:.3rem .7rem;border-radius:20px;font:500 .78rem Inter,system-ui,sans-serif;border:1px solid #e5e5e3;color:#595959;background:#fff;transition:all .15s}.ds-chip:hover{border-color:#c0440e;color:#c0440e}.ds-chip-active{background:#c0440e;color:#fff;border-color:#c0440e}"
-    },
-    {
-      "name": "Tag",
-      "kind": "chip",
-      "refersTo": "tag",
-      "description": "Small Ember Wash label.",
-      "html": "<span class=\"ds-tag\">Vegetarian</span>",
-      "css": ".ds-tag{display:inline-block;padding:.15rem .5rem;border-radius:4px;font:600 .72rem Inter,system-ui,sans-serif;background:#fdf0eb;color:#c0440e;letter-spacing:.01em}"
-    },
-    {
-      "name": "Text Input",
-      "kind": "input",
-      "refersTo": "input",
-      "description": "Field with Ember focus ring.",
-      "html": "<input class=\"ds-input\" placeholder=\"Search recipes or ingredients\">",
-      "css": ".ds-input{width:100%;padding:.55rem .75rem;border:1px solid #e5e5e3;border-radius:8px;font:.9rem Inter,system-ui,sans-serif;background:#fff;color:#1a1a1a;transition:border-color .15s,box-shadow .15s}.ds-input::placeholder{color:#6b6b6b}.ds-input:focus{outline:none;border-color:#c0440e;box-shadow:0 0 0 3px rgba(192,68,14,.1)}"
+      "css": ".ds-chip { display: inline-block; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-size: 0.8125rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 999px; border: 1px solid var(--border, #d9d7cf); color: var(--text-secondary, #4a5566); background: var(--surface, #fff); cursor: pointer; transition: background-color 0.15s, border-color 0.15s, color 0.15s; } .ds-chip:hover { border-color: var(--accent, #b83a12); color: var(--accent, #b83a12); } .ds-chip-active, .ds-chip-active:hover { background: var(--accent-solid, #b83a12); border-color: var(--accent-solid, #b83a12); color: #fff; }"
     },
     {
       "name": "Recipe Card",
       "kind": "card",
       "refersTo": "card",
-      "description": "Photo on top, title and meta below; lifts on hover.",
-      "html": "<div class=\"ds-card\"><div class=\"ds-card-img\">No image</div><div class=\"ds-card-body\"><h3>Pasteis de Nata</h3><div class=\"ds-card-meta\">45 min \u00b7 12 servings</div></div></div>",
-      "css": ".ds-card{background:#fff;border:1px solid #e5e5e3;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04);width:260px;transition:all .15s;cursor:pointer}.ds-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);transform:translateY(-2px)}.ds-card-img{height:120px;background:#f0f0ee;color:#6b6b6b;display:flex;align-items:center;justify-content:center;font:500 .85rem Inter,sans-serif}.ds-card-body{padding:1rem 1.25rem 1.25rem}.ds-card-body h3{font:600 .95rem/1.35 Inter,sans-serif;color:#1a1a1a;margin:0 0 .3rem}.ds-card-meta{color:#6b6b6b;font:.78rem Inter,sans-serif}"
+      "description": "Index card with a monogram tile for photo-less recipes.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-mono\" data-mono=\"P\">P</div><div class=\"ds-card-body\"><h3>Pasteis de Nata</h3><div class=\"ds-meta\"><span>45 min</span><span>Serves 12</span></div></div></div>",
+      "css": ".ds-card { width: 260px; overflow: hidden; background: var(--surface, #fff); border: 1px solid var(--border, #d9d7cf); border-radius: 6px; box-shadow: var(--shadow-sm, 0 1px 0 rgba(27,36,49,0.05), 0 1px 3px rgba(27,36,49,0.05)); transition: box-shadow 0.2s, transform 0.2s; } .ds-card:hover { box-shadow: var(--shadow-md, 0 8px 24px rgba(27,36,49,0.12)); transform: translateY(-3px); } .ds-mono { aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; font-family: 'Alegreya', Georgia, serif; font-style: italic; font-weight: 700; font-size: 4.5rem; line-height: 1; background: var(--tint-1, #f6e3d8); color: var(--tint-1-ink, #9a300e); } .ds-card-body { padding: 0.9rem 1.15rem 1.15rem; } .ds-card-body h3 { margin: 0 0 0.25rem; font-family: 'Alegreya', Georgia, serif; font-size: 1.3rem; font-weight: 700; line-height: 1.2; color: var(--text-primary, #1b2431); } .ds-meta { display: flex; gap: 0.75rem; font-family: system-ui, sans-serif; font-size: 0.8125rem; color: var(--text-tertiary, #5a6577); font-variant-numeric: tabular-nums; }"
     },
     {
-      "name": "Nav Link",
+      "name": "Masthead Nav",
       "kind": "nav",
-      "refersTo": "navigation",
-      "description": "Top-bar link; active state is Terracotta on Ember Wash.",
-      "html": "<a class=\"ds-nav\">Recipes</a> <a class=\"ds-nav ds-nav-active\">Meal Plan</a>",
-      "css": ".ds-nav{display:inline-block;color:#595959;font:500 .84rem Inter,sans-serif;padding:.4rem .7rem;border-radius:6px;transition:all .15s;cursor:pointer}.ds-nav:hover{color:#1a1a1a;background:#f0f0ee}.ds-nav-active{color:#c0440e;background:#fdf0eb}"
+      "refersTo": "button-primary",
+      "description": "Flour bar with a double blue rule, Alegreya site name, grouped items, and a filled + menu.",
+      "html": "<nav class=\"ds-masthead\"><span class=\"ds-brand\">Our Kitchen</span><a class=\"ds-nav-link ds-active\" href=\"#\">Recipes</a><a class=\"ds-nav-link\" href=\"#\">Plan</a><a class=\"ds-nav-link\" href=\"#\">Shop</a><a class=\"ds-nav-link\" href=\"#\">Tools</a><span class=\"ds-nav-add\">+</span></nav>",
+      "css": ".ds-masthead { display: flex; align-items: center; gap: 0.25rem; height: 64px; padding: 0 1.5rem; background: var(--nav-bg, #f3f2ee); border-bottom: 3px double var(--rule, #cfdde8); font-family: system-ui, sans-serif; } .ds-brand { font-family: 'Alegreya', Georgia, serif; font-size: 1.625rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary, #1b2431); margin-right: 1.25rem; } .ds-nav-link { color: var(--text-secondary, #4a5566); font-size: 0.875rem; font-weight: 600; padding: 0.45rem 0.7rem; border-radius: 4px; text-decoration: none; } .ds-nav-link:hover { color: var(--text-primary, #1b2431); background: var(--border-light, #ebe9e2); } .ds-nav-link:focus-visible { outline: 2px solid var(--accent, #b83a12); outline-offset: 2px; } .ds-nav-link.ds-active { color: var(--accent, #b83a12); box-shadow: inset 0 -2px 0 var(--accent, #b83a12); border-radius: 4px 4px 0 0; } .ds-nav-add { margin-left: auto; background: var(--accent-solid, #b83a12); color: #fff; font-size: 0.875rem; font-weight: 600; padding: 0.45rem 0.85rem; border-radius: 4px; }"
+    },
+    {
+      "name": "Ruled Ingredient List",
+      "kind": "custom",
+      "refersTo": "reading",
+      "description": "Unboxed Alegreya list on blue rules with a terracotta dash tick.",
+      "html": "<ul class=\"ds-ruled\"><li>2 cups bread flour</li><li>1 tsp fine salt</li><li>300 g water</li></ul>",
+      "css": ".ds-ruled { list-style: none; margin: 0; padding: 0; max-width: 68ch; font-family: 'Alegreya', Georgia, serif; } .ds-ruled li { position: relative; padding: 0.5rem 0 0.5rem 1.1rem; border-bottom: 1px solid var(--rule, #cfdde8); font-size: 1.1875rem; line-height: 1.45; color: var(--text-primary, #1b2431); } .ds-ruled li::before { content: ''; position: absolute; left: 0; top: 1.05em; width: 0.55rem; height: 2px; background: var(--accent, #b83a12); }"
+    },
+    {
+      "name": "Cook Mode Next Button",
+      "kind": "button",
+      "refersTo": "cook-next-button",
+      "description": "Instrument Panel control: 64px, ember fill on the fixed chalkboard bar.",
+      "html": "<div class=\"ds-cook-bar\"><button class=\"ds-cook-prev\">Back</button><button class=\"ds-cook-next\">Next</button></div>",
+      "css": ".ds-cook-bar { display: flex; gap: 0.75rem; padding: 0.75rem 1rem; background: var(--cook-bar, #0f1216); border-top: 1px solid var(--cook-line, #2c343e); } .ds-cook-prev, .ds-cook-next { flex: 1; min-height: 64px; border: 0; border-radius: 6px; font-family: system-ui, sans-serif; font-size: 1.375rem; font-weight: 700; cursor: pointer; transition: transform 0.1s, background-color 0.15s; } .ds-cook-prev { flex: 0 0 34%; background: var(--cook-surface, #262d36); color: var(--cook-text, #f4f1ea); } .ds-cook-next { background: var(--cook-accent-solid, #c8501a); color: #fff; } .ds-cook-prev:active, .ds-cook-next:active { transform: scale(0.97); } .ds-cook-prev:focus-visible, .ds-cook-next:focus-visible { outline: 2px solid var(--cook-text, #f4f1ea); outline-offset: 2px; }"
     }
   ],
   "narrative": {
-    "northStar": "The Kitchen Counter",
-    "overview": "A clear, sturdy workspace where everything is within reach. Surfaces are calm off-white and white, text is near-black Inter, and a single terracotta accent marks what is active, actionable, or the cook's own.",
+    "northStar": "The Well-Used Cookbook",
+    "overview": "A recipe is an index card you would hand to someone, not a row in a dashboard. The system is built from index-card materials: white card stock ruled with pale blue lines, blue-black fountain-pen ink, and a single red-pen terracotta for everything the cook marks. The ground is a cool-warm flour, not cream. Recipe text and titles are set in Alegreya, a calligraphic serif, with italic for notes and step numbers; interface chrome uses the system sans so controls stay quiet.\n\nReading and sharing surfaces (shelf, recipe page, public share pages) live in this paper world. Doing surfaces (cook mode, shopping, meal plan) borrow its rigour as a Kitchen Instrument Panel: big targets, tabular numerals, one action per screen. The dark theme is a chalkboard menu, and cook mode is always that chalkboard regardless of the theme toggle.",
     "keyCharacteristics": [
-      "One accent, used for links, active states, primary actions, and list markers.",
-      "Single sans family (Inter); hierarchy comes from weight, size, and uppercase labels, not from font mixing.",
-      "Soft-lifted cards: hairline border plus ambient shadow, deeper on hover.",
-      "Rounded but not bubbly: 8px controls, 12px cards, pill chips.",
-      "Theme via CSS custom properties on data-theme, mirrored in static/pages/_theme.css for embedded pages."
+      "Ruled stock, not boxed panels: pale blue rules divide lists; cards are white with a hairline edge and a paper shadow.",
+      "One accent (red-pen terracotta), used for what the cook marks: links, active state, list ticks, step numbers, the primary button.",
+      "Alegreya for everything that is read; system sans for everything that is pressed.",
+      "Photo-led cards, with a category-tinted italic monogram when there is no photo.",
+      "Motion is short and functional: 0.15s state changes, one ease-out curve, all of it honoring reduced motion."
     ],
     "rules": [
-      {
-        "name": "The One Ember Rule",
-        "body": "Terracotta is the only chromatic accent. Green and red mean status, never decoration.",
-        "section": "colors"
-      },
-      {
-        "name": "The Wash, Not Fill Rule",
-        "body": "Secondary emphasis uses Ember Wash tints; solid Terracotta is reserved for the primary action and the selected state.",
-        "section": "colors"
-      },
-      {
-        "name": "The One Family Rule",
-        "body": "Inter only. Add hierarchy with weight and case, not a second typeface.",
-        "section": "typography"
-      },
-      {
-        "name": "The Lift On Touch Rule",
-        "body": "Cards lift only in response to hover; at rest they stay quiet.",
-        "section": "elevation"
-      },
-      {
-        "name": "The Sentence-Case Data Rule",
-        "body": "User-generated strings (aisle names, categories, titles) are never uppercased; uppercase is for fixed, short labels.",
-        "section": "typography"
-      }
+      { "name": "The Red-Pen Rule", "body": "There is one accent. Terracotta marks what the cook touches or has marked; no second hue is added for emphasis. Tints are for monograms only.", "section": "colors" },
+      { "name": "The Accent-Solid Rule", "body": "--accent is for text, lines, and marks. --accent-solid is the only accent that may fill a surface carrying white text. In light theme they are the same value (#b83a12). In dark theme they split: text accent #f0784a, fill #c8501a, whose white text contrast is only 4.55:1. That is the floor; do not lighten the fill, and never put white text on the dark-theme text accent.", "section": "colors" },
+      { "name": "The Wash Not Fill Rule", "body": "Quiet emphasis uses a wash (accent-subtle, hairline-light, a tint) rather than a solid fill. Solid accent fills are reserved for the primary action, the active chip, and the active segment.", "section": "colors" },
+      { "name": "The Cook Mode Is Always Chalkboard Rule", "body": "Cook mode reads the fixed --cook-* palette, never the theme tokens, so it is identical in a bright kitchen and a dark one.", "section": "colors" },
+      { "name": "The Sentence-Case Data Rule", "body": "User-supplied strings (titles, tags, ingredients, categories) are never uppercased or letter-spaced, and no kicker or eyebrow sits above a heading. Meta is a plain label and value pair.", "section": "typography" },
+      { "name": "The Two-Voices Rule", "body": "Alegreya is for what is read (titles, recipe text, notes); the sans is for what is pressed (buttons, nav, inputs, menus).", "section": "typography" },
+      { "name": "The Paper Shadow Rule", "body": "Shadows are soft, low, and blurred with no offset x-axis. Hard offset shadows do not exist here.", "section": "elevation" },
+      { "name": "The One Primary Action Rule", "body": "Each surface has exactly one primary action. On the recipe page it is Start cooking; everything else sits in menus or secondary buttons.", "section": "components" },
+      { "name": "The Monogram Not 'No image' Rule", "body": "Photo-less recipes get a tinted monogram tile, never an empty 'No image' box.", "section": "components" },
+      { "name": "The Ruled Not Boxed Rule", "body": "Lists sit on blue rules; cards are white stock. Do not wrap list rows in bordered boxes.", "section": "components" }
     ],
     "dos": [
-      "Do use var(--accent) and the existing custom properties; never hard-code hex in templates.",
-      "Do change tokens only in static/css/tokens.css; every template and static/pages/_theme.css loads it.",
-      "Do design every surface for light and dark.",
-      "Do keep touch targets comfortable for kitchen use on phones and tablets.",
-      "Do keep public shared pages self-contained and attractive for a first-time visitor."
+      "Do change tokens only in static/css/tokens.css; every stylesheet and the embedded-page adapter (static/pages/_theme.css) reads them.",
+      "Do give each surface exactly one primary action. On the recipe page it is Start cooking; Share, More, and everything else sit in menus or secondary buttons.",
+      "Do use --accent for text and lines and --accent-solid for fills that carry white text.",
+      "Do keep touch targets at 44px minimum on coarse pointers and 56px or larger in cook mode.",
+      "Do give photo-less recipes a monogram tile in a category tint.",
+      "Do honor prefers-reduced-motion on every animation and transition you add.",
+      "Do divide lists with rule-blue lines; keep cards white."
     ],
     "donts": [
-      "Don't introduce a second accent colour or a second typeface.",
-      "Don't hard-code the brand name; the site name and logo are admin-set.",
-      "Don't use shadows at rest beyond the Resting/Standard tokens; reserve Lifted for hover and overlays.",
-      "Don't put white text on --accent in dark theme; use --accent-solid."
+      "Don't use border-left or border-right stripes as accents.",
+      "Don't use emoji as icons; use inline SVG (stroke 2, round caps, 22px in cook mode).",
+      "Don't show a \"No image\" box; use the monogram.",
+      "Don't uppercase, letter-space, or set kickers or eyebrows above headings, and never transform user strings.",
+      "Don't add a second accent hue or use the tints outside monograms.",
+      "Don't theme cook mode; it always reads --cook-*.",
+      "Don't hard-code hex values in component CSS or use offset-style shadows.",
+      "Don't put a dashboard shell on the app: no flat many-link bar, no bordered grey boxes, no sans on every surface."
     ]
   }
 }

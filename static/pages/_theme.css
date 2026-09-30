@@ -1,35 +1,147 @@
-/* Shared theme for Recipe Manager "Extras" pages.
-   Loaded AFTER each page's own <style> so these rules win on source order.
-   Mirrors the app design tokens in templates/base.html. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* Shared adapter for Recipe Manager "Extras" pages (guides and calculators).
+   Loaded AFTER each page's own <style>, so equal-specificity rules here win by source order.
+   Theme comes from static/css/tokens.css; pages set data-theme on <html> from localStorage("theme")
+   (falling back to prefers-color-scheme) in an inline script, which this file simply follows.
+   World: "The Well-Used Cookbook": index-card panels, blue rule lines, red-pen terracotta, chalkboard dark. */
 @import url('../css/tokens.css');
+@import url('../css/fonts.css');
 
+:root, [data-theme="light"] { --on-accent: #fff; color-scheme: light; }
+[data-theme="dark"] { --on-accent: #fff; color-scheme: dark; }
 
-/* ── Generic element theming (element specificity, wins by source order) ── */
-html, body {
-  background: var(--bg) !important;
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Base ── */
+html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif !important;
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
-body::before { display: none !important; content: none !important; } /* kill decorative overlays */
 
-h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-family: inherit; }
-a { color: var(--accent); }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+h1 { font-size: var(--fs-display); font-weight: 700; }
+h2 { font-size: var(--fs-lg); font-weight: 700; }
+h3 { font-size: var(--fs-md); font-weight: 700; }
+
+a { color: var(--accent); text-underline-offset: 0.15em; }
 a:hover { color: var(--accent-hover); }
-hr { border-color: var(--border); }
+hr { border: 0; border-top: 1px solid var(--rule); }
 code, pre, .mono { color: var(--text-secondary); }
+strong { font-weight: 700; }
 
 /* Form controls */
+input, select, textarea, button { font-family: var(--font-ui); }
 input, select, textarea {
-  font-family: 'Inter', system-ui, sans-serif;
   color: var(--text-primary);
   background: var(--input-bg);
-  border-color: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 input[type="range"] { accent-color: var(--accent); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent-solid); }
 
-/* Utility helpers pages can opt into */
-.jf-accent { color: var(--accent) !important; }
-.jf-accent-bg { background: var(--accent-solid) !important; color: #fff !important; }
-.jf-surface { background: var(--surface) !important; color: var(--text-primary) !important;
-              border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important; }
+/* Focus and motion, for every page */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { box-shadow: var(--focus-ring); }
+
+@media (pointer: coarse) {
+  button, select, input[type="number"], input[type="text"], [role="button"], [role="tab"] { min-height: 44px; }
+  button, [role="button"], [role="tab"] { min-width: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Shared components pages can opt into ── */
+
+/* Index card: white stock, hairline edge, paper shadow */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem 1.5rem;
+}
+.panel-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Small-caps red-pen label */
+
+/* Tinted box with a drawn-icon slot. Put an inline <svg> inside .callout-icon. */
+.callout {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  column-gap: 0.85rem;
+  align-items: start;
+  padding: 0.9rem 1.1rem;
+  background: var(--accent-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+}
+.callout-icon { width: 1.5rem; height: 1.5rem; color: var(--accent); margin-top: 0.1rem; }
+.callout-icon svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.callout-body > :first-child { margin-top: 0; }
+.callout-body > :last-child { margin-bottom: 0; }
+.callout-title { font-family: var(--font-display); font-size: var(--fs-md); font-weight: 700; margin: 0 0 0.35rem; }
+.callout--success { background: var(--success-bg); border-color: var(--success-border); }
+.callout--success .callout-icon { color: var(--success); }
+.callout--note { background: var(--surface); border-color: var(--rule); }
+
+/* Ruled list: blue rule between rows, red-pen dash marker */
+.ruled-list { list-style: none; margin: 0; padding: 0; }
+.ruled-list > li {
+  position: relative;
+  padding: 0.55rem 0 0.55rem 1.1rem;
+  border-bottom: 1px solid var(--rule);
+  overflow-wrap: anywhere;
+}
+.ruled-list > li::before { content: ""; position: absolute; left: 0; top: 1.2em; width: 0.55rem; height: 2px; background: var(--accent); }
+.ruled-list > li:last-child { border-bottom: 0; }
+
+/* Buttons */
+.pg-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  min-height: 44px; padding: 0.5rem 1.1rem;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text-primary);
+  font-size: var(--fs-sm); font-weight: 600; cursor: pointer; text-decoration: none;
+  transition: background-color var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast);
+}
+.pg-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pg-btn--primary { background: var(--accent-solid); border-color: var(--accent-solid); color: var(--on-accent); }
+.pg-btn--primary:hover { background: var(--accent-solid-hover); border-color: var(--accent-solid-hover); color: var(--on-accent); }
+
+/* Progress bar: the fill is full width and scaled from the left (no width transitions) */
+.pg-progress { height: 0.75rem; background: var(--border-light); border: 1px solid var(--border);
+  border-radius: var(--radius-pill); overflow: hidden; }
+.pg-progress-fill { height: 100%; width: 100%; background: var(--accent-solid); transform: scaleX(0);
+  transform-origin: left; transition: transform 0.4s var(--ease-out); }
+
+/* Legacy opt-in helpers */
+.jf-accent { color: var(--accent); }
+.jf-accent-bg { background: var(--accent-solid); color: var(--on-accent); }
+.jf-surface { background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-lg); }

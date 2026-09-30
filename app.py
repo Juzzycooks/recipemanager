@@ -156,10 +156,10 @@ def create_app():
                 g._site_settings = {row.key: row.value for row in SiteSetting.query.all()}
             return g._site_settings.get(key, default)
 
-        tokens_path = os.path.join(app.static_folder, "css", "tokens.css")
+        css_dir = os.path.join(app.static_folder, "css")
         try:
-            asset_v = int(os.path.getmtime(tokens_path))
-        except OSError:
+            asset_v = int(max(os.path.getmtime(os.path.join(css_dir, n)) for n in os.listdir(css_dir) if n.endswith(".css")))
+        except (OSError, ValueError):
             asset_v = 0
         return dict(get_setting=get_setting, asset_v=asset_v)
 

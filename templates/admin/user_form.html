@@ -1,37 +1,38 @@
 {% extends "base.html" %}
 {% block title %}{{ "Edit User" if user else "Add User" }} - Admin{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
-<div class="card" style="max-width:500px;margin:0 auto;">
-    <h2 style="font-size:var(--fs-md);margin-bottom:0.3rem;">{{ "Edit User" if user else "Add User" }}</h2>
-    <p style="color:var(--text-secondary);margin-bottom:1.25rem;font-size:var(--fs-sm);">
-        {% if user %}Update user details below.{% else %}A temporary password will be generated. If SMTP is configured and an email is provided, credentials will be emailed automatically.{% endif %}
-    </p>
+<div class="form-narrow center-col">
+<div class="page-header"><h1>{{ "Edit user" if user else "Add user" }}</h1></div>
+<div class="card">
+    <p class="muted import-lead">{% if user %}Update user details below.{% else %}A temporary password will be generated. If SMTP is configured and an email is provided, credentials will be emailed automatically.{% endif %}</p>
     <form method="POST">
         <div class="form-group">
             <label for="username">Username</label>
-            <input type="text" id="username" name="username" required value="{{ user.username if user else '' }}" placeholder="Username">
+            <input type="text" id="username" name="username" required value="{{ user.username if user else '' }}" placeholder="Username" autocomplete="off" autofocus>
         </div>
         <div class="form-group">
             <label for="email">Email</label>
-            <input type="email" id="email" name="email" value="{{ user.email if user else '' }}" placeholder="user@example.com">
+            <input type="email" id="email" name="email" autocomplete="off" value="{{ user.email if user else '' }}" placeholder="user@example.com">
             <div class="form-hint">Used for sending login credentials via SMTP.</div>
         </div>
         {% if user %}
         <div class="form-group">
-            <label for="new_password">New Password (leave blank to keep current)</label>
-            <input type="password" id="new_password" name="new_password" placeholder="New password">
+            <label for="new_password">New password <span class="opt">(leave blank to keep current)</span></label>
+            <input type="password" id="new_password" name="new_password" autocomplete="new-password" placeholder="New password">
         </div>
         {% endif %}
-        <div class="form-group" style="margin-top:1.25rem;">
-            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-weight:normal;">
-                <input type="checkbox" name="is_admin" style="width:auto;" {% if user and user.is_admin %}checked{% endif %}>
+        <div class="form-group">
+            <label class="check-row">
+                <input type="checkbox" name="is_admin" {% if user and user.is_admin %}checked{% endif %}>
                 Admin privileges
             </label>
         </div>
-        <div class="actions" style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <div class="form-actions form-actions-rule">
             <button type="submit" class="btn btn-primary">{{ "Update User" if user else "Create User" }}</button>
             <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
+</div>
 </div>
 {% endblock %}
