@@ -15,7 +15,8 @@ def _clean(value):
     if "<" in text and ">" in text:
         text = BeautifulSoup(text, "html.parser").get_text(" ")
     text = html_mod.unescape(text).replace("\u00a0", " ")
-    return re.sub(r"[ \t]+", " ", text).strip()
+    text = re.sub(r"[ \t]+", " ", text).strip()
+    return re.sub(r"^(?:[-–—•*]\s*)?[▢☐□◻☑✓✔]+\s*", "", text)  # recipe plugins print a checkbox glyph before each ingredient
 
 
 def _clean_lines(value):

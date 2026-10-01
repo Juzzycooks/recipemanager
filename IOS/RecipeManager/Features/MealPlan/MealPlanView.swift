@@ -82,7 +82,7 @@ struct MealPlanView: View {
     struct PlanTarget: Identifiable { let day: Date; var id: TimeInterval { day.timeIntervalSinceReferenceDate } }
 
     var body: some View {
-        ScrollView {
+        VerticalScroll {
             VStack(spacing: Spacing.m) {
                 weekSelector
                 VStack(spacing: Spacing.s) {

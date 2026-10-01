@@ -11,7 +11,7 @@ struct SignInView: View {
     private enum Field { case server, username, password }
 
     var body: some View {
-        ScrollView {
+        VerticalScroll {
             VStack(alignment: .leading, spacing: Spacing.xl) {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
                     Text("Sign in").font(AppTypography.largeTitle).foregroundStyle(AppColors.textPrimary)

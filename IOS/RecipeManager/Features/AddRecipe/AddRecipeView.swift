@@ -17,7 +17,7 @@ struct AddRecipeView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
+            VerticalScroll {
                 VStack(spacing: Spacing.m) {
                     ActionCard(symbol: "link", tint: AppColors.secondary, title: "Import from a URL", subtitle: "Paste a link from any recipe site") { path.append(.url) }
                     ActionCard(symbol: "camera", tint: AppColors.favorite, title: "Scan from a Photo", subtitle: "Snap a picture of a recipe") { path.append(.photo) }
@@ -90,7 +90,7 @@ struct ImportURLView: View {
     @FocusState private var focused: Bool
 
     var body: some View {
-        ScrollView {
+        VerticalScroll {
             VStack(alignment: .leading, spacing: Spacing.m) {
                 Text("Paste a link to a recipe. We'll read the ingredients and method, and you can check them before saving.")
                     .foregroundStyle(AppColors.textSecondary)
@@ -160,7 +160,7 @@ struct PhotoImportView: View {
     @State private var error: String?
 
     var body: some View {
-        ScrollView {
+        VerticalScroll {
             VStack(alignment: .leading, spacing: Spacing.m) {
                 Text("Choose photos or screenshots of a recipe, in order. We'll read the text on them.").foregroundStyle(AppColors.textSecondary)
                 if ocrAvailable == false {

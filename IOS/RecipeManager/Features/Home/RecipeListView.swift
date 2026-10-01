@@ -14,7 +14,7 @@ struct RecipeListView: View {
     }
 
     var body: some View {
-        ScrollView {
+        VerticalScroll {
             if feed.recipes.isEmpty && feed.hasLoaded && !feed.isLoading {
                 EmptyStateView(title: kind == .favorites ? "No favorites yet" : "No recipes yet", systemImage: kind == .favorites ? "heart" : "book.closed",
                                message: kind == .favorites ? "Tap the heart on a recipe to keep it here." : "Tap + to add your first recipe.")

@@ -33,7 +33,7 @@ struct CollectionsView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
+            VerticalScroll {
                 VStack(spacing: Spacing.m) {
                     Picker("Show", selection: $segment) { ForEach(Segment.allCases) { Text($0.rawValue).tag($0) } }
                         .pickerStyle(.segmented).screenPadding()

@@ -214,3 +214,16 @@ extension View {
     /// The shared side margin.
     func screenPadding() -> some View { padding(.horizontal, Spacing.screen) }
 }
+
+/// A vertical ScrollView whose content is exactly as wide as the screen and which never bounces sideways,
+/// so a page can't be dragged aside to show blank space even if one child is too wide.
+struct VerticalScroll<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        ScrollView {
+            content().containerRelativeFrame(.horizontal)
+        }
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+    }
+}

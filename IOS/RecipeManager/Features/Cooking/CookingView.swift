@@ -23,7 +23,7 @@ struct CookingView: View {
             topBar
             if timer.isActive { TimerPill().padding(.top, Spacing.xs) }
             if let step = current {
-                ScrollView {
+                VerticalScroll {
                     VStack(alignment: .leading, spacing: Spacing.m) {
                         RecipeImage(path: recipe.imageUrl, title: recipe.title, id: recipe.id)
                             .frame(maxWidth: .infinity).frame(height: 240).clipShape(RoundedRectangle(cornerRadius: Radius.card))
@@ -31,6 +31,18 @@ struct CookingView: View {
                         Text(step.heading ?? "Step \(step.number)").font(AppTypography.title).foregroundStyle(AppColors.textPrimary)
                             .accessibilityAddTraits(.isHeader)
                         Text(step.text).font(AppTypography.readingLarge).foregroundStyle(AppColors.textPrimary).lineSpacing(6)
+                        let needed = recipe.ingredients(for: step)
+                        if !needed.isEmpty {
+                            VStack(alignment: .leading, spacing: Spacing.xs) {
+                                Text("For this step").font(.subheadline.weight(.semibold)).foregroundStyle(AppColors.secondary)
+                                ForEach(Array(needed.enumerated()), id: \.offset) { _, line in
+                                    Text(line).font(AppTypography.reading).foregroundStyle(AppColors.textPrimary)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading).padding(Spacing.m)
+                            .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
+                            .accessibilityElement(children: .combine)
+                        }
                         if let minutes = CookTimer.detectMinutes(in: step.text), !timer.isActive {
                             Button { Task { await timer.start(minutes: minutes, title: recipe.title, detail: step.text) } } label: {
                                 Label("Start \(minutes) min timer", systemImage: "timer")
@@ -109,7 +121,7 @@ struct CookingView: View {
         NavigationStack {
             List {
                 ForEach(recipe.ingredientSections) { section in
-                    Section(section.heading ?? "Ingredients") { ForEach(section.lines, id: \.self) { Text($0).font(AppTypography.reading) } }
+                    Section(section.heading ?? "Ingredients") { ForEach(Array(section.lines.enumerated()), id: \.offset) { _, line in Text(line).font(AppTypography.reading) } }
                 }
             }
             .appBackground().navigationTitle("Ingredients").navigationBarTitleDisplayMode(.inline)

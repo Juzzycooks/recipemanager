@@ -64,7 +64,7 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
+            VerticalScroll {
                 VStack(alignment: .leading, spacing: Spacing.xl) {
                     header
                     VStack(alignment: .leading, spacing: Spacing.s) {

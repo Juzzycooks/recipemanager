@@ -192,7 +192,7 @@ def _sections(text):
     """Split '# Heading' section markers: [{heading|None, lines[]}]."""
     out, cur = [], {"heading": None, "lines": []}
     for raw in (text or "").splitlines():
-        line = raw.strip()
+        line = re.sub(r"^(?:[-–—•*]\s*)?[▢☐□◻☑✓✔]+\s*", "", raw.strip())  # checkbox glyphs left by imports
         if not line:
             continue
         if line.startswith("# "):

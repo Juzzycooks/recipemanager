@@ -2,17 +2,22 @@ import SwiftUI
 import Observation
 
 extension RecipeDetail {
-    struct NumberedStep: Identifiable { let number: Int; let heading: String?; let text: String; var id: Int { number } }
+    struct NumberedStep: Identifiable { let number: Int; let heading: String?; let section: String?; let text: String; var id: Int { number } }
 
     /// Steps flattened across sections and numbered 1…n; the first step of a section carries its heading.
     var numberedSteps: [NumberedStep] {
         var out: [NumberedStep] = []
         for section in instructionSections {
             for (i, line) in section.lines.enumerated() {
-                out.append(NumberedStep(number: out.count + 1, heading: i == 0 ? section.heading : nil, text: line))
+                out.append(NumberedStep(number: out.count + 1, heading: i == 0 ? section.heading : nil, section: section.heading, text: line))
             }
         }
         return out
+    }
+
+    /// The ingredient lines a step mentions (shown against the step in cook mode).
+    func ingredients(for step: NumberedStep) -> [String] {
+        StepIngredients.match(step: step.text, section: step.section, in: ingredientSections)
     }
 }
 

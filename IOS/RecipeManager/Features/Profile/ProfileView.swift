@@ -28,7 +28,7 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
+            VerticalScroll {
                 VStack(spacing: Spacing.l) {
                     header
                     stats

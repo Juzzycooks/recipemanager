@@ -73,6 +73,16 @@ struct RecipeBrief: Codable, Sendable, Identifiable, Hashable {
 struct RecipeSection: Codable, Sendable, Hashable, Identifiable {
     let heading: String?
     let lines: [String]
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        heading = try c.decodeIfPresent(String.self, forKey: .heading)
+        // Imports from recipe sites can leave a checkbox glyph at the start of a line; it would sit beside our own tick box.
+        lines = try c.decode([String].self, forKey: .lines).map {
+            $0.replacingOccurrences(of: "^(?:[-–—•*]\\s*)?[▢☐□◻☑✓✔]+\\s*", with: "", options: .regularExpression)
+        }
+    }
+    init(heading: String?, lines: [String]) { self.heading = heading; self.lines = lines }
     var id: String { (heading ?? "") + "|" + lines.joined(separator: "\n") }
 }
 

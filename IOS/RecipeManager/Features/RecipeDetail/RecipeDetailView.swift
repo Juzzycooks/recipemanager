@@ -18,7 +18,7 @@ struct RecipeDetailView: View {
     init(id: Int) { _model = State(initialValue: RecipeDetailModel(id: id)) }
 
     var body: some View {
-        ScrollView {
+        VerticalScroll {
             if let recipe = model.recipe {
                 VStack(spacing: 0) {
                     hero(recipe)
@@ -130,21 +130,24 @@ struct RecipeDetailView: View {
         if r.ingredientSections.isEmpty {
             Text("No ingredients yet.").foregroundStyle(AppColors.textSecondary)
         }
-        ForEach(r.ingredientSections) { section in
+        ForEach(Array(r.ingredientSections.enumerated()), id: \.offset) { sectionIndex, section in
             VStack(alignment: .leading, spacing: 0) {
                 if let heading = section.heading {
                     Text(heading).font(.subheadline.weight(.semibold)).foregroundStyle(AppColors.secondary).padding(.top, Spacing.xs)
                 }
-                ForEach(section.lines, id: \.self) { line in
-                    IngredientRow(text: line, isChecked: picked.contains(line)) {
-                        withAnimation(.snappy(duration: 0.15)) { if picked.contains(line) { picked.remove(line) } else { picked.insert(line) } }
+                ForEach(Array(section.lines.enumerated()), id: \.offset) { lineIndex, line in
+                    let key = "\(sectionIndex)-\(lineIndex)"
+                    IngredientRow(text: line, isChecked: picked.contains(key)) {
+                        withAnimation(.snappy(duration: 0.15)) { if picked.contains(key) { picked.remove(key) } else { picked.insert(key) } }
                     }
                 }
             }
         }
         if !r.ingredientSections.isEmpty {
             SecondaryButton(title: picked.isEmpty ? "Add all to shopping list" : "Add \(picked.count) to shopping list", systemImage: "cart.badge.plus") {
-                let lines = r.ingredientSections.flatMap(\.lines).filter { picked.contains($0) }
+                let lines = r.ingredientSections.enumerated().flatMap { s, section in
+                    section.lines.enumerated().compactMap { l, line in picked.contains("\(s)-\(l)") ? line : nil }
+                }
                 Task { if await model.addToShopping(lines: lines, session, app) { picked = [] } }
             }
         }

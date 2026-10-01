@@ -47,7 +47,7 @@ struct SearchView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            VerticalScroll {
                 VStack(alignment: .leading, spacing: Spacing.m) {
                     SearchBar(text: $model.query, prompt: "Try “chicken”, “pasta” or “soup”…", focus: $focused) { remember(model.query) }
                         .screenPadding()

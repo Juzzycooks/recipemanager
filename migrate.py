@@ -195,6 +195,15 @@ def migrate(db_path):
         except sqlite3.OperationalError:
             pass
 
+        # Imports used to keep the checkbox glyph (and a bullet) at the start of ingredient/method lines.
+        if "recipe" in existing_tables:
+            import re
+            lead = re.compile(r"^(?:[-–—•*]\s*)?[▢☐□◻☑✓✔]+\s*", re.M)
+            for rid, ing, ins in cursor.execute("SELECT id, ingredients, instructions FROM recipe").fetchall():
+                new_ing, new_ins = lead.sub("", ing or ""), lead.sub("", ins or "")
+                if new_ing != (ing or "") or new_ins != (ins or ""):
+                    cursor.execute("UPDATE recipe SET ingredients=?, instructions=? WHERE id=?", (new_ing, new_ins, rid))
+
     conn.commit()
     conn.close()
     print("Migration: Complete")

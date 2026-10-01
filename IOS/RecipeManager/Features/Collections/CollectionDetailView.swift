@@ -14,7 +14,7 @@ struct CollectionDetailView: View {
     private let columns = [GridItem(.adaptive(minimum: 160), spacing: Spacing.s, alignment: .top)]
 
     var body: some View {
-        ScrollView {
+        VerticalScroll {
             if let collection {
                 VStack(alignment: .leading, spacing: Spacing.m) {
                     if !collection.description.isEmpty {
