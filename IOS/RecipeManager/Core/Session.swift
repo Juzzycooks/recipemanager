@@ -142,8 +142,16 @@ final class Session {
         do { user = try await client.get("/me") }
         catch APIError.unauthorized { signOutLocally() }
         catch {
-            user = nil
-            offlineRestore = true
+            // Server unreachable (or erroring): open with the account saved last time and carry on offline;
+            // the connectivity probe brings it back. Only a never-synced install has to wait on the retry screen.
+            if let url = client.url("/me"), let saved = await OfflineStore.shared.cached(for: url),
+               let cached: User = try? client.decode(saved) {
+                user = cached
+                Connectivity.shared.setReachable(false)
+            } else {
+                user = nil
+                offlineRestore = true
+            }
         }
         watchConnectivity()
     }

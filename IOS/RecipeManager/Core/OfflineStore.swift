@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import UIKit
 
 /// Everything saved for offline use: GET responses, plus a full local copy of the recipe library so lists,
 /// search, filters and recipe pages keep working with no connection. Files live in Application Support
@@ -80,14 +81,17 @@ actor OfflineStore: ResponseCaching {
 
     func clear() {
         library = [:]
+        memoryClear()
         try? FileManager.default.removeItem(at: directory)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 
     func byteCount() -> Int {
-        let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.fileSizeKey])) ?? []
-        return files.reduce(0) { $0 + ((try? $1.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) }
+        guard let walker = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: [.fileSizeKey]) else { return 0 }
+        return walker.compactMap { (try? ($0 as? URL)?.resourceValues(forKeys: [.fileSizeKey]))?.fileSize }.reduce(0, +)
     }
+
+    private func memoryClear() { Task { await ImageStore.shared.clearMemory() } }
 
     // MARK: Internals
 
@@ -146,5 +150,57 @@ actor OfflineStore: ResponseCaching {
               let object = try? JSONSerialization.jsonObject(with: encoded) else { return nil }
         let body: [String: Any] = ["items": object, "page": page, "per_page": perPage, "total": items.count, "pages": pages]
         return try? JSONSerialization.data(withJSONObject: body)
+    }
+}
+
+/// Pictures kept on disk next to the offline library (Application Support, so iOS never empties them the way it can
+/// the URL cache). A picture is downloaded once; `OfflineStore.clear()` removes the folder with everything else.
+actor ImageStore {
+    static let shared = ImageStore()
+
+    private let directory: URL
+    nonisolated(unsafe) private let memory = NSCache<NSURL, UIImage>()
+
+    private init() {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        directory = base.appendingPathComponent("Offline/Images", isDirectory: true)
+        memory.totalCostLimit = 64 << 20
+    }
+
+    nonisolated func cachedImage(_ url: URL) -> UIImage? { memory.object(forKey: url as NSURL) }
+
+    func has(_ url: URL) -> Bool { FileManager.default.fileExists(atPath: file(for: url).path) }
+
+    /// The picture from disk, downloading and saving it first if this is the first time.
+    func image(_ url: URL) async -> UIImage? {
+        if let hit = memory.object(forKey: url as NSURL) { return hit }
+        let path = file(for: url)
+        var data = try? Data(contentsOf: path)
+        if data == nil {
+            guard let (fetched, response) = try? await URLSession.shared.data(from: url),
+                  (response as? HTTPURLResponse)?.statusCode == 200, UIImage(data: fetched) != nil else { return nil }
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try? fetched.write(to: path, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            data = fetched
+        }
+        guard let data, let image = UIImage(data: data) else { return nil }
+        memory.setObject(image, forKey: url as NSURL, cost: data.count)
+        return image
+    }
+
+    /// Downloads to disk without decoding (used by the offline sync).
+    func prefetch(_ url: URL) async {
+        guard !has(url) else { return }
+        guard let (data, response) = try? await URLSession.shared.data(from: url),
+              (response as? HTTPURLResponse)?.statusCode == 200 else { return }
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? data.write(to: file(for: url), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+
+    func clearMemory() { memory.removeAllObjects() }
+
+    private func file(for url: URL) -> URL {
+        let digest = SHA256.hash(data: Data(url.absoluteString.utf8)).map { String(format: "%02x", $0) }.joined()
+        return directory.appendingPathComponent(digest)
     }
 }

@@ -36,7 +36,6 @@ final class OfflineSync {
         guard let client = session.client, !isSyncing else { return }
         do {
             // 1. Which recipes exist, and which changed since we last looked?
-            state = .syncing("Checking recipes…")
             var summaries: [RecipeSummary] = []
             var page = 1, pages = 1
             repeat {
@@ -53,6 +52,7 @@ final class OfflineSync {
 
             // 2. Download those in full, a few at a time (each GET also updates the local library).
             var done = 0
+            if !stale.isEmpty { state = .syncing("Downloading recipes (0 of \(stale.count))…") }
             try await withThrowingTaskGroup(of: Void.self) { group in
                 var iterator = stale.makeIterator()
                 func next() -> Int? { iterator.next()?.id }
@@ -65,7 +65,6 @@ final class OfflineSync {
             }
 
             // 3. The rest of what the screens show.
-            state = .syncing("Saving collections, list and plan…")
             let _: ItemList<Category> = try await client.get("/categories")
             let _: User = try await client.get("/me")
             let collections: ItemList<CollectionSummary> = try await client.get("/collections")
@@ -83,7 +82,7 @@ final class OfflineSync {
             if includeImages {
                 let recipes = await OfflineStore.shared.allRecipes()
                 let urls = recipes.flatMap { [$0.thumbUrl, $0.imageUrl] }.compactMap { client.resolve($0) }
-                try await prefetch(Array(Set(urls)))
+                await prefetch(Array(Set(urls)))
             }
 
             recipeCount = await OfflineStore.shared.recipeCount
@@ -107,17 +106,19 @@ final class OfflineSync {
         lastSync = nil; recipeCount = 0; state = .idle
     }
 
-    private func prefetch(_ urls: [URL]) async throws {
-        let todo = urls.filter { URLCache.shared.cachedResponse(for: URLRequest(url: $0)) == nil }
+    private func prefetch(_ urls: [URL]) async {
+        var todo: [URL] = []
+        for url in urls where !(await ImageStore.shared.has(url)) { todo.append(url) }
         guard !todo.isEmpty else { return }
+        state = .syncing("Downloading pictures (0 of \(todo.count))…")
         var done = 0
         await withTaskGroup(of: Void.self) { group in
             var iterator = todo.makeIterator()
-            for _ in 0..<4 { if let url = iterator.next() { group.addTask { _ = try? await URLSession.shared.data(from: url) } } }
+            for _ in 0..<4 { if let url = iterator.next() { group.addTask { await ImageStore.shared.prefetch(url) } } }
             while await group.next() != nil {
                 done += 1
                 if done % 5 == 0 { state = .syncing("Downloading pictures (\(done) of \(todo.count))…") }
-                if let url = iterator.next() { group.addTask { _ = try? await URLSession.shared.data(from: url) } }
+                if let url = iterator.next() { group.addTask { await ImageStore.shared.prefetch(url) } }
             }
         }
     }

@@ -161,8 +161,14 @@ struct APIClient: Sendable {
 
     private func perform(_ request: URLRequest) async throws -> Data {
         let data: Data, response: URLResponse
-        do { (data, response) = try await URLSession.shared.data(for: request) }
-        catch {
+        do {
+            do { (data, response) = try await URLSession.shared.data(for: request) }
+            catch let error as URLError where request.httpMethod == "GET" && Self.isTransient(error) {
+                // A connection that went stale while the app was in the background fails once; a second try is clean.
+                try await Task.sleep(for: .milliseconds(600))
+                (data, response) = try await URLSession.shared.data(for: request)
+            }
+        } catch {
             let failure = APIError.network(error)
             if failure.isOffline { await cache?.reachability(false) }
             throw failure
@@ -176,6 +182,10 @@ struct APIClient: Sendable {
                                   message: env?.error.message ?? "The server answered with an error (\(http.statusCode)).")
         }
         return data
+    }
+
+    private static func isTransient(_ error: URLError) -> Bool {
+        [.networkConnectionLost, .notConnectedToInternet, .cannotConnectToHost, .timedOut, .secureConnectionFailed].contains(error.code)
     }
 
     func decode<T: Decodable>(_ data: Data) throws -> T {
