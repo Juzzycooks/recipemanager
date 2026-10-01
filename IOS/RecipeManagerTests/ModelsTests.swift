@@ -138,3 +138,21 @@ struct ServerFixtureTests {
         #expect(response.user.username == "chef")
     }
 }
+
+@Suite struct HTMLEntitiesTests {
+    @Test func decodesCommonEntities() {
+        #expect(HTMLEntities.decode("&quot;Besciamella&quot; that&#39;s it&nbsp;") == "\"Besciamella\" that's it ")
+        #expect(HTMLEntities.decode("Salad &amp; Pasta &#x2013; &frac12; cup") == "Salad & Pasta – ½ cup")
+        #expect(HTMLEntities.decode("Fish & chips; 5 > 3 &unknown; ok") == "Fish & chips; 5 > 3 &unknown; ok")
+    }
+
+    @Test func cleansResponsesAndLeavesPlainOnesAlone() throws {
+        let plain = Data(#"{"title":"Soup","n":2.5}"#.utf8)
+        #expect(HTMLEntities.clean(plain) == plain)
+        let dirty = Data(#"{"title":"Mac &amp; Cheese","tags":["it&#39;s"],"n":3}"#.utf8)
+        let obj = try #require(try JSONSerialization.jsonObject(with: HTMLEntities.clean(dirty)) as? [String: Any])
+        #expect(obj["title"] as? String == "Mac & Cheese")
+        #expect((obj["tags"] as? [String]) == ["it's"])
+        #expect(obj["n"] as? Int == 3)
+    }
+}

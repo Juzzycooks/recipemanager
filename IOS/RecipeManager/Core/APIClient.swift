@@ -180,7 +180,7 @@ struct APIClient: Sendable {
 
     func decode<T: Decodable>(_ data: Data) throws -> T {
         if T.self == Empty.self || data.isEmpty, let empty = Empty() as? T { return empty }
-        do { return try Self.decoder.decode(T.self, from: data) }
+        do { return try Self.decoder.decode(T.self, from: HTMLEntities.clean(data)) }
         catch { throw APIError.decoding(error) }
     }
 
