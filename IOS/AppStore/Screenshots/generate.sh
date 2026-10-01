@@ -10,12 +10,10 @@ for size in "iphone-6.9 1320 2868" "iphone-6.5 1284 2778"; do
   s 02-home          01-home          "Your recipes, beautifully kept"       "Quick picks, collections and your week at a glance"
   s 03-recipe-detail 02-recipe        "Everything on one page"               "Ingredients, steps, ratings and notes, scaled to your servings"
   s 04-cooking       03-cooking       "Cook hands-free, step by step"        "Big text, a screen that stays awake and real kitchen timers"
-  s 05-collections   04-collections   "Organise your way"                    "Group recipes into collections for weeknights, baking and more"
-  s 06-search        05-search        "Find dinner fast"                     "Search by name, ingredient or tag"
-  s 07-meal-plan     06-meal-plan     "Plan the week"                        "Drop recipes onto days and see what's for dinner"
-  s 08-shopping      07-shopping      "Shop from your plan"                  "A shopping list that builds itself and works offline"
-  s 09-add           08-add           "Save recipes from anywhere"           "Import from a link, scan a photo or write your own"
-  s 10-settings      09-settings      "Make it yours"                        "Light, dark and colour themes"
-  s 01-sign-in       10-sign-in       "Your server. Your recipes."           "Free. No ads, no tracking. It talks only to the server you run"
+  s 06-search        04-search        "Find dinner fast"                     "Search by name, ingredient or tag"
+  s 11-all-recipes   05-all-recipes   "Your whole library, offline too"      "Browse everything, even without a connection"
+  s 09-add           06-add           "Save recipes from anywhere"           "Import from a link, scan a photo or write your own"
+  s 10-settings      07-settings      "Make it yours"                        "Light, dark and colour themes"
+  s 01-sign-in       08-sign-in       "Your server. Your recipes."           "Free. No ads, no tracking. It talks only to the server you run"
 done
 rm -f .frame-bin
