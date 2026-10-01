@@ -1,6 +1,6 @@
 # Handoff
 
-Everything a new person (or a fresh Claude session) needs to keep working on Spoonmate.
+Everything a new person (or a fresh Claude session) needs to keep working on Spoonmate: the Flask server and the native iPhone app in `IOS/`.
 Product truth lives in `PRODUCT.md`; the visual system lives in `DESIGN.md` and `.impeccable/design.json`; the direction contract lives in `.impeccable/surfaces/app.md`. This file covers how the project is put together, how to run and ship it, what changed recently, and what is still unverified.
 
 ## What it is
@@ -27,6 +27,10 @@ Main areas: recipe shelf and recipe page, import (link, Instagram/TikTok, photo/
 | `static/js/` | `app.js` (shortcuts, install hint, offline notice), `cook.js`, `shelf.js`, `shopping.js` |
 | `static/pages/` | Self-contained guides and calculators (embedded pages); they load `_theme.css` which imports the tokens |
 | `static/sw.js`, `static/offline.html` | Service worker (offline pages, cache-first uploads) |
+| `IOS/` | The SwiftUI iPhone app, its Safari share extension and timer widget. See the iPhone app section below and `IOS/README.md` |
+| `docs/screenshots/` | Screenshots used by the README (web and iPhone) |
+| `tools/` | `generate_icons.py` (web and iOS icons from one drawing) and `seed_demo.py` (fills an empty server with a demo library) |
+| `.github/dependabot.yml` | Weekly pip and monthly Docker base-image update PRs (security alerts and updates are also on) |
 | `tests/` | `unittest` suites plus `test_cook.js` (Node) and `smoke_routes.py` |
 
 ## Design system in one paragraph
@@ -56,6 +60,43 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 Tag each push with the commit hash so a rollback is one `docker pull`. After a deploy, users may need one hard refresh because the service worker caches scripts.
 
+## The iPhone app (`IOS/`)
+
+SwiftUI, iOS 18+, Swift 6, iPhone only and portrait only. The project is generated from `IOS/project.yml` with XcodeGen (`cd IOS && xcodegen generate`); never edit the `.xcodeproj` by hand. Three targets share a keychain group: the app, `ShareExtension` (Safari "Save to Spoonmate") and `TimerWidget` (Live Activity for timers). Bundle IDs are `com.justinrahme.Spoonmate`, `.Share` and `.TimerWidget`. Version and build come from `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml` and must match across all three.
+
+- **API client:** bearer tokens against `/api/v1` (`API.md`). `APIClient` also cleans HTML entities out of every response (`HTMLEntities.swift`) because imported recipes sometimes carry `&quot;` and `&#39;`. `APIClient.swift` and `HTMLEntities.swift` are compiled into the share extension too, so new files they depend on must be added to its source list in `project.yml`.
+- **Offline:** `OfflineStore` (response cache plus the whole library), `Outbox` (queued favourite, rating, made-it and shopping changes), `Connectivity`, `OfflineSync`.
+- **Timers:** AlarmKit on iOS 26.1+, a notification burst before that. AlarmKit cannot be exercised in the simulator.
+- **Theme:** `ThemeStore` drives light/dark and five colour themes. `Color.accentColor` does not follow it; use `AppColors`.
+- **Account deletion:** Profile, Account, Delete account calls `DELETE /api/v1/me` (needs the current server image; older servers answer 404 and the app says so).
+
+```bash
+cd IOS
+xcodegen generate
+xcodebuild test -project RecipeManager.xcodeproj -scheme RecipeManager \
+  -destination 'platform=iOS Simulator,name=iPhone 18 Pro' CODE_SIGNING_ALLOWED=NO   # 25 tests
+```
+
+Unsigned builds cannot use the keychain, so for hands-on testing in the simulator build with signing on (`-allowProvisioningUpdates`) and reinstall; `xcodebuild test` reinstalls an unsigned copy.
+
+## App Store status
+
+Prepared, not yet submitted. Everything lives in `IOS/APP_STORE.md` (step-by-step guide) and `IOS/AppStore/`:
+
+- `AppStoreListing.md`: paste-ready name, subtitle, promo text, keywords, description, What's New, review notes.
+- `PRIVACY.md`: the privacy policy. Public URL: `https://github.com/Juzzycooks/recipemanager/blob/main/IOS/AppStore/PRIVACY.md`.
+- `Screenshots/`: raw simulator captures in `raw/` (a real library, status bar 9:41) and `raw-demo/` (seeded demo server), framed slides in `iphone-6.9/` and `iphone-6.5/`, and `generate.sh` to rebuild them with the captions.
+- Privacy manifest (`IOS/RecipeManager/Resources/PrivacyInfo.xcprivacy`), export compliance flag, account deletion and the sign-in explainer are done.
+- Questionnaire answers already decided: age rating 4+ (all capability questions No, Age Category Not Applicable), third-party content No, Data Not Collected, no tracking.
+
+**Still to do (needs a person):** enrol in the Apple Developer Program, set the Team for all three targets, create the App Store Connect record, stand up a public demo server with a non-admin reviewer account and fill the three placeholders in the review notes, run TestFlight on real phones (timers, share extension, local-network prompt, offline), then archive and upload. The app has been tried on a real iPhone and works.
+
+## Repo and hosting
+
+- GitHub `Juzzycooks/recipemanager`, now **public**; secret scanning and push protection are on. History was rewritten once (1 October 2026) to remove a personal email and an old username, so any clone older than that must be re-cloned.
+- Docker Hub `juzzycooks/recipemanager`, last pushed from the current `main` (multi-arch, tagged with the commit hash). Rebuild after any server change; iOS-only or docs-only changes do not need it.
+- Keep work or personal information out of the repo. Before publishing anything new, grep for it, including the demo data and screenshots.
+
 ## Settings stored in `SiteSetting` (Admin, Site settings)
 
 `site_name`, `logo_file`, `store_name` and `store_search_url` (shopping "find" link, `{q}` is replaced; empty hides it), `public_show_author` (show the owner's username on shared pages, off by default), `mealplan_share_<user_id>` (meal-plan share token).
@@ -73,7 +114,7 @@ Tag each push with the commit hash so a rollback is one `docker pull`. After a d
 
 ## Recent changes (newest first)
 
-Recipe pictures kept locally and repaired automatically; install hint fixed; "New recipe" offers Write / Link / Photo; cook mode upgrades; round-2 fixes to Plan, Shop, Admin and the recipe form; usability batch (import preview, photo import, Instagram, hearts, undo, offline, sharing); redesign to the current design system; earlier design-system, accessibility, motion, type and performance passes.
+App Store preparation (iPhone only): renamed to Spoonmate with matching web and iOS icons, bundle IDs `com.justinrahme.Spoonmate`, `DELETE /api/v1/me`, privacy manifest and policy, listing copy and screenshots, HTML-entity cleaning in the app, MIT licence, public repo with Dependabot; before that the token API, the SwiftUI app, kitchen timers, themes, Safari share extension and offline use; Recipe pictures kept locally and repaired automatically; install hint fixed; "New recipe" offers Write / Link / Photo; cook mode upgrades; round-2 fixes to Plan, Shop, Admin and the recipe form; usability batch (import preview, photo import, Instagram, hearts, undo, offline, sharing); redesign to the current design system; earlier design-system, accessibility, motion, type and performance passes.
 
 ## Not verified in a real browser (do this before relying on it)
 
@@ -87,6 +128,8 @@ dialogs (shopping picker, meal-plan share/move, keyboard shortcuts), the service
 - The users table on phones hides its Actions column behind a sideways scroll (the username links to the edit page).
 - The `static/pages/*` guides still contain a few hard-coded names ("Juzzycooks") in titles.
 - Collections have no equivalent of the recipe "undo delete".
+- The iOS app has no UI tests; screens are checked by hand in the simulator. Account deletion was tested through the API tests and by hand on a phone, not by an automated UI run.
+- The app does not scale servings or import PDFs (the web app does); keep store copy to what the app does.
 - No automated browser tests; adding Playwright would cover most of the list above.
 
 ## Working notes for the next Claude session
@@ -94,4 +137,5 @@ dialogs (shopping picker, meal-plan share/move, keyboard shortcuts), the service
 - Don't guess at visuals: render pages and look. On macOS, Safari can be opened and captured with `screencapture`, but Safari blocks scripting unless the user enables "Allow JavaScript from Apple Events". If you screenshot from the user's Safari, open your own window, verify it is showing localhost, and close only that window by id. Screenshots can include desktop notifications; delete them.
 - The sandbox server caches Jinja templates when not in debug mode: restart it after template edits.
 - Scratch tooling (sandbox server, sample-data seeding, screenshot helper) lived outside the repo; `tests/smoke_routes.py` is the part worth keeping.
+- iOS simulator work: the device-interaction tool only accepts taps from a subagent; take screenshots with `xcrun simctl io <udid> screenshot` and use `simctl status_bar ... override --time 9:41` first. Use the iPhone 18 Pro simulator.
 - Impeccable design tooling lives in `.claude/` (untracked). `PRODUCT.md`, `DESIGN.md` and `.impeccable/` are tracked.
