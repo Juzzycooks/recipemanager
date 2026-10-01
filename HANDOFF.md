@@ -68,6 +68,8 @@ SwiftUI, iOS 18+, Swift 6, iPhone only and portrait only. The project is generat
 - **Offline:** `OfflineStore` (response cache plus the whole library), `Outbox` (queued favourite, rating, made-it and shopping changes), `Connectivity`, `OfflineSync`.
 - **Timers:** AlarmKit on iOS 26.1+, a notification burst before that. AlarmKit cannot be exercised in the simulator.
 - **Theme:** `ThemeStore` drives light/dark and five colour themes. `Color.accentColor` does not follow it; use `AppColors`.
+- **Cook mode ingredients:** each step shows a "For this step" card. `Core/StepIngredients.swift` is a Swift port of `matchIngredients` in `static/js/cook.js`; keep the two in step. Ingredient tick state on the recipe page is keyed by section and position, not by text, so duplicate lines are independent.
+- **Layout guard:** every vertical scroll page uses `VerticalScroll` (`SmallComponents.swift`: content pinned to the screen width, no sideways bounce) so a page can't be dragged aside to show blank space. Use it instead of a bare `ScrollView` for vertical pages.
 - **Account deletion:** Profile, Account, Delete account calls `DELETE /api/v1/me` (needs the current server image; older servers answer 404 and the app says so).
 
 ```bash
@@ -114,6 +116,8 @@ Prepared, not yet submitted. Everything lives in `IOS/APP_STORE.md` (step-by-ste
 
 ## Recent changes (newest first)
 
+iPhone 1.0.0 build 2: ingredients listed against each step in cook mode; sideways-drag whitespace guarded with `VerticalScroll`; doubled ingredient tick boxes fixed. Cause: recipe-site imports kept a leading checkbox glyph (`▢`, sometimes `- ▢`) in the stored text, so the web page and the app each added their own box. Fixed at three levels: `scraper._clean` strips it on import, a startup migration in `migrate.py` cleans existing recipes (rewrites `recipe.ingredients`/`instructions`), and `_sections` in `api_v1.py` plus `RecipeSection` decoding in the app strip it defensively. Server image `a6ed450` is on Docker Hub; the version bump (`032bdd3`) is not yet uploaded to App Store Connect.
+
 App Store preparation (iPhone only): renamed to Spoonmate with matching web and iOS icons, bundle IDs `com.justinrahme.Spoonmate`, `DELETE /api/v1/me`, privacy manifest and policy, listing copy and screenshots, HTML-entity cleaning in the app, MIT licence, public repo with Dependabot; before that the token API, the SwiftUI app, kitchen timers, themes, Safari share extension and offline use; Recipe pictures kept locally and repaired automatically; install hint fixed; "New recipe" offers Write / Link / Photo; cook mode upgrades; round-2 fixes to Plan, Shop, Admin and the recipe form; usability batch (import preview, photo import, Instagram, hearts, undo, offline, sharing); redesign to the current design system; earlier design-system, accessibility, motion, type and performance passes.
 
 ## Not verified in a real browser (do this before relying on it)
@@ -123,7 +127,8 @@ dialogs (shopping picker, meal-plan share/move, keyboard shortcuts), the service
 
 ## Known gaps and ideas
 
-- Ingredient-to-step matching in cook mode is word based (misses "the mixture", can over-match).
+- Not verified on a device: the sideways-drag fix was a blanket guard (the offending view was never identified), and the server tests could not be run in the session that made the glyph fix (missing dependencies on that machine); run `python3 -m unittest discover -s tests -t .` and re-import one recipe.
+- Ingredient-to-step matching in cook mode (web and app) is word based (misses "the mixture", can over-match).
 - "Overnight" is not turned into a timer.
 - The users table on phones hides its Actions column behind a sideways scroll (the username links to the edit page).
 - The `static/pages/*` guides still contain a few hard-coded names ("Juzzycooks") in titles.
