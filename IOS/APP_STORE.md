@@ -77,7 +77,7 @@ Paste-ready drafts. Adjust the tone freely.
 | **Subtitle** (30) | Recipes on your own server |
 | **Category** | Food & Drink (secondary: Productivity) |
 | **Promotional text** (170) | Import recipes from any link, plan your week, build the shopping list and cook step by step, all on your own server, and even offline. |
-| **Keywords** (100) | `recipe,cookbook,meal plan,shopping list,cooking,kitchen,import,grocery,timer,self-hosted` |
+| **Keywords** (100) | `cookbook,meal plan,shopping list,cooking,kitchen,import,grocery,timer,self-hosted,offline,planner` |
 | **Support URL** | https://github.com/Juzzycooks/recipemanager/issues |
 | **Marketing URL** | https://github.com/Juzzycooks/recipemanager |
 | **Privacy Policy URL** | https://github.com/Juzzycooks/recipemanager/blob/main/PRIVACY.md |
@@ -91,7 +91,7 @@ Paste-ready drafts. Adjust the tone freely.
 > Spoonmate is a recipe app for people who like to keep their recipes to themselves. It connects to a Spoonmate server that you run at home (or anywhere you like), so your collection stays yours.
 >
 > **Save recipes from anywhere**
-> Paste a link, share a page from Safari, scan a photo or screenshot, import a PDF, or type it in yourself. Spoonmate reads the ingredients and method for you, and you can check them before saving.
+> Paste a link, share a page from Safari, scan a photo or screenshot, or type it in yourself. Spoonmate reads the ingredients and method for you, and you can check them before saving.
 >
 > **Cook without fuss**
 > Step-by-step cooking mode keeps the screen on, shows one step at a time, and starts timers straight from the method ("simmer for 20 minutes"). Timers ring like the Clock app, with a countdown on your Lock Screen.
@@ -184,3 +184,5 @@ Also tick **"Sign-in required"** and enter the same credentials in the demo-acco
 - [ ] Submit for Review; release manually or automatically after approval
 
 Finished 6.9" and 6.5" screenshot slides are in `IOS/AppStore/Screenshots/` (see its README).
+
+Paste-ready listing copy with alternates and the screenshot captions: [`AppStore/AppStoreListing.md`](AppStore/AppStoreListing.md).

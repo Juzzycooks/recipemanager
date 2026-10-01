@@ -8,7 +8,7 @@ for size in "iphone-6.9 1320 2868" "iphone-6.5 1284 2778"; do
   set -- $size; dir=$1; W=$2; H=$3; mkdir -p "$dir"
   s() { ./.frame-bin single "raw/$1.png" "$dir/$2.png" $W $H "$3" "$4"; }
   s 02-home              01-home         "Your recipes, beautifully kept"       "Quick picks, collections and your week at a glance"
-  s 03-recipe-detail     02-recipe       "Everything on one page"               "Ingredients, steps, ratings and notes, scaled to your servings"
+  s 03-recipe-detail     02-recipe       "Everything on one page"               "Ingredients, steps, ratings and notes in one clean view"
   s 04-cooking           03-cooking      "Cook hands-free, step by step"        "Big text, a screen that stays awake and real kitchen timers"
   s 08-collections       04-collections  "Organise your way"                    "Group recipes into collections for weeknights, slow cooking and more"
   s 09-collection-detail 05-collection   "Every collection, one tap away"       "Browse a collection as a grid of photos"
