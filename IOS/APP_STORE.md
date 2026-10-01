@@ -6,7 +6,7 @@ A working guide for the first submission. It covers what is already done in the 
 
 | Decision | Recommendation | Why it matters |
 |:--|:--|:--|
-| **Bundle IDs** | Keep `com.justinrahme.RecipeManager` (+ `.Share`, `.TimerWidget`) or rename to `com.justinrahme.Spoonmate` | **Permanent** once you create the App Store Connect record. Easier to change *now* (tell me and I'll update `project.yml`, the keychain group and the docs in one go). |
+| **Bundle IDs** | `com.justinrahme.Spoonmate` (+ `.Share`, `.TimerWidget`) | **Permanent** once you create the App Store Connect record. Already renamed from the old `RecipeManager` ids. |
 | **Seller name** | Your name (individual) or a company | Shown on the store page. A company needs a D-U-N-S number and extra verification time. |
 | **A demo server for App Review** | Yes, required in practice (section 7) | Reviewers must be able to sign in and use the app. They will not set up a server. |
 | **Support and privacy URLs** | GitHub pages now, your own site later | Both are required fields. `PRIVACY.md` is ready to publish. |
@@ -33,7 +33,7 @@ A working guide for the first submission. It covers what is already done in the 
 
 1. **Enrol in the Apple Developer Program** at developer.apple.com/programs (about US$99 / AU$149 a year). Approval can take from hours to a couple of days.
 2. **Sign in to Xcode** (*Settings → Accounts*) and pick your **Team** for all three targets (*RecipeManager*, *RecipeManagerShare*, *RecipeManagerTimerWidget*) under *Signing & Capabilities*. Or uncomment `DEVELOPMENT_TEAM` in `IOS/project.yml` and run `xcodegen generate`.
-3. **Keychain Sharing:** confirm the capability appears on the app and the share extension with the group `…com.justinrahme.RecipeManager.shared`. Automatic signing creates the App IDs and profiles.
+3. **Keychain Sharing:** confirm the capability appears on the app and the share extension with the group `…com.justinrahme.Spoonmate.shared`. Automatic signing creates the App IDs and profiles.
 4. **Create the app in App Store Connect** (appstoreconnect.apple.com → *Apps → +*): platform iOS, name **Spoonmate** (no exact match existed on the US store when I checked, but names are first-come), language English (Australia) or US, bundle ID from the list, and any SKU (e.g. `spoonmate-ios`).
 5. **Host the two URLs** (support and privacy; section 6).
 6. **Stand up the demo server** (section 7).

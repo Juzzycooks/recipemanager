@@ -29,7 +29,7 @@ targets:
     entitlements:
       path: RecipeManager/RecipeManager.entitlements
       properties:
-        keychain-access-groups: ["$(AppIdentifierPrefix)com.justinrahme.RecipeManager.shared"]
+        keychain-access-groups: ["$(AppIdentifierPrefix)com.justinrahme.Spoonmate.shared"]
     info:
       path: RecipeManager/Resources/Info.plist
       properties:
@@ -47,7 +47,7 @@ targets:
           NSAllowsLocalNetworking: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.Spoonmate
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -65,7 +65,7 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager.TimerWidget
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.Spoonmate.TimerWidget
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         SKIP_INSTALL: YES
@@ -81,7 +81,7 @@ targets:
     entitlements:
       path: ShareExtension/ShareExtension.entitlements
       properties:
-        keychain-access-groups: ["$(AppIdentifierPrefix)com.justinrahme.RecipeManager.shared"]
+        keychain-access-groups: ["$(AppIdentifierPrefix)com.justinrahme.Spoonmate.shared"]
     info:
       path: ShareExtension/Info.plist
       properties:
@@ -100,7 +100,7 @@ targets:
               NSExtensionActivationSupportsText: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManager.Share
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.Spoonmate.Share
         TARGETED_DEVICE_FAMILY: "1"
         SKIP_INSTALL: YES
   RecipeManagerTests:
@@ -111,7 +111,7 @@ targets:
       - target: RecipeManager
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.RecipeManagerTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.SpoonmateTests
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
 schemes:

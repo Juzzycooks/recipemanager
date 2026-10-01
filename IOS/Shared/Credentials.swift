@@ -9,7 +9,7 @@ struct Credentials: Codable, Sendable, Equatable {
 }
 
 enum CredentialStore {
-    private static let service = "com.justinrahme.RecipeManager.credentials"
+    private static let service = "com.justinrahme.Spoonmate.credentials"
 
     static func read() -> Credentials? {
         var query = base

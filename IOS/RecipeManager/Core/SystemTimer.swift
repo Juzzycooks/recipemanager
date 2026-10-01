@@ -18,7 +18,7 @@ enum SystemTimer {
     }
 
     /// One notification every `burstInterval` seconds for `burstCount` rings on the fallback path.
-    private static let log = Logger(subsystem: "com.justinrahme.RecipeManager", category: "SystemTimer")
+    private static let log = Logger(subsystem: "com.justinrahme.Spoonmate", category: "SystemTimer")
 
     static let burstInterval = 10
     static let burstCount = 6
