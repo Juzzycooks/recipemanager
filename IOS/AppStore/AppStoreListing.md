@@ -90,7 +90,7 @@ First release. Save recipes from a link, photo or Safari, cook step by step with
 | **Secondary category** | Productivity |
 | **Support URL** | https://github.com/Juzzycooks/recipemanager/issues |
 | **Marketing URL** | https://github.com/Juzzycooks/recipemanager |
-| **Privacy Policy URL** | https://github.com/Juzzycooks/recipemanager/blob/main/PRIVACY.md |
+| **Privacy Policy URL** | https://github.com/Juzzycooks/recipemanager/blob/main/IOS/AppStore/PRIVACY.md |
 | **Copyright** | 2026 Justin Rahme |
 | **Price** | Free |
 | **Availability** | All countries and regions (iPhone only; not offered on iPad, Mac or Vision Pro) |

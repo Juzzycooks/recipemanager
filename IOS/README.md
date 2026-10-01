@@ -110,7 +110,7 @@ All client-side; the server is unchanged.
 
 ## Publishing
 
-See [`APP_STORE.md`](APP_STORE.md) for the App Store checklist, listing text and review notes. The app is iPhone-only, portrait, iOS 18+, and ships with a privacy manifest, [`PRIVACY.md`](../PRIVACY.md) as its privacy policy, and in-app account deletion.
+See [`APP_STORE.md`](APP_STORE.md) for the App Store checklist, listing text and review notes. The app is iPhone-only, portrait, iOS 18+, and ships with a privacy manifest, [`PRIVACY.md`](AppStore/PRIVACY.md) as its privacy policy, and in-app account deletion.
 
 ## App icon and name
 

@@ -25,7 +25,7 @@ A working guide for the first submission. It covers what is already done in the 
 | Explaining the server | Sign-in screen says a server is needed and links to setup instructions (guidelines 2.3 and 4.2) |
 | Launch screen | Cream/dark background colour, no white flash |
 | Release build | Compiles for a real device (unsigned) with no warnings; 9 MB |
-| Privacy policy | [`PRIVACY.md`](../PRIVACY.md) |
+| Privacy policy | [`PRIVACY.md`](AppStore/PRIVACY.md) |
 
 **Server requirement:** account deletion only works against a server running the image that includes `DELETE /api/v1/me`. Rebuild and push the image before you submit, and mention "server v1.0 or later" in the listing.
 
@@ -80,7 +80,7 @@ Paste-ready drafts. Adjust the tone freely.
 | **Keywords** (100) | `cookbook,meal plan,shopping list,cooking,kitchen,import,grocery,timer,self-hosted,offline,planner` |
 | **Support URL** | https://github.com/Juzzycooks/recipemanager/issues |
 | **Marketing URL** | https://github.com/Juzzycooks/recipemanager |
-| **Privacy Policy URL** | https://github.com/Juzzycooks/recipemanager/blob/main/PRIVACY.md |
+| **Privacy Policy URL** | https://github.com/Juzzycooks/recipemanager/blob/main/IOS/AppStore/PRIVACY.md |
 | **Copyright** | 2026 Justin Rahme |
 | **What's New** | First release. |
 | **Age rating** | Answer the questionnaire honestly; expect 4+. (No mature content and no web browsing. Comments are visible only to people on the same private server.) |
@@ -117,7 +117,7 @@ Paste-ready drafts. Adjust the tone freely.
 
 A GitHub link works for the first submission, but a proper page looks better and can be shown in your website. Publish:
 
-- **Privacy:** the text of [`PRIVACY.md`](../PRIVACY.md)
+- **Privacy:** the text of [`PRIVACY.md`](AppStore/PRIVACY.md)
 - **Support:** a page with setup instructions and a contact route (email or issues)
 
 ## 7. App Review: the demo server and review notes
