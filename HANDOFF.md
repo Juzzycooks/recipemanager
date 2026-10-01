@@ -97,6 +97,7 @@ Prepared, not yet submitted. Everything lives in `IOS/APP_STORE.md` (step-by-ste
 
 - GitHub `Juzzycooks/recipemanager`, now **public**; secret scanning and push protection are on. History was rewritten once (1 October 2026) to remove a personal email and an old username, so any clone older than that must be re-cloned.
 - Docker Hub `juzzycooks/recipemanager`, last pushed from the current `main` (multi-arch, tagged with the commit hash). Rebuild after any server change; iOS-only or docs-only changes do not need it.
+- **Unraid Community Applications:** the template is `spoonmate.xml` here and is mirrored in the public repo `Juzzycooks/unraid-templates` (its `<TemplateURL>` points there; keep the two copies identical). The image name and default appdata path stay `recipemanager` / `RecipeManager` so existing installs keep updating. Status: template written and URLs verified, but **not yet tested on an Unraid box, no forum support thread created, and not yet submitted to CA**. Next: test via `/boot/config/plugins/dockerMan/templates-user/`, post `[Support] Juzzycooks - Spoonmate` in the Docker Containers forum, switch `<Support>` in both copies to that thread URL, then submit the templates repo in the Community Applications forum.
 - Keep work or personal information out of the repo. Before publishing anything new, grep for it, including the demo data and screenshots.
 
 ## Settings stored in `SiteSetting` (Admin, Site settings)
