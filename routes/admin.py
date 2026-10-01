@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from models import db, User, Category, Recipe, Calculator, SiteSetting
 from mailer import send_welcome_email
+from routes.auth import find_user
 from mealie_import import (
     mealie_auth, mealie_get_recipes, mealie_get_recipe_detail, parse_mealie_recipe,
     download_mealie_image,
@@ -89,7 +90,7 @@ def add_user():
         if email and not is_valid_email(email):
             flash("That email address doesn't look right. Check it for typos.", "error")
             return redirect(url_for("admin.add_user"))
-        if User.query.filter_by(username=username).first():
+        if find_user(username):
             flash("That username is taken. Try another.", "error")
             return redirect(url_for("admin.add_user"))
 

@@ -89,6 +89,18 @@ class TestAuth(Api):
             LoginAttempt.query.delete()
             db.session.commit()
 
+    def test_login_ignores_username_case(self):
+        for name in ("ADMIN", "Admin", "  admin "):
+            r = self.c.post(f"{V1}/auth/login", json={"username": name, "password": PW})
+            self.assertEqual(r.status_code, 200, name)
+        r = self.post("/admin/users", json={"username": "ADMIN"})
+        self.assertEqual(r.status_code, 409)  # can't create a second account that differs only by case
+        self.post("/admin/users", json={"username": "casey"})
+        with app.app_context():
+            uid = User.query.filter_by(username="casey").first().id
+        self.assertEqual(self.patch(f"/admin/users/{uid}", json={"username": "Admin"}).status_code, 409)
+        self.assertEqual(self.patch(f"/admin/users/{uid}", json={"username": "Casey"}).status_code, 200)  # own name, new case
+
     def test_site_is_public(self):
         r = self.c.get(f"{V1}/site")
         self.assertEqual(r.status_code, 200)

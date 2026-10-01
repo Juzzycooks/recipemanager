@@ -30,6 +30,15 @@ def _prune_attempts():
     LoginAttempt.query.filter(LoginAttempt.created_at < cutoff).delete()
 
 
+def find_user(username: str):
+    """Look a user up by username, ignoring case (an exact-case match wins if two accounts differ only by case)."""
+    username = (username or "").strip()
+    if not username:
+        return None
+    return (User.query.filter_by(username=username).first()
+            or User.query.filter(db.func.lower(User.username) == username.lower()).first())
+
+
 def _is_rate_limited(ip: str, username: str = "") -> bool:
     """DB-backed: shared across workers; limits per-IP and per-username."""
     _prune_attempts()
@@ -41,7 +50,7 @@ def _is_rate_limited(ip: str, username: str = "") -> bool:
         return True
     if username:
         user_count = LoginAttempt.query.filter(
-            LoginAttempt.username == username,
+            LoginAttempt.username == username.lower(),
             LoginAttempt.created_at >= cutoff).count()
         if user_count >= _MAX_ATTEMPTS:
             return True
@@ -49,13 +58,13 @@ def _is_rate_limited(ip: str, username: str = "") -> bool:
 
 
 def _record_attempt(ip: str, username: str = ""):
-    db.session.add(LoginAttempt(ip=ip, username=username[:80]))
+    db.session.add(LoginAttempt(ip=ip, username=username.lower()[:80]))
     db.session.commit()
 
 
 def _clear_attempts(ip: str, username: str = ""):
     q = LoginAttempt.query.filter(
-        db.or_(LoginAttempt.ip == ip, LoginAttempt.username == username))
+        db.or_(LoginAttempt.ip == ip, LoginAttempt.username == username.lower()))
     q.delete()
     db.session.commit()
 
@@ -123,7 +132,7 @@ def login():
             flash("Too many tries. Wait a few minutes, then try again.", "error")
             return redirect(url_for("auth.login"))
 
-        user = User.query.filter_by(username=username).first()
+        user = find_user(username)
         if user and user.check_password(password):
             _clear_attempts(ip, username)
             login_user(user)

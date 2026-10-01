@@ -341,7 +341,7 @@ def setup():
 
 @api_v1_bp.route("/auth/login", methods=["POST"])
 def login():
-    from routes.auth import _clear_attempts, _is_rate_limited, _record_attempt
+    from routes.auth import _clear_attempts, _is_rate_limited, _record_attempt, find_user
     if User.query.count() == 0:
         raise ApiError("setup_required", "No accounts yet. Create the admin with POST /api/v1/auth/setup.", 409)
     b = Body()
@@ -349,7 +349,7 @@ def login():
     ip = request.remote_addr or "unknown"
     if _is_rate_limited(ip, username):
         raise ApiError("rate_limited", "Too many tries. Wait a few minutes, then try again.", 429)
-    user = User.query.filter_by(username=username).first()
+    user = find_user(username)
     if not (user and user.check_password(password)):
         _record_attempt(ip, username)
         raise ApiError("invalid_credentials", "Invalid username or password.", 401)
@@ -1540,7 +1540,8 @@ def admin_create_user():
         raise ApiError("validation", "Enter a username.", 422)
     if email and not is_valid_email(email):
         raise ApiError("validation", "That email address doesn't look right.", 422)
-    if User.query.filter_by(username=username).first():
+    from routes.auth import find_user as _find_user
+    if _find_user(username):
         raise ApiError("conflict", "That username is taken.", 409)
     password = secrets.token_urlsafe(12)
     user = User(username=username, email=email, is_admin=b.flag("is_admin"))
@@ -1554,12 +1555,12 @@ def admin_create_user():
 @api_v1_bp.route("/admin/users/<int:user_id>", methods=["PATCH"])
 @api_auth(admin=True)
 def admin_update_user(user_id):
-    from routes.auth import _validate_password, is_valid_email
+    from routes.auth import _validate_password, is_valid_email, find_user as _find_user
     user = User.query.get_or_404(user_id)
     b = Body()
     if b.has("username") and b.text("username"):
         name = b.text("username")
-        clash = User.query.filter_by(username=name).first()
+        clash = _find_user(name)
         if clash and clash.id != user.id:
             raise ApiError("conflict", "That username is taken.", 409)
         user.username = name
