@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Container version="2">
-  <Name>RecipeManager</Name>
+  <Name>Spoonmate</Name>
   <Repository>juzzycooks/recipemanager:latest</Repository>
   <Registry>https://hub.docker.com/r/juzzycooks/recipemanager</Registry>
   <Branch>
@@ -10,14 +10,15 @@
   <Network>bridge</Network>
   <Privileged>false</Privileged>
   <Support>https://github.com/Juzzycooks/recipemanager/issues</Support>
-  <Overview>A self-hosted recipe manager with URL importing, Mealie migration, shopping lists with Woolworths price lookup, calculators, user management, and SMTP notifications.</Overview>
-  <Category>Productivity: HomeAutomation:</Category>
+  <Project>https://github.com/Juzzycooks/recipemanager</Project>
+  <ReadMe>https://github.com/Juzzycooks/recipemanager#readme</ReadMe>
+  <TemplateURL>https://raw.githubusercontent.com/Juzzycooks/unraid-templates/main/spoonmate.xml</TemplateURL>
+  <Overview>Spoonmate is a self-hosted recipe manager for your household. Import recipes from links, Instagram/TikTok, photos, PDFs or Mealie; plan the week's meals; build shopping lists; cook step by step with timers; and use the companion iPhone app. On first launch open the web UI and create your account - the first user becomes the admin.</Overview>
+  <Category>Productivity: Tools:</Category>
   <WebUI>http://[IP]:[PORT:8114]</WebUI>
   <Icon>https://raw.githubusercontent.com/Juzzycooks/recipemanager/main/static/icon-512.png</Icon>
   <ExtraParams>--restart=unless-stopped</ExtraParams>
-  <DateInstalled/>
-  <Description>A self-hosted recipe manager with URL importing, Mealie migration, shopping lists with Woolworths price lookup, calculators, user management, and SMTP notifications. On first launch visit the web UI to create your admin account.</Description>
-  <templatePath>/tmp/GitHub/Templates/RecipeManager.xml</templatePath>
+  <Description>Spoonmate is a self-hosted recipe manager for your household. Import recipes from links, Instagram/TikTok, photos, PDFs or Mealie; plan the week's meals; build shopping lists; cook step by step with timers; and use the companion iPhone app. On first launch open the web UI and create your account - the first user becomes the admin.</Description>
 
   <Config Name="Web UI Port" Target="5000" Default="8114" Mode="tcp" Description="Port for the web interface" Type="Port" Display="always" Required="true" Mask="false">8114</Config>
 

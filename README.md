@@ -196,7 +196,7 @@ docker compose up -d
 
 ### Unraid
 
-A Community Applications template is in this repo ([`recipemanager.xml`](recipemanager.xml)). Or add the container by hand: repository `juzzycooks/recipemanager`, port `5000` (e.g. host `8114`), and a path mapping from `/app/data` to `/mnt/user/appdata/RecipeManager` (the template's default).
+A Community Applications template is in this repo ([`spoonmate.xml`](spoonmate.xml)). Or add the container by hand: repository `juzzycooks/recipemanager`, port `5000` (e.g. host `8114`), and a path mapping from `/app/data` to `/mnt/user/appdata/RecipeManager` (the template's default).
 
 ### First run
 
