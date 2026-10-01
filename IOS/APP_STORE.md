@@ -182,3 +182,5 @@ Also tick **"Sign-in required"** and enter the same credentials in the demo-acco
 - [ ] Accessibility checked (VoiceOver, large text). Don't claim Accessibility Nutrition Labels until this has been done.
 - [ ] Build selected on the version page; export compliance and content-rights questions answered (no third-party content; encryption: standard HTTPS only)
 - [ ] Submit for Review; release manually or automatically after approval
+
+Finished 6.9" and 6.5" screenshot slides are in `IOS/AppStore/Screenshots/` (see its README).
