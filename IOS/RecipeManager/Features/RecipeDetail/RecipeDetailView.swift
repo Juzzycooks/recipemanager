@@ -144,12 +144,18 @@ struct RecipeDetailView: View {
             }
         }
         if !r.ingredientSections.isEmpty {
-            SecondaryButton(title: picked.isEmpty ? "Add all to shopping list" : "Add \(picked.count) to shopping list", systemImage: "cart.badge.plus") {
+            // Ticked means "I already have it", so only the unticked lines go on the list.
+            let total = r.ingredientSections.reduce(0) { $0 + $1.lines.count }
+            let toBuy = total - picked.count
+            SecondaryButton(title: picked.isEmpty ? "Add all to shopping list"
+                                  : toBuy > 0 ? "Add \(toBuy) to shopping list" : "You have everything", systemImage: "cart.badge.plus") {
+                guard toBuy > 0 else { return }
                 let lines = r.ingredientSections.enumerated().flatMap { s, section in
-                    section.lines.enumerated().compactMap { l, line in picked.contains("\(s)-\(l)") ? line : nil }
+                    section.lines.enumerated().compactMap { l, line in picked.contains("\(s)-\(l)") ? nil : line }
                 }
                 Task { if await model.addToShopping(lines: lines, session, app) { picked = [] } }
             }
+            .disabled(!picked.isEmpty && toBuy == 0)
         }
         if let n = r.nutrition { nutrition(n) }
     }

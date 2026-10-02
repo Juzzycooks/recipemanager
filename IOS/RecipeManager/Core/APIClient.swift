@@ -169,6 +169,8 @@ struct APIClient: Sendable {
                 (data, response) = try await URLSession.shared.data(for: request)
             }
         } catch {
+            // A reload superseding this request (or the view going away) is not a failure worth an alert.
+            if error is CancellationError || (error as? URLError)?.code == .cancelled { throw CancellationError() }
             let failure = APIError.network(error)
             if failure.isOffline { await cache?.reachability(false) }
             throw failure
