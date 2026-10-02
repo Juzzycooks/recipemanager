@@ -172,7 +172,8 @@ def create_app():
         def app_name():
             return (get_setting("site_name", "") or "").strip() or APP_NAME
 
-        return dict(get_setting=get_setting, app_name=app_name, asset_v=asset_v)
+        from units import unit_ingredients
+        return dict(get_setting=get_setting, app_name=app_name, asset_v=asset_v, unit_ingredients=unit_ingredients)
 
     @app.template_filter('recipe_image')
     def recipe_image_filter(image_url):

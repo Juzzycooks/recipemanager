@@ -106,6 +106,14 @@ class TestAuth(Api):
         self.assertEqual(r.status_code, 200)
         self.assertFalse(r.get_json()["setup_required"])
 
+    def test_unit_table_is_public(self):
+        r = self.c.get(f"{V1}/units")
+        self.assertEqual(r.status_code, 200)
+        body = r.get_json()
+        self.assertIn("milk", body["liquids"])
+        self.assertIn({"name": "walnut", "grams_per_cup": 115, "us_cups": True}, body["solids"])
+        self.assertNotIn("about", body)
+
     def test_setup_closed_after_first_user(self):
         self.assertEqual(self.c.post(f"{V1}/auth/setup", json={"username": "x", "password": PW}).status_code, 409)
 
@@ -237,6 +245,8 @@ class TestRecipes(Api):
         self.assertNotIn("notes", body)
         self.assertNotIn("comments", body)
         self.assertIsNone(body["author"])
+        page = self.c.get(url.replace("http://localhost", ""))   # the web page carries the unit table for unitconv.js
+        self.assertIn(b'window.UNIT_INGREDIENTS = {"liquids"', page.data)
         self.assertEqual(self.delete(f"/recipes/{rid}/share").status_code, 204)
         self.assertEqual(self.c.get(f"{V1}/shared/recipes/{token}").status_code, 404)
 

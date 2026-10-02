@@ -199,6 +199,7 @@ function copyShareLink() {
 
 // Recipe scaling + unit conversion (shared engine)
 </script>
+<script>window.UNIT_INGREDIENTS = {{ unit_ingredients()|tojson }};</script>
 <script src="{{ url_for('static', filename='unitconv.js', v=asset_v) }}"></script>
 <script src="{{ url_for('static', filename='units.js', v=asset_v) }}"></script>
 <script>

@@ -158,6 +158,14 @@ struct ServerFixtureTests {
 }
 
 struct UnitConversionTests {
+    init() throws {
+        // The server's copy (static/unit-ingredients.json), which the app normally fetches from /units.
+        let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: "../../static/unit-ingredients.json")
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        UnitConversion.use(try decoder.decode(UnitIngredients.self, from: Data(contentsOf: file)), save: false)
+    }
+
     private func metric(_ s: String) -> String { UnitConversion.convert(s, to: .metric) }
     private func us(_ s: String) -> String { UnitConversion.convert(s, to: .imperial) }
 
@@ -169,7 +177,6 @@ struct UnitConversionTests {
     }
 
     @Test func volumesToMetric() {
-        #expect(metric("1 cup rice") == "240 ml rice")
         #expect(metric("1 1/2 tbsp honey") == "1 1/2 tbsp honey")   // spoons stay spoons
         #expect(metric("1/2 tsp salt") == "1/2 tsp salt")
         #expect(us("15 ml soy sauce") == "1 tbsp soy sauce")
@@ -178,9 +185,28 @@ struct UnitConversionTests {
     }
 
     @Test func toImperial() {
-        #expect(us("500 g flour") == "1 lb flour")
+        #expect(us("500 g flour") == "4 ¼ cups flour")   // US bakers measure flour in cups
         #expect(us("250 ml cream") == "1 cup cream")
         #expect(us("1 kg onions") == "2 ¼ lb onions")
+    }
+
+    @Test func cupsDependOnTheIngredient() {
+        #expect(metric("½ cup nuts") == "65 g nuts")
+        #expect(metric("1/2 cup chopped walnuts") == "60 g chopped walnuts")
+        #expect(metric("1 cup rice") == "190 g rice")
+        #expect(metric("2 cups plain flour") == "240 g plain flour")
+        #expect(metric("1 cup light brown sugar") == "210 g light brown sugar")
+        #expect(metric("½ cup peanut butter") == "140 g peanut butter")
+        #expect(metric("1 cup buttermilk") == "240 ml buttermilk")
+        #expect(metric("1 cup milk chocolate chips") == "170 g milk chocolate chips")
+        #expect(metric("1 cup water, plus flour for dusting") == "240 ml water, plus flour for dusting")
+        #expect(metric("1 cup frozen peas") == "1 cup frozen peas")
+        #expect(metric("1 cup (150 g) frozen peas") == "150 g frozen peas")
+        #expect(metric("Stir in 1 cup sugar, then 1 cup stock.") == "Stir in 200 g sugar, then 240 ml stock.")
+        #expect(us("100 g walnuts") == "¾ cup walnuts")
+        #expect(us("1 kg flour") == "8 ¼ cups flour")
+        #expect(us("250 g butter") == "9 oz butter")   // butter stays a weight
+        #expect(metric("8 oz boiling water") == "240 ml boiling water")
     }
 
     @Test func rangesAndFractionGlyphs() {

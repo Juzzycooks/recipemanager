@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// Which measuring system to show amounts in. `original` leaves recipes exactly as written.
 enum UnitSystem: String, CaseIterable, Identifiable, Sendable {
@@ -12,6 +13,17 @@ enum UnitSystem: String, CaseIterable, Identifiable, Sendable {
 
     /// The saved preference from Settings.
     static var preferred: UnitSystem { UnitSystem(rawValue: UserDefaults.standard.string(forKey: storageKey) ?? "") ?? .original }
+}
+
+/// The ingredient table behind cup and ounce conversion, from the server's `GET /units` (static/unit-ingredients.json).
+struct UnitIngredients: Codable, Sendable {
+    struct Solid: Codable, Sendable {
+        let name: String
+        let gramsPerCup: Double
+        let usCups: Bool
+    }
+    let liquids: [String]
+    let solids: [Solid]
 }
 
 /// Converts amounts and oven temperatures inside ingredient lines and method steps, for display only.
@@ -31,6 +43,7 @@ enum UnitConversion {
         let toBase: Double      // grams or millilitres
         let metric: Bool
         var spoon = false       // tsp / tbsp: spices and small amounts, kept as spoons when converting to metric
+        var cup = false         // cups measure dry goods too, so what they become depends on the ingredient
     }
 
     private static func unit(_ raw: String, remainder: Substring) -> Unit? {
@@ -38,9 +51,9 @@ enum UnitConversion {
         switch key {
         case "lb", "lbs", "pound", "pounds": return Unit(kind: .weight, toBase: 453.592, metric: false)
         case "oz", "ounce", "ounces":
-            return isLiquid(remainder) ? Unit(kind: .volume, toBase: 29.5735, metric: false) : Unit(kind: .weight, toBase: 28.3495, metric: false)
+            return ingredient(remainder) == .liquid ? Unit(kind: .volume, toBase: 29.5735, metric: false) : Unit(kind: .weight, toBase: 28.3495, metric: false)
         case "floz", "fluidounce", "fluidounces": return Unit(kind: .volume, toBase: 29.5735, metric: false)
-        case "cup", "cups": return Unit(kind: .volume, toBase: 236.588, metric: false)
+        case "cup", "cups": return Unit(kind: .volume, toBase: 236.588, metric: false, cup: true)
         case "tbsp", "tbsps", "tbs", "tablespoon", "tablespoons": return Unit(kind: .volume, toBase: 14.7868, metric: false, spoon: true)
         case "tsp", "tsps", "teaspoon", "teaspoons": return Unit(kind: .volume, toBase: 4.92892, metric: false, spoon: true)
         case "pint", "pints", "pt": return Unit(kind: .volume, toBase: 473.176, metric: false)
@@ -54,13 +67,52 @@ enum UnitConversion {
         }
     }
 
-    /// "oz" is a weight unless the ingredient is something you pour.
-    private static let liquids = ["milk", "cream", "water", "stock", "broth", "juice", "oil", "wine", "beer", "vinegar", "syrup",
-                                  "liqueur", "rum", "vodka", "whisky", "whiskey", "brandy", "cider", "coffee", "tea", "yogurt drink", "buttermilk", "passata"]
+    // MARK: Ingredients
 
-    private static func isLiquid(_ remainder: Substring) -> Bool {
-        let nearby = remainder.prefix(40).lowercased()
-        return liquids.contains { nearby.contains($0) }
+    /// What a cup (or an ounce) of something is: poured, or a dry good with a known weight per US cup.
+    private enum Ingredient: Equatable {
+        case liquid
+        case solid(gramsPerCup: Double, cupsInUS: Bool)   // cupsInUS: US recipes measure it in cups (flour), not ounces (butter)
+    }
+
+    /// The table, ready to search.
+    private struct Lookup: @unchecked Sendable {        // NSRegularExpression is immutable once built
+        let solids: [String: Ingredient]
+        let regex: NSRegularExpression?
+
+        init(_ table: UnitIngredients) {
+            solids = Dictionary(table.solids.map { ($0.name.lowercased(), .solid(gramsPerCup: $0.gramsPerCup, cupsInUS: $0.usCups)) },
+                                uniquingKeysWith: { first, _ in first })
+            // Longest names first, so "peanut butter" wins over "peanut" and "buttermilk" over "butter" at the same spot.
+            let names = (table.liquids + table.solids.map(\.name)).sorted { $0.count > $1.count }.map(NSRegularExpression.escapedPattern(for:))
+            regex = names.isEmpty ? nil
+                : try? NSRegularExpression(pattern: "(?<![\\w-])(\(names.joined(separator: "|")))(?:e?s)?(?![\\w-])", options: .caseInsensitive)
+        }
+    }
+
+    private static let defaultsKey = "unitIngredients"
+    /// Starts from the copy saved last time, so conversion works at launch and offline.
+    private static let lookup = Mutex(Lookup(saved() ?? UnitIngredients(liquids: [], solids: [])))
+
+    private static func saved() -> UnitIngredients? {
+        UserDefaults.standard.data(forKey: defaultsKey).flatMap { try? JSONDecoder().decode(UnitIngredients.self, from: $0) }
+    }
+
+    /// Switches to a table fetched from the server (`GET /units`) and keeps it for next launch.
+    static func use(_ table: UnitIngredients, save: Bool = true) {
+        guard !table.liquids.isEmpty || !table.solids.isEmpty else { return }
+        lookup.withLock { $0 = Lookup(table) }
+        if save, let data = try? JSONEncoder().encode(table) { UserDefaults.standard.set(data, forKey: defaultsKey) }
+    }
+
+    /// The first ingredient named soon after an amount: "1 cup water, plus flour for dusting" is water.
+    /// Nil when nothing is recognised (or the table hasn't arrived yet), which leaves cups as written.
+    private static func ingredient(_ remainder: Substring) -> Ingredient? {
+        let nearby = String(remainder.prefix(50))
+        let table = lookup.withLock { $0 }
+        guard let match = table.regex?.firstMatch(in: nearby, range: NSRange(location: 0, length: (nearby as NSString).length)) else { return nil }
+        let name = (nearby as NSString).substring(with: match.range(at: 1)).lowercased()
+        return table.solids[name] ?? .liquid
     }
 
     // MARK: Amounts
@@ -92,13 +144,26 @@ enum UnitConversion {
                     continue
                 }
             }
+            // What one of the written unit comes to, in grams or millilitres.
+            var kind = from.kind, perUnit = from.toBase, cupsOnly = false
+            let food = ingredient(Substring(after))
+            if wantMetric, from.cup {
+                // A cup of nuts is weighed, a cup of milk is poured; a cup of something unknown stays a cup.
+                switch food {
+                case .liquid?: break
+                case .solid(let grams, _)?: (kind, perUnit) = (.weight, grams)
+                case nil: continue
+                }
+            } else if !wantMetric, from.kind == .weight, case .solid(let grams, true)? = food {
+                (kind, perUnit, cupsOnly) = (.volume, from.toBase / grams * 236.588, true)   // 250 g flour -> 2 cups
+            }
             let high = match.range(at: 2).location == NSNotFound ? nil : number(source.substring(with: match.range(at: 2)))
-            var a = render(low * from.toBase, kind: from.kind, metric: wantMetric)
+            var a = render(low * perUnit, kind: kind, metric: wantMetric, cupsOnly: cupsOnly)
             if let high {
-                var b = render(high * from.toBase, kind: from.kind, metric: wantMetric)
+                var b = render(high * perUnit, kind: kind, metric: wantMetric, cupsOnly: cupsOnly)
                 if wantMetric, a.unit != b.unit {   // a range that crosses 1 kg / 1 L reads best in the bigger unit for both ends
-                    a = (plain(round(low * from.toBase / 1000, to: 0.05)), b.unit)
-                    b = (plain(round(high * from.toBase / 1000, to: 0.05)), b.unit)
+                    a = (plain(round(low * perUnit / 1000, to: 0.05)), b.unit)
+                    b = (plain(round(high * perUnit / 1000, to: 0.05)), b.unit)
                 }
                 result.replaceCharacters(in: range, with: a.unit == b.unit ? "\(a.value)–\(b.value) \(a.unit)" : "\(a.value) \(a.unit)–\(b.value) \(b.unit)")
             } else {
@@ -156,7 +221,8 @@ enum UnitConversion {
     }
 
     /// An amount in grams or millilitres, written the way a cook in that system would.
-    private static func render(_ base: Double, kind: Kind, metric: Bool) -> (value: String, unit: String) {
+    /// `cupsOnly`: dry goods go up to cups but never quarts (8 cups of flour, not 2 qt).
+    private static func render(_ base: Double, kind: Kind, metric: Bool, cupsOnly: Bool = false) -> (value: String, unit: String) {
         if metric {
             var v = base < 5 ? round(base, to: 0.5) : base < 10 ? round(base, to: 1) : base < 100 ? round(base, to: 5) : round(base, to: 10)
             if v >= 1000 { v = round(v / 1000, to: 0.05); return (plain(v), kind == .weight ? "kg" : "L") }
@@ -170,7 +236,7 @@ enum UnitConversion {
         case .volume:
             if base < 15 { return (fractional(base / 4.92892, step: 0.25), "tsp") }
             if base < 60 { return (fractional(base / 14.7868, step: 0.5), "tbsp") }
-            if base < 950 {
+            if base < 950 || cupsOnly {
                 let cups = base / 236.588
                 return (fractional(cups, step: 0.25), cups > 1.12 ? "cups" : "cup")
             }

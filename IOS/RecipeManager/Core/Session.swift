@@ -99,6 +99,12 @@ final class Session {
         user = response.user
         _ = try? await client?.get("/me") as User?                 // saved now so the app can start offline later
         watchConnectivity()
+        Task { await refreshUnitTable() }
+    }
+
+    /// Fetches the ingredient table for cup and ounce conversion; UnitConversion keeps the last copy for offline use.
+    func refreshUnitTable() async {
+        if let table: UnitIngredients = try? await client?.get("/units") { UnitConversion.use(table) }
     }
 
     func signOut() async {
@@ -154,6 +160,7 @@ final class Session {
             }
         }
         watchConnectivity()
+        Task { await refreshUnitTable() }
     }
 
     /// True when the token is kept but the server couldn't be reached at launch.

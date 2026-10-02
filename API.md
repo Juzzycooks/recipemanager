@@ -21,6 +21,7 @@ Code: `routes/api_v1.py`. Tests: `tests/test_api_v1.py`.
 | | |
 |---|---|
 | `GET /site` | `{api_version, name, logo_url, setup_required, ocr_available, store}` |
+| `GET /units` | `{version, liquids[], solids[{name, grams_per_cup, us_cups}]}`, the ingredient table for converting cups and ounces (`static/unit-ingredients.json`) |
 | `POST /auth/setup` | `{username, password, email?, device_name?}` first admin only (409 after). Returns `{token, user}` |
 | `POST /auth/login` | `{username, password, device_name?}` returns `{token, user}`. 5 failures per 5 min per IP/user, then 429 |
 | `POST /auth/forgot-password` | `{email}` always answers the same |

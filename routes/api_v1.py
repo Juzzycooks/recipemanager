@@ -19,6 +19,7 @@ from models import (
     ApiToken, Calculator, Category, Collection, Comment, CookLog, ExtraShare, Favorite,
     MealPlan, Rating, Recipe, ShoppingListItem, SiteSetting, User, db,
 )
+from units import unit_ingredients
 
 api_v1_bp = Blueprint("api_v1", __name__, url_prefix="/api/v1")
 
@@ -308,6 +309,12 @@ def site():
     return jsonify(api_version=1, name=_setting("site_name"), logo_url=_upload_url(_setting("logo_file")),
                    setup_required=User.query.count() == 0, ocr_available=bool(ocr_available()),
                    store={"name": store_name, "search_url": store_url})
+
+
+@api_v1_bp.route("/units")
+def units():
+    """Public: the ingredient table the app uses to convert cups and ounces (static/unit-ingredients.json)."""
+    return jsonify(unit_ingredients())
 
 
 def _issue_token(user, name):

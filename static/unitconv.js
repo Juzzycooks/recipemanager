@@ -4,12 +4,26 @@
 (function (root) {
   var KEY = 'unitSystem';
 
-  var LIQUIDS = ['milk', 'cream', 'water', 'stock', 'broth', 'juice', 'oil', 'wine', 'beer', 'vinegar', 'syrup', 'liqueur', 'rum',
-    'vodka', 'whisky', 'whiskey', 'brandy', 'cider', 'coffee', 'tea', 'yogurt drink', 'buttermilk', 'passata'];
+  /* What a cup (or an ounce) of something is: poured, or a dry good with a known weight per US cup.
+     The table is static/unit-ingredients.json, which the server writes into the page as window.UNIT_INGREDIENTS. */
+  var SOLID = {}, INGREDIENT = null;
 
-  function isLiquid(remainder) {
-    var nearby = remainder.slice(0, 40).toLowerCase();
-    return LIQUIDS.some(function (w) { return nearby.indexOf(w) !== -1; });
+  function use(table) {
+    var liquids = (table && table.liquids) || [], solids = (table && table.solids) || [], names = liquids.slice();
+    SOLID = {};
+    solids.forEach(function (s) { SOLID[s.name.toLowerCase()] = { grams: s.grams_per_cup, us: !!s.us_cups }; names.push(s.name); });
+    // Longest names first, so "peanut butter" wins over "peanut" and "buttermilk" over "butter" at the same spot.
+    INGREDIENT = names.length ? new RegExp('(^|[^\\w-])(' + names
+      .sort(function (x, y) { return y.length - x.length; })
+      .map(function (n) { return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')(?:e?s)?(?![\\w-])', 'i') : null;
+  }
+
+  /* The first ingredient named soon after an amount: "1 cup water, plus flour for dusting" is water.
+     Returns null (unknown, or no table), 'liquid', or { grams, us }. */
+  function ingredient(remainder) {
+    var m = INGREDIENT && INGREDIENT.exec(remainder.slice(0, 50));
+    if (!m) return null;
+    return SOLID[m[2].toLowerCase()] || 'liquid';
   }
 
   function unit(raw, remainder) {
@@ -17,9 +31,9 @@
     switch (k) {
       case 'lb': case 'lbs': case 'pound': case 'pounds': return { kind: 'w', base: 453.592, metric: false };
       case 'oz': case 'ounce': case 'ounces':
-        return isLiquid(remainder) ? { kind: 'v', base: 29.5735, metric: false } : { kind: 'w', base: 28.3495, metric: false };
+        return ingredient(remainder) === 'liquid' ? { kind: 'v', base: 29.5735, metric: false } : { kind: 'w', base: 28.3495, metric: false };
       case 'floz': case 'fluidounce': case 'fluidounces': return { kind: 'v', base: 29.5735, metric: false };
-      case 'cup': case 'cups': return { kind: 'v', base: 236.588, metric: false };
+      case 'cup': case 'cups': return { kind: 'v', base: 236.588, metric: false, cup: true };
       case 'tbsp': case 'tbsps': case 'tbs': case 'tablespoon': case 'tablespoons': return { kind: 'v', base: 14.7868, metric: false, spoon: true };
       case 'tsp': case 'tsps': case 'teaspoon': case 'teaspoons': return { kind: 'v', base: 4.92892, metric: false, spoon: true };
       case 'pint': case 'pints': case 'pt': return { kind: 'v', base: 473.176, metric: false };
@@ -69,8 +83,9 @@
     return whole === 0 ? g : whole + ' ' + g;
   }
 
-  /* An amount in grams or millilitres, written the way a cook in that system would. */
-  function render(base, kind, metric) {
+  /* An amount in grams or millilitres, written the way a cook in that system would.
+     cupsOnly: dry goods go up to cups but never quarts (8 cups of flour, not 2 qt). */
+  function render(base, kind, metric, cupsOnly) {
     if (metric) {
       var v = base < 5 ? snap(base, 0.5) : base < 10 ? snap(base, 1) : base < 100 ? snap(base, 5) : snap(base, 10);
       if (v >= 1000) return { value: plain(snap(v / 1000, 0.05)), unit: kind === 'w' ? 'kg' : 'L' };
@@ -83,7 +98,7 @@
     }
     if (base < 15) return { value: fractional(base / 4.92892, 0.25), unit: 'tsp' };
     if (base < 60) return { value: fractional(base / 14.7868, 0.5), unit: 'tbsp' };
-    if (base < 950) { var cups = base / 236.588; return { value: fractional(cups, 0.25), unit: cups > 1.12 ? 'cups' : 'cup' }; }
+    if (base < 950 || cupsOnly) { var cups = base / 236.588; return { value: fractional(cups, 0.25), unit: cups > 1.12 ? 'cups' : 'cup' }; }
     return { value: fractional(base / 946.353, 0.25), unit: 'qt' };
   }
 
@@ -103,11 +118,20 @@
         if (theirs && theirs.metric === wantMetric) { out += pre + paren[1]; last += paren[0].length; re.lastIndex = last; used = true; }
       }
       if (used) continue;
-      var a = render(low * from.base, from.kind, wantMetric);
+      // What one of the written unit comes to, in grams or millilitres.
+      var kind = from.kind, per = from.base, cupsOnly = false, food = ingredient(after);
+      if (wantMetric && from.cup) {
+        // A cup of nuts is weighed, a cup of milk is poured; a cup of something unknown stays a cup.
+        if (!food) { out += m[0]; continue; }
+        if (food !== 'liquid') { kind = 'w'; per = food.grams; }
+      } else if (!wantMetric && from.kind === 'w' && food && food !== 'liquid' && food.us) {
+        kind = 'v'; per = from.base / food.grams * 236.588; cupsOnly = true;   // 250 g flour -> 2 cups
+      }
+      var a = render(low * per, kind, wantMetric, cupsOnly);
       if (m[3]) {
-        var hiBase = num(m[3]) * from.base, b = render(hiBase, from.kind, wantMetric);
+        var hiBase = num(m[3]) * per, b = render(hiBase, kind, wantMetric, cupsOnly);
         if (wantMetric && a.unit !== b.unit) {   // a range that crosses 1 kg / 1 L reads best in the bigger unit for both ends
-          a = { value: plain(snap(low * from.base / 1000, 0.05)), unit: b.unit }; b = { value: plain(snap(hiBase / 1000, 0.05)), unit: b.unit };
+          a = { value: plain(snap(low * per / 1000, 0.05)), unit: b.unit }; b = { value: plain(snap(hiBase / 1000, 0.05)), unit: b.unit };
         }
         out += pre + (a.unit === b.unit ? a.value + '–' + b.value + ' ' + a.unit : a.value + ' ' + a.unit + '–' + b.value + ' ' + b.unit);
       } else {
@@ -171,9 +195,10 @@
     document.addEventListener('unitsystemchange', paint);
   }
 
-  var api = { convert: convert, get: get, set: set };
+  var api = { convert: convert, get: get, set: set, use: use };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof document !== 'undefined') {
+    use(root.UNIT_INGREDIENTS);
     root.UnitConv = api;
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   }

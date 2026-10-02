@@ -147,6 +147,7 @@
     function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
     setTheme(getTheme());
     </script>
+    <script>window.UNIT_INGREDIENTS = {{ unit_ingredients()|tojson }};</script>
     <script src="/static/unitconv.js?v={{ asset_v }}"></script>
     <script src="/static/units.js?v={{ asset_v }}"></script>
     <script>
