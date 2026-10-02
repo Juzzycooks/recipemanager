@@ -56,3 +56,60 @@ struct AppTabBar: View {
         .accessibilityLabel("Add recipe")
     }
 }
+
+extension View {
+    /// Puts the tab bar at the bottom of a tab's root screen. It belongs to the screen (not to the shell around the
+    /// stack), so pushing a recipe slides it away together with the screen instead of resizing everything underneath.
+    func withAppTabBar() -> some View { modifier(AppTabBarInset()) }
+}
+
+private struct AppTabBarInset: ViewModifier {
+    @Environment(AppState.self) private var app
+    @State private var keyboardVisible = false
+
+    func body(content: Content) -> some View {
+        @Bindable var app = app
+        content
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !keyboardVisible { AppTabBar(selection: $app.tab) { app.showingAdd = true } }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
+    }
+}
+
+/// Round Home button for pushed screens: jumps straight back to the Home tab from anywhere.
+struct HomeButton: View {
+    @Environment(AppState.self) private var app
+
+    var body: some View {
+        Button { app.goHome() } label: {
+            Image(systemName: "house.fill").font(.system(size: 18, weight: .semibold)).foregroundStyle(AppColors.primary)
+                .frame(width: 52, height: 52)
+                .background(AppColors.card, in: Circle())
+                .overlay(Circle().stroke(AppColors.separator, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.08), radius: 6, y: 1)
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel("Home")
+    }
+}
+
+extension View {
+    /// Home button alone in the bottom-left, for pushed screens with no bottom action.
+    func homeBar() -> some View {
+        safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack { HomeButton(); Spacer() }.screenPadding().padding(.vertical, Spacing.s)
+        }
+    }
+
+    /// Home button beside the screen's bottom action, on the usual bar.
+    func homeBar<Action: View>(@ViewBuilder action: () -> Action) -> some View {
+        let action = action()
+        return safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack(spacing: Spacing.s) { HomeButton(); action }
+                .screenPadding().padding(.vertical, Spacing.s)
+                .barBackground()
+        }
+    }
+}

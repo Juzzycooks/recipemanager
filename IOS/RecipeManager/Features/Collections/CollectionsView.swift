@@ -25,6 +25,7 @@ struct CollectionsView: View {
     @State private var segment = Segment.mine
     @State private var showingNew = false
     @State private var path: [AppRoute] = []
+    @Environment(AppState.self) private var app
 
     private var visible: [CollectionSummary] {
         segment == .mine ? model.collections : model.collections.filter { $0.shareUrl != nil }
@@ -55,6 +56,8 @@ struct CollectionsView: View {
                 .padding(.bottom, Spacing.xl)
             }
             .background(AppColors.background)
+            .withAppTabBar()
+            .onChange(of: app.homeRequest) { path = [] }
             .navigationTitle("Collections")
             .appDestinations()
             .toolbar {

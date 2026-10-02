@@ -30,15 +30,15 @@ extension View {
                 Group {
                     switch route {
                     case .recipe(let id): RecipeDetailView(id: id)
-                    case .collection(let id): CollectionDetailView(id: id)
-                    case .recipeList(let kind): RecipeListView(kind: kind)
+                    case .collection(let id): CollectionDetailView(id: id).homeBar()
+                    case .recipeList(let kind): RecipeListView(kind: kind).homeBar()
                     case .mealPlan: MealPlanView()
                     case .shoppingList: ShoppingListView()
-                    case .devices: DevicesView()
-                    case .settings: SettingsView()
-                    case .adminSettings: AdminSettingsView()
-                    case .adminUsers: AdminUsersView()
-                    case .adminCategories: AdminCategoriesView()
+                    case .devices: DevicesView().homeBar()
+                    case .settings: SettingsView().homeBar()
+                    case .adminSettings: AdminSettingsView().homeBar()
+                    case .adminUsers: AdminUsersView().homeBar()
+                    case .adminCategories: AdminCategoriesView().homeBar()
                     }
                 }
                 .toolbarVisibility(.hidden, for: .tabBar)

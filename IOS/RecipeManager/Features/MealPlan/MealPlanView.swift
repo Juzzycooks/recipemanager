@@ -103,11 +103,7 @@ struct MealPlanView: View {
                 } label: { Image(systemName: "calendar") }.accessibilityLabel("Meal plan options")
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            PrimaryButton(title: "Plan a Meal") { picking = PlanTarget(day: model.suggestedDay) }
-                .screenPadding().padding(.vertical, Spacing.s)
-                .barBackground()
-        }
+        .homeBar { PrimaryButton(title: "Plan a Meal") { picking = PlanTarget(day: model.suggestedDay) } }
         .hidesAppTabBar()
         .task(id: "\(model.weekStart.apiDay)#\(session.dataVersion)") { await model.load(session) }
         .refreshable { await model.load(session) }

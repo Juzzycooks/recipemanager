@@ -32,7 +32,7 @@ struct RecipeDetailView: View {
         .background(AppColors.background)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar { if let recipe = model.recipe { toolbar(recipe) } }
-        .safeAreaInset(edge: .bottom, spacing: 0) { if let recipe = model.recipe { startBar(recipe) } }
+        .homeBar { if let recipe = model.recipe { startBar(recipe) } else { Spacer() } }
         .hidesAppTabBar()
         .task(id: session.dataVersion) { await model.load(session) }
         .refreshable { await model.load(session) }
@@ -241,8 +241,6 @@ struct RecipeDetailView: View {
     private func startBar(_ r: RecipeDetail) -> some View {
         PrimaryButton(title: "Start Cooking", systemImage: "flame") { showingCook = true }
             .disabled(r.steps.isEmpty).opacity(r.steps.isEmpty ? 0.5 : 1)
-            .screenPadding().padding(.vertical, Spacing.s)
-            .barBackground()
     }
 
     @ToolbarContentBuilder private func toolbar(_ r: RecipeDetail) -> some ToolbarContent {

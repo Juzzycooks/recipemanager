@@ -38,6 +38,14 @@ final class AppState {
         pendingRecipeID = id
     }
 
+    /// Bumped by the Home button on pushed screens; every tab's stack pops back to its root.
+    private(set) var homeRequest = 0
+
+    func goHome() {
+        tab = .home
+        homeRequest += 1
+    }
+
     func openSearch() {
         tab = .search
         searchFocusRequest += 1

@@ -34,7 +34,6 @@ struct MainView: View {
     @Environment(CookTimer.self) private var timer
     @Environment(OfflineSync.self) private var sync
     @Environment(\.scenePhase) private var scenePhase
-    @State private var keyboardVisible = false
 
     var body: some View {
         @Bindable var app = app
@@ -48,16 +47,7 @@ struct MainView: View {
                 Tab(AppTab.profile.title, systemImage: AppTab.profile.symbol, value: AppTab.profile) { ProfileView() }
             }
             .toolbarVisibility(.hidden, for: .tabBar)
-            if !app.tabBarHidden && !keyboardVisible {
-                AppTabBar(selection: $app.tab) { app.showingAdd = true }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(1)
-            }
         }
-        .animation(.snappy, value: app.tabBarHidden)
-        .animation(.snappy, value: keyboardVisible)
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
         .task {
             // Reconnect: send what was changed offline, refresh what's on screen, and top up the offline copy.
             Connectivity.shared.onRegained = { Task { await catchUp() } }

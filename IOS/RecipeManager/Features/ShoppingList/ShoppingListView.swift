@@ -133,11 +133,7 @@ struct ShoppingListView: View {
                 } label: { Image(systemName: "ellipsis") }.accessibilityLabel("More")
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            SecondaryButton(title: "Add Item", systemImage: "plus") { showingAdd = true }
-                .screenPadding().padding(.vertical, Spacing.s)
-                .barBackground()
-        }
+        .homeBar { SecondaryButton(title: "Add Item", systemImage: "plus") { showingAdd = true } }
         .hidesAppTabBar()
         .task { await model.load(session) }
         .refreshable { await model.load(session) }

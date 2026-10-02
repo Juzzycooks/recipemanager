@@ -79,6 +79,8 @@ struct HomeView: View {
                 .padding(.top, Spacing.xs).padding(.bottom, Spacing.xl)
             }
             .background(AppColors.background)
+            .withAppTabBar()
+            .onChange(of: app.homeRequest) { path = [] }
             .toolbar(.hidden, for: .navigationBar)
             .appDestinations()
             .task(id: "\(model.filter.rawValue)#\(session.dataVersion)") { await model.load(session) }

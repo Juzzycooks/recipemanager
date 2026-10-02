@@ -40,13 +40,14 @@ struct SearchView: View {
     @Environment(AppState.self) private var app
     @State private var model = SearchModel()
     @State private var sheet: Sheet?
+    @State private var path: [AppRoute] = []
     @FocusState private var focused: Bool
     @AppStorage("recentSearches") private var recentData = Data()
 
     private var recents: [String] { (try? JSONDecoder().decode([String].self, from: recentData)) ?? [] }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             VerticalScroll {
                 VStack(alignment: .leading, spacing: Spacing.m) {
                     SearchBar(text: $model.query, prompt: "Try “chicken”, “pasta” or “soup”…", focus: $focused) { remember(model.query) }
@@ -58,6 +59,8 @@ struct SearchView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .background(AppColors.background)
+            .withAppTabBar()
+            .onChange(of: app.homeRequest) { path = [] }
             .navigationTitle("Search")
             .appDestinations()
             .task { await model.loadCategories(session) }

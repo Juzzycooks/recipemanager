@@ -21,6 +21,7 @@ final class ProfileModel {
 
 struct ProfileView: View {
     @Environment(Session.self) private var session
+    @Environment(AppState.self) private var app
     @State private var model = ProfileModel()
     @State private var path: [AppRoute] = []
     @State private var showingAccount = false
@@ -42,6 +43,8 @@ struct ProfileView: View {
                 .screenPadding().padding(.bottom, Spacing.xl)
             }
             .background(AppColors.background)
+            .withAppTabBar()
+            .onChange(of: app.homeRequest) { path = [] }
             .navigationTitle("Profile")
             .appDestinations()
             .task(id: session.dataVersion) { await model.load(session) }
