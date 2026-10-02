@@ -53,13 +53,16 @@
         b.classList.toggle('active', parseFloat(b.dataset.scale) === factor);
       });
       items.forEach(function (el) {
-        el.textContent = factor === 1 ? el.dataset.original : scaleLine(el.dataset.original, factor);
+        var text = factor === 1 ? el.dataset.original : scaleLine(el.dataset.original, factor);
+        // Metric / US display preference (unitconv.js); the scaled amount is converted, never the saved recipe.
+        el.textContent = window.UnitConv ? window.UnitConv.convert(text, window.UnitConv.get()) : text;
       });
     }
 
     if (opts.scaleBtns) document.querySelectorAll(opts.scaleBtns).forEach(function (btn) {
       btn.addEventListener('click', function () { factor = parseFloat(btn.dataset.scale); render(); });
     });
+    document.addEventListener('unitsystemchange', render);
     render();
   }
 

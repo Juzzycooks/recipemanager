@@ -82,6 +82,11 @@
                         <button type="button" class="ctrl-btn scale-btn active" data-scale="1">1&times;</button>
                         <button type="button" class="ctrl-btn scale-btn" data-scale="2">2&times;</button>
                     </div>
+                    <div class="unit-controls" role="group" aria-label="Measurement units">
+                        <button type="button" class="ctrl-btn" data-unit="original" aria-pressed="true">As written</button>
+                        <button type="button" class="ctrl-btn" data-unit="metric" aria-pressed="false">Metric</button>
+                        <button type="button" class="ctrl-btn" data-unit="imperial" aria-pressed="false">US</button>
+                    </div>
                 </div>
                 <ul class="ingredient-list" id="ingredient-list">
                     {% for line in recipe.ingredients.split('\n') %}
@@ -142,7 +147,8 @@
     function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
     setTheme(getTheme());
     </script>
-    <script src="/static/units.js"></script>
+    <script src="/static/unitconv.js?v={{ asset_v }}"></script>
+    <script src="/static/units.js?v={{ asset_v }}"></script>
     <script>
     RecipeUnits.attach({ items: '#ingredient-list li:not(.rm-section)', scaleBtns: '.scale-btn' });
     </script>

@@ -9,6 +9,10 @@ struct RecipeDetailView: View {
     @State private var model: RecipeDetailModel
     @State private var tab = DetailTab.ingredients
     @State private var picked: Set<String> = []
+    @AppStorage(UnitSystem.storageKey) private var unitSetting = UnitSystem.original.rawValue
+    /// Set from the Ingredients tab to flip just this recipe; otherwise the Settings choice applies.
+    @State private var unitOverride: UnitSystem?
+    private var units: UnitSystem { unitOverride ?? UnitSystem(rawValue: unitSetting) ?? .original }
     @State private var showingCook = false
     @State private var showingEditor = false
     @State private var showingPlan = false
@@ -37,7 +41,7 @@ struct RecipeDetailView: View {
         .task(id: session.dataVersion) { await model.load(session) }
         .refreshable { await model.load(session) }
         .fullScreenCover(isPresented: $showingCook) {
-            if let recipe = model.recipe { CookingView(recipe: recipe) { Task { await model.madeIt(session, app) } } }
+            if let recipe = model.recipe { CookingView(recipe: recipe, units: units) { Task { await model.madeIt(session, app) } } }
         }
         .sheet(isPresented: $showingEditor) {
             NavigationStack { RecipeEditorView(mode: .edit(model.recipe!), onClose: { showingEditor = false }) { model.recipe = $0 } }
@@ -129,6 +133,11 @@ struct RecipeDetailView: View {
     @ViewBuilder private func ingredients(_ r: RecipeDetail) -> some View {
         if r.ingredientSections.isEmpty {
             Text("No ingredients yet.").foregroundStyle(AppColors.textSecondary)
+        } else {
+            Picker("Units", selection: Binding(get: { units }, set: { unitOverride = $0 })) {
+                ForEach(UnitSystem.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
         }
         ForEach(Array(r.ingredientSections.enumerated()), id: \.offset) { sectionIndex, section in
             VStack(alignment: .leading, spacing: 0) {
@@ -137,7 +146,7 @@ struct RecipeDetailView: View {
                 }
                 ForEach(Array(section.lines.enumerated()), id: \.offset) { lineIndex, line in
                     let key = "\(sectionIndex)-\(lineIndex)"
-                    IngredientRow(text: line, isChecked: picked.contains(key)) {
+                    IngredientRow(text: UnitConversion.convert(line, to: units), isChecked: picked.contains(key)) {
                         withAnimation(.snappy(duration: 0.15)) { if picked.contains(key) { picked.remove(key) } else { picked.insert(key) } }
                     }
                 }
@@ -171,10 +180,10 @@ struct RecipeDetailView: View {
                     HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
                         Text("\(step.number)").font(.headline.monospacedDigit()).foregroundStyle(AppColors.onPrimary)
                             .frame(width: 28, height: 28).background(AppColors.primary, in: Circle()).accessibilityHidden(true)
-                        Text(step.text).font(AppTypography.reading).foregroundStyle(AppColors.textPrimary).lineSpacing(3)
+                        Text(UnitConversion.convert(step.text, to: units)).font(AppTypography.reading).foregroundStyle(AppColors.textPrimary).lineSpacing(3)
                     }
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Step \(step.number). \(step.text)")
+                    .accessibilityLabel("Step \(step.number). \(UnitConversion.convert(step.text, to: units))")
                 }
             }
         }

@@ -31,6 +31,11 @@
                     <button type="button" class="seg scale-btn active" data-scale="1">1&times;</button>
                     <button type="button" class="seg scale-btn" data-scale="2">2&times;</button>
                 </div>
+                <div class="seg-group" role="group" aria-label="Measurement units">
+                    <button type="button" class="seg" data-unit="original" aria-pressed="true">As written</button>
+                    <button type="button" class="seg" data-unit="metric" aria-pressed="false">Metric</button>
+                    <button type="button" class="seg" data-unit="imperial" aria-pressed="false">US</button>
+                </div>
             </div>
             {% for line in recipe.ingredients.split('\n') %}
             {% if line.strip().startswith('# ') %}
@@ -77,7 +82,8 @@
         <button type="button" class="nav-btn next"><span class="next-label">Next</span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
     </div>
     <div id="cook-live" class="sr-only" aria-live="polite"></div>
-    <script src="{{ url_for('static', filename='units.js') }}"></script>
+    <script src="{{ url_for('static', filename='unitconv.js', v=asset_v) }}"></script>
+    <script src="{{ url_for('static', filename='units.js', v=asset_v) }}"></script>
     <script src="{{ url_for('static', filename='js/cook.js', v=asset_v) }}"></script>
 </body>
 </html>

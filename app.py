@@ -165,7 +165,7 @@ def create_app():
         try:
             asset_v = int(max(
                 os.path.getmtime(os.path.join(app.static_folder, d, n))
-                for d in ("css", "js") if os.path.isdir(os.path.join(app.static_folder, d))
+                for d in ("", "css", "js") if os.path.isdir(os.path.join(app.static_folder, d))
                 for n in os.listdir(os.path.join(app.static_folder, d)) if n.endswith((".css", ".js"))))
         except (OSError, ValueError):
             asset_v = 0

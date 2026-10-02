@@ -156,3 +156,54 @@ struct ServerFixtureTests {
         #expect(obj["n"] as? Int == 3)
     }
 }
+
+struct UnitConversionTests {
+    private func metric(_ s: String) -> String { UnitConversion.convert(s, to: .metric) }
+    private func us(_ s: String) -> String { UnitConversion.convert(s, to: .imperial) }
+
+    @Test func weightsToMetric() {
+        #expect(metric("1 lb chicken thighs") == "450 g chicken thighs")
+        #expect(metric("2 lb potatoes") == "910 g potatoes")
+        #expect(metric("4 oz cheddar, grated") == "110 g cheddar, grated")
+        #expect(metric("5 lb beef") == "2.25 kg beef")
+    }
+
+    @Test func volumesToMetric() {
+        #expect(metric("1 cup rice") == "240 ml rice")
+        #expect(metric("1 1/2 tbsp honey") == "20 ml honey")
+        #expect(metric("1/2 tsp salt") == "2.5 ml salt")
+        #expect(metric("8 fl oz milk") == "240 ml milk")
+        #expect(metric("8 oz milk") == "240 ml milk")
+    }
+
+    @Test func toImperial() {
+        #expect(us("500 g flour") == "1 lb flour")
+        #expect(us("250 ml cream") == "1 cup cream")
+        #expect(us("1 kg onions") == "2 ¼ lb onions")
+    }
+
+    @Test func rangesAndFractionGlyphs() {
+        #expect(metric("2-3 lb brisket") == "0.9–1.35 kg brisket")
+        #expect(metric("½ cup oil") == "120 ml oil")
+    }
+
+    @Test func prefersTheFigureTheRecipeAlreadyGives() {
+        #expect(metric("1 lb (450 g) flour") == "450 g flour")
+        #expect(us("450 g (1 lb) flour") == "1 lb flour")
+    }
+
+    @Test func temperatures() {
+        #expect(metric("Bake at 350°F for 20 minutes.") == "Bake at 175°C for 20 minutes.")
+        #expect(metric("Heat the oven to 400 degrees F") == "Heat the oven to 205°C")
+        #expect(metric("preheat to 350°F (180°C)") == "preheat to 180°C")
+        #expect(us("Bake at 180°C") == "Bake at 355°F")
+    }
+
+    @Test func leavesEverythingElseAlone() {
+        #expect(metric("3 eggs") == "3 eggs")
+        #expect(metric("a pinch of salt") == "a pinch of salt")
+        #expect(metric("250 g flour") == "250 g flour")
+        #expect(metric("2 garlic cloves") == "2 garlic cloves")
+        #expect(UnitConversion.convert("1 lb beef", to: .original) == "1 lb beef")
+    }
+}

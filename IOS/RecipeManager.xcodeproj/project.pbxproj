@@ -82,6 +82,7 @@
 		EEEF14D68CA2102E24F5CB77 /* SmallComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88645AE01726AFA77EB3F245 /* SmallComponents.swift */; };
 		F30586155DA9158D7969547F /* SharedContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C510E0E31E198249C66F2D4 /* SharedContent.swift */; };
 		F309DE5816B9534334816802 /* StepIngredients.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F43187DE72D7FCC320EE650 /* StepIngredients.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* UnitConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5D /* UnitConversion.swift */; };
 		F7EA5404C5F023A3F3652D96 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F77FA09B68377C7128645BFC /* OnboardingView.swift */; };
 		FF318E9DA15FF0B7D0CE4089 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD339DDCAAEDEE693CE4878D /* APIClient.swift */; };
 /* End PBXBuildFile section */
@@ -174,6 +175,7 @@
 		9A12E7131F4049564115E456 /* RecipeManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RecipeManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C805B8C2BCC450DF4BCA2DE /* recipe_page.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = recipe_page.json; sourceTree = "<group>"; };
 		9F43187DE72D7FCC320EE650 /* StepIngredients.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepIngredients.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5D /* UnitConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitConversion.swift; sourceTree = "<group>"; };
 		A038E1ED3FD97222583AE16C /* MealPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanView.swift; sourceTree = "<group>"; };
 		A142E23B7CC101A48F2D8A0A /* login.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = login.json; sourceTree = "<group>"; };
 		A8ECA1C666A3BACA15A7EA9F /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
@@ -285,6 +287,7 @@
 				0335F4C5DD94B01838E77179 /* RecipeFeed.swift */,
 				57519229ABCF4D003703C093 /* Session.swift */,
 				9F43187DE72D7FCC320EE650 /* StepIngredients.swift */,
+				A1B2C3D4E5F60718293A4B5D /* UnitConversion.swift */,
 				8B3D6386D4204D7FFBBE9057 /* SystemTimer.swift */,
 			);
 			path = Core;
@@ -688,6 +691,7 @@
 				EEEF14D68CA2102E24F5CB77 /* SmallComponents.swift in Sources */,
 				D308305A21FA17282C2CC64E /* SpoonmateMark.swift in Sources */,
 				F309DE5816B9534334816802 /* StepIngredients.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* UnitConversion.swift in Sources */,
 				DFFE08F728780D11E723D2E8 /* SystemTimer.swift in Sources */,
 				2E71C14DF6896E959F42482B /* TimerMetadata.swift in Sources */,
 			);
@@ -861,7 +865,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -989,7 +993,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

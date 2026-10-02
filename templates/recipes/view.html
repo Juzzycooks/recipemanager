@@ -113,6 +113,11 @@
                     <button type="button" class="btn btn-secondary btn-sm scale-btn" data-scale="2" aria-label="Double">2&times;</button>
                     <button type="button" class="btn btn-secondary btn-sm scale-btn" data-scale="3" aria-label="Triple">3&times;</button>
                 </div>
+                <div class="scale-group" role="group" aria-label="Measurement units">
+                    <button type="button" class="btn btn-secondary btn-sm unit-btn" data-unit="original" aria-pressed="true">As written</button>
+                    <button type="button" class="btn btn-secondary btn-sm unit-btn" data-unit="metric" aria-pressed="false">Metric</button>
+                    <button type="button" class="btn btn-secondary btn-sm unit-btn" data-unit="imperial" aria-pressed="false">US</button>
+                </div>
             </div>
             <ul class="ingredient-list" id="ingredient-list">
                 {% for line in recipe.ingredients.split('\n') %}
@@ -194,7 +199,8 @@ function copyShareLink() {
 
 // Recipe scaling + unit conversion (shared engine)
 </script>
-<script src="/static/units.js"></script>
+<script src="{{ url_for('static', filename='unitconv.js', v=asset_v) }}"></script>
+<script src="{{ url_for('static', filename='units.js', v=asset_v) }}"></script>
 <script>
 RecipeUnits.attach({ items: '#ingredient-list li:not(.list-section)', scaleBtns: '.scale-btn' });
 </script>

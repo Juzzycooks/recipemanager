@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(Session.self) private var session
     @AppStorage("appearance") private var appearance = Appearance.system.rawValue
     @AppStorage("keepAwake") private var keepAwake = true
+    @AppStorage(UnitSystem.storageKey) private var unitSystem = UnitSystem.original.rawValue
     @AppStorage("showStoreLinks") private var showStoreLinks = true
     @AppStorage("recentSearches") private var recentSearches = Data()
     @AppStorage(OfflineSync.enabledKey) private var offlineEnabled = true
@@ -18,6 +19,13 @@ struct SettingsView: View {
         List {
             appearanceSection
             offlineSection
+            Section {
+                Picker("Measurements", selection: $unitSystem) {
+                    ForEach(UnitSystem.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+            } header: { Text("Units") } footer: {
+                Text("Converts weights, volumes and oven temperatures when you view a recipe. The saved recipe isn't changed, and you can switch a single recipe from its Ingredients tab.")
+            }
             Section("Cooking") {
                 Toggle("Keep screen awake while cooking", isOn: $keepAwake)
             }

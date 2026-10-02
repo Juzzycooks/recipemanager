@@ -5,6 +5,7 @@ import UIKit
 struct CookingView: View {
     @Environment(\.dismiss) private var dismiss
     let recipe: RecipeDetail
+    var units: UnitSystem = .original
     let onFinished: () -> Void
 
     @State private var index = 0
@@ -30,13 +31,13 @@ struct CookingView: View {
                             .accessibilityHidden(true)
                         Text(step.heading ?? "Step \(step.number)").font(AppTypography.title).foregroundStyle(AppColors.textPrimary)
                             .accessibilityAddTraits(.isHeader)
-                        Text(step.text).font(AppTypography.readingLarge).foregroundStyle(AppColors.textPrimary).lineSpacing(6)
+                        Text(UnitConversion.convert(step.text, to: units)).font(AppTypography.readingLarge).foregroundStyle(AppColors.textPrimary).lineSpacing(6)
                         let needed = recipe.ingredients(for: step)
                         if !needed.isEmpty {
                             VStack(alignment: .leading, spacing: Spacing.xs) {
                                 Text("For this step").font(.subheadline.weight(.semibold)).foregroundStyle(AppColors.secondary)
                                 ForEach(Array(needed.enumerated()), id: \.offset) { _, line in
-                                    Text(line).font(AppTypography.reading).foregroundStyle(AppColors.textPrimary)
+                                    Text(UnitConversion.convert(line, to: units)).font(AppTypography.reading).foregroundStyle(AppColors.textPrimary)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading).padding(Spacing.m)
@@ -121,7 +122,7 @@ struct CookingView: View {
         NavigationStack {
             List {
                 ForEach(recipe.ingredientSections) { section in
-                    Section(section.heading ?? "Ingredients") { ForEach(Array(section.lines.enumerated()), id: \.offset) { _, line in Text(line).font(AppTypography.reading) } }
+                    Section(section.heading ?? "Ingredients") { ForEach(Array(section.lines.enumerated()), id: \.offset) { _, line in Text(UnitConversion.convert(line, to: units)).font(AppTypography.reading) } }
                 }
             }
             .appBackground().navigationTitle("Ingredients").navigationBarTitleDisplayMode(.inline)

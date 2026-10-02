@@ -1,0 +1,31 @@
+// Run with: node tests/test_unitconv.js   (no dependencies). Mirrors UnitConversionTests in IOS/RecipeManagerTests.
+const assert = require('assert');
+const { convert } = require('../static/unitconv.js');
+const metric = (s) => convert(s, 'metric'), us = (s) => convert(s, 'imperial');
+
+assert.strictEqual(metric('1 lb chicken thighs'), '450 g chicken thighs');
+assert.strictEqual(metric('2 lb potatoes'), '910 g potatoes');
+assert.strictEqual(metric('4 oz cheddar, grated'), '110 g cheddar, grated');
+assert.strictEqual(metric('5 lb beef'), '2.25 kg beef');
+assert.strictEqual(metric('1 cup rice'), '240 ml rice');
+assert.strictEqual(metric('1 1/2 tbsp honey'), '20 ml honey');
+assert.strictEqual(metric('1/2 tsp salt'), '2.5 ml salt');
+assert.strictEqual(metric('8 fl oz milk'), '240 ml milk');
+assert.strictEqual(metric('8 oz milk'), '240 ml milk');
+assert.strictEqual(us('500 g flour'), '1 lb flour');
+assert.strictEqual(us('250 ml cream'), '1 cup cream');
+assert.strictEqual(us('1 kg onions'), '2 ¼ lb onions');
+assert.strictEqual(metric('2-3 lb brisket'), '0.9–1.35 kg brisket');
+assert.strictEqual(metric('½ cup oil'), '120 ml oil');
+assert.strictEqual(metric('1 lb (450 g) flour'), '450 g flour');
+assert.strictEqual(us('450 g (1 lb) flour'), '1 lb flour');
+assert.strictEqual(metric('Bake at 350°F for 20 minutes.'), 'Bake at 175°C for 20 minutes.');
+assert.strictEqual(metric('Heat the oven to 400 degrees F'), 'Heat the oven to 205°C');
+assert.strictEqual(metric('preheat to 350°F (180°C)'), 'preheat to 180°C');
+assert.strictEqual(us('Bake at 180°C'), 'Bake at 355°F');
+assert.strictEqual(metric('3 eggs'), '3 eggs');
+assert.strictEqual(metric('a pinch of salt'), 'a pinch of salt');
+assert.strictEqual(metric('250 g flour'), '250 g flour');
+assert.strictEqual(metric('2 garlic cloves'), '2 garlic cloves');
+assert.strictEqual(convert('1 lb beef', 'original'), '1 lb beef');
+console.log('unitconv ok');
