@@ -44,6 +44,8 @@ actor OfflineStore: ResponseCaching {
         await MainActor.run { Connectivity.shared.setReachable(reachable) }
     }
 
+    func isOffline() async -> Bool { await MainActor.run { Connectivity.shared.isOffline } }
+
     // MARK: Library
 
     func allRecipes() -> [RecipeDetail] {

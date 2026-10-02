@@ -40,6 +40,12 @@ protocol ResponseCaching: Sendable {
     /// A response built locally (e.g. the recipe list from the offline library), or nil.
     func generated(path: String, query: [String: String]) async -> Data?
     func reachability(_ reachable: Bool) async
+    /// True while the app already knows the server can't be reached, so requests can skip the wait.
+    func isOffline() async -> Bool
+}
+
+extension ResponseCaching {
+    func isOffline() async -> Bool { false }
 }
 
 /// Thin wrapper over URLSession for the `/api/v1` JSON API (see API.md).
@@ -132,7 +138,7 @@ struct APIClient: Sendable {
     /// Cheap reachability probe that never falls back to cached data.
     func ping() async -> Bool {
         guard let request = try? makeRequest("GET", "/site", query: [:]) else { return false }
-        return (try? await perform(request)) != nil
+        return (try? await perform(request, probing: true)) != nil
     }
 
     // MARK: Plumbing
@@ -159,7 +165,9 @@ struct APIClient: Sendable {
         return try await perform(request)
     }
 
-    private func perform(_ request: URLRequest) async throws -> Data {
+    private func perform(_ request: URLRequest, probing: Bool = false) async throws -> Data {
+        // Known offline: fail at once (callers answer from the local copy or queue the change) instead of waiting out a timeout.
+        if !probing, let cache, await cache.isOffline() { throw APIError.network(URLError(.notConnectedToInternet)) }
         let data: Data, response: URLResponse
         do {
             do { (data, response) = try await URLSession.shared.data(for: request) }
