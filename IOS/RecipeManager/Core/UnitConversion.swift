@@ -30,6 +30,7 @@ enum UnitConversion {
         let kind: Kind
         let toBase: Double      // grams or millilitres
         let metric: Bool
+        var spoon = false       // tsp / tbsp: spices and small amounts, kept as spoons when converting to metric
     }
 
     private static func unit(_ raw: String, remainder: Substring) -> Unit? {
@@ -40,8 +41,8 @@ enum UnitConversion {
             return isLiquid(remainder) ? Unit(kind: .volume, toBase: 29.5735, metric: false) : Unit(kind: .weight, toBase: 28.3495, metric: false)
         case "floz", "fluidounce", "fluidounces": return Unit(kind: .volume, toBase: 29.5735, metric: false)
         case "cup", "cups": return Unit(kind: .volume, toBase: 236.588, metric: false)
-        case "tbsp", "tbsps", "tbs", "tablespoon", "tablespoons": return Unit(kind: .volume, toBase: 14.7868, metric: false)
-        case "tsp", "tsps", "teaspoon", "teaspoons": return Unit(kind: .volume, toBase: 4.92892, metric: false)
+        case "tbsp", "tbsps", "tbs", "tablespoon", "tablespoons": return Unit(kind: .volume, toBase: 14.7868, metric: false, spoon: true)
+        case "tsp", "tsps", "teaspoon", "teaspoons": return Unit(kind: .volume, toBase: 4.92892, metric: false, spoon: true)
         case "pint", "pints", "pt": return Unit(kind: .volume, toBase: 473.176, metric: false)
         case "quart", "quarts", "qt": return Unit(kind: .volume, toBase: 946.353, metric: false)
         case "gallon", "gallons": return Unit(kind: .volume, toBase: 3785.41, metric: false)
@@ -77,7 +78,7 @@ enum UnitConversion {
         let wantMetric = system == .metric
         for match in amountRegex.matches(in: text, range: NSRange(location: 0, length: source.length)).reversed() {
             let after = source.substring(from: match.range.upperBound)
-            guard let from = unit(source.substring(with: match.range(at: 3)), remainder: Substring(after)), from.metric != wantMetric,
+            guard let from = unit(source.substring(with: match.range(at: 3)), remainder: Substring(after)), from.metric != wantMetric, !(wantMetric && from.spoon),
                   let low = number(source.substring(with: match.range(at: 1))) else { continue }
             var range = match.range
             // "1 lb (450 g)": the recipe already gives the other system, so use that instead of converting.

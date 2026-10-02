@@ -20,8 +20,8 @@
         return isLiquid(remainder) ? { kind: 'v', base: 29.5735, metric: false } : { kind: 'w', base: 28.3495, metric: false };
       case 'floz': case 'fluidounce': case 'fluidounces': return { kind: 'v', base: 29.5735, metric: false };
       case 'cup': case 'cups': return { kind: 'v', base: 236.588, metric: false };
-      case 'tbsp': case 'tbsps': case 'tbs': case 'tablespoon': case 'tablespoons': return { kind: 'v', base: 14.7868, metric: false };
-      case 'tsp': case 'tsps': case 'teaspoon': case 'teaspoons': return { kind: 'v', base: 4.92892, metric: false };
+      case 'tbsp': case 'tbsps': case 'tbs': case 'tablespoon': case 'tablespoons': return { kind: 'v', base: 14.7868, metric: false, spoon: true };
+      case 'tsp': case 'tsps': case 'teaspoon': case 'teaspoons': return { kind: 'v', base: 4.92892, metric: false, spoon: true };
       case 'pint': case 'pints': case 'pt': return { kind: 'v', base: 473.176, metric: false };
       case 'quart': case 'quarts': case 'qt': return { kind: 'v', base: 946.353, metric: false };
       case 'gallon': case 'gallons': return { kind: 'v', base: 3785.41, metric: false };
@@ -94,7 +94,8 @@
       var pre = m[1], from = unit(m[4], text.slice(m.index + m[0].length)), low = num(m[2]);
       out += text.slice(last, m.index);
       last = m.index + m[0].length;
-      if (!from || from.metric === wantMetric || !isFinite(low)) { out += m[0]; continue; }
+      // tsp / tbsp are spices and small amounts: leave them as spoons when converting to metric
+      if (!from || from.metric === wantMetric || (wantMetric && from.spoon) || !isFinite(low)) { out += m[0]; continue; }
       var after = text.slice(last), paren = after.match(PAREN), used = false;
       if (paren) {
         var inner = new RegExp('^' + AMOUNT.replace('(^|[^\\w/.,])', '()') + '$', 'i').exec(paren[1]);

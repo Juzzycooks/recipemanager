@@ -170,8 +170,9 @@ struct UnitConversionTests {
 
     @Test func volumesToMetric() {
         #expect(metric("1 cup rice") == "240 ml rice")
-        #expect(metric("1 1/2 tbsp honey") == "20 ml honey")
-        #expect(metric("1/2 tsp salt") == "2.5 ml salt")
+        #expect(metric("1 1/2 tbsp honey") == "1 1/2 tbsp honey")   // spoons stay spoons
+        #expect(metric("1/2 tsp salt") == "1/2 tsp salt")
+        #expect(us("15 ml soy sauce") == "1 tbsp soy sauce")
         #expect(metric("8 fl oz milk") == "240 ml milk")
         #expect(metric("8 oz milk") == "240 ml milk")
     }

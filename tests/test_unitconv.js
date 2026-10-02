@@ -8,8 +8,9 @@ assert.strictEqual(metric('2 lb potatoes'), '910 g potatoes');
 assert.strictEqual(metric('4 oz cheddar, grated'), '110 g cheddar, grated');
 assert.strictEqual(metric('5 lb beef'), '2.25 kg beef');
 assert.strictEqual(metric('1 cup rice'), '240 ml rice');
-assert.strictEqual(metric('1 1/2 tbsp honey'), '20 ml honey');
-assert.strictEqual(metric('1/2 tsp salt'), '2.5 ml salt');
+assert.strictEqual(metric('1 1/2 tbsp honey'), '1 1/2 tbsp honey');   // spoons stay spoons
+assert.strictEqual(metric('1/2 tsp salt'), '1/2 tsp salt');
+assert.strictEqual(us('15 ml soy sauce'), '1 tbsp soy sauce');
 assert.strictEqual(metric('8 fl oz milk'), '240 ml milk');
 assert.strictEqual(metric('8 oz milk'), '240 ml milk');
 assert.strictEqual(us('500 g flour'), '1 lb flour');

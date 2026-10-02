@@ -52,6 +52,7 @@
 		95335F0FB7F5898C17A6E819 /* recipe_detail.json in Resources */ = {isa = PBXBuildFile; fileRef = B62F3A6B89235A9359914D2D /* recipe_detail.json */; };
 		97637455B9DAAE8CF93EE2E0 /* tokens.json in Resources */ = {isa = PBXBuildFile; fileRef = C9E1C73FFAA2F6314519A018 /* tokens.json */; };
 		99731C51B8E92EC1A56A2700 /* recipe_page.json in Resources */ = {isa = PBXBuildFile; fileRef = 9C805B8C2BCC450DF4BCA2DE /* recipe_page.json */; };
+		A1B2C3D4E5F60718293A4B5C /* UnitConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5D /* UnitConversion.swift */; };
 		A1F886006F7EA9DB66ADE507 /* ModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63F88E99DC58F7AE69822FBF /* ModelsTests.swift */; };
 		A2E3E2BC88B45261DE7EA361 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E72CAA476D3EA4210101292 /* SignInView.swift */; };
 		A6155FAA6F97ECA642DB61BF /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EE75005B63BBBACC757F6662 /* PrivacyInfo.xcprivacy */; };
@@ -82,7 +83,6 @@
 		EEEF14D68CA2102E24F5CB77 /* SmallComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88645AE01726AFA77EB3F245 /* SmallComponents.swift */; };
 		F30586155DA9158D7969547F /* SharedContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C510E0E31E198249C66F2D4 /* SharedContent.swift */; };
 		F309DE5816B9534334816802 /* StepIngredients.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F43187DE72D7FCC320EE650 /* StepIngredients.swift */; };
-		A1B2C3D4E5F60718293A4B5C /* UnitConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5D /* UnitConversion.swift */; };
 		F7EA5404C5F023A3F3652D96 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F77FA09B68377C7128645BFC /* OnboardingView.swift */; };
 		FF318E9DA15FF0B7D0CE4089 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD339DDCAAEDEE693CE4878D /* APIClient.swift */; };
 /* End PBXBuildFile section */
@@ -175,9 +175,9 @@
 		9A12E7131F4049564115E456 /* RecipeManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RecipeManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C805B8C2BCC450DF4BCA2DE /* recipe_page.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = recipe_page.json; sourceTree = "<group>"; };
 		9F43187DE72D7FCC320EE650 /* StepIngredients.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepIngredients.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B5D /* UnitConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitConversion.swift; sourceTree = "<group>"; };
 		A038E1ED3FD97222583AE16C /* MealPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanView.swift; sourceTree = "<group>"; };
 		A142E23B7CC101A48F2D8A0A /* login.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = login.json; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5D /* UnitConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitConversion.swift; sourceTree = "<group>"; };
 		A8ECA1C666A3BACA15A7EA9F /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		B3A6357AEE8AE3F22A7B386A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		B474B442C9AF50773B42B7AF /* ShoppingListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingListView.swift; sourceTree = "<group>"; };
@@ -865,7 +865,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -993,7 +993,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
