@@ -104,7 +104,7 @@ Prepared, not yet submitted. Everything lives in `IOS/APP_STORE.md` (step-by-ste
 ## Repo and hosting
 
 - GitHub `Juzzycooks/recipemanager`, now **public**; secret scanning and push protection are on. History was rewritten once (1 October 2026) to remove a personal email and an old username, so any clone older than that must be re-cloned.
-- Docker Hub `juzzycooks/recipemanager`, last pushed from `main` at `0eb2561` (multi-arch, `latest` and `0eb2561`; includes ingredient-aware cup conversion and `GET /api/v1/units`). Not yet pulled and deployed on the Unraid box as far as Claude knows. Rebuild after any server change; iOS-only or docs-only changes do not need it.
+- Docker Hub `juzzycooks/recipemanager`, last pushed from `main` at `1e062ca` (multi-arch, `latest` and `1e062ca`; includes the web edit fix that keeps a recipe's picture, plus everything in `0eb2561`). Not yet pulled and deployed on the Unraid box as far as Claude knows. Rebuild after any server change; iOS-only or docs-only changes do not need it.
 - **Unraid Community Applications:** the template is `spoonmate.xml` here and is mirrored in the public repo `Juzzycooks/unraid-templates` (its `<TemplateURL>` points there; keep the two copies identical). The image name and default appdata path stay `recipemanager` / `RecipeManager` so existing installs keep updating. Status: template written and URLs verified, but **not yet tested on an Unraid box, no forum support thread created, and not yet submitted to CA**. Next: test via `/boot/config/plugins/dockerMan/templates-user/`, post `[Support] Juzzycooks - Spoonmate` in the Docker Containers forum, switch `<Support>` in both copies to that thread URL, then submit the templates repo in the Community Applications forum.
 - Keep work or personal information out of the repo. Before publishing anything new, grep for it, including the demo data and screenshots.
 
@@ -124,6 +124,8 @@ Prepared, not yet submitted. Everything lives in `IOS/APP_STORE.md` (step-by-ste
 - **Install hint** appears only on phones, from the third session, only when an install prompt exists (or iOS instructions), and always goes away.
 
 ## Recent changes (newest first)
+
+Web edit keeps the picture (`1e062ca`, image pushed): editing a recipe with an uploaded or imported picture used to wipe it, because the form only pre-fills the URL box for http links. An empty URL box now keeps the current picture; a "Remove picture" box clears it. The iPhone app was never affected (its PATCH omits `image_url`).
 
 iPhone 1.0.0 builds 5 to 10 (commits `455bceb` and later; all pushed to GitHub (build 10 is `0eb2561`); none uploaded to App Store Connect yet; build 10 is built and unit tested but not tried on a device):
 - Build 10: cups convert by ingredient: a cup of a known dry good becomes grams, a cup of a known liquid becomes ml, and a cup of anything unknown stays a cup (so "½ cup nuts" is 65 g, not 120 ml). Going to US, grams of flour, sugar, nuts and similar become cups; butter, cheese and chocolate stay ounces. The ingredient table moved out of the code into `static/unit-ingredients.json` (read by `units.py`): it is written into the recipe, cook and shared pages as `window.UNIT_INGREDIENTS` and served to the app at the public `GET /api/v1/units`, which the app fetches at launch and sign-in and caches in UserDefaults. Edit the JSON to add ingredients or fix weights; no app release needed. Image `0eb2561` is on Docker Hub.
