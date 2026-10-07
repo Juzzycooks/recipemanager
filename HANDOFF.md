@@ -58,7 +58,8 @@ node tests/test_cook.js
 python tests/smoke_routes.py
 
 # build and push the multi-arch image (amd64 for Unraid, arm64 for Apple silicon / Pi)
-docker buildx build --platform linux/amd64,linux/arm64 \
+# --pull --no-cache so apk upgrade really fetches the latest security fixes
+docker buildx build --pull --no-cache --platform linux/amd64,linux/arm64 \
   -t juzzycooks/recipemanager:latest -t juzzycooks/recipemanager:$(git rev-parse --short HEAD) --push .
 ```
 
@@ -124,6 +125,8 @@ Prepared, not yet submitted. Everything lives in `IOS/APP_STORE.md` (step-by-ste
 - **Install hint** appears only on phones, from the third session, only when an install prompt exists (or iOS instructions), and always goes away.
 
 ## Recent changes (newest first)
+
+Image hardening and a first-start fix (Docker Scout on Docker Hub had 8 high and 4 medium findings): pip is uninstalled from the runtime image (the app never runs it; its vendored urllib3 2.7.0, msgpack and setuptools were the Python findings, the app's own urllib3 is 2.8.0); `libexpat>=2.9.0` comes from Alpine edge until 3.24 ships it (remove that Dockerfile line then); zlib 1.3.2-r1 arrives with a fresh `apk upgrade`, so build with `--pull --no-cache` when patching CVEs, otherwise the cached upgrade layer keeps old packages. Left: two medium giflib findings with no fix anywhere (leptonica, needed by tesseract for photo import). Also fixed: on an empty data folder the two gunicorn workers raced to create tables ("table recipe_categories already exists", exit 3) and to write `.secret_key`; `app._startup_lock` (a flock on `DATA_DIR/.startup.lock`) now serialises first-run setup. Existing installs never hit it.
 
 Web edit keeps the picture (`1e062ca`, image pushed): editing a recipe with an uploaded or imported picture used to wipe it, because the form only pre-fills the URL box for http links. An empty URL box now keeps the current picture; a "Remove picture" box clears it. The iPhone app was never affected (its PATCH omits `image_url`).
 

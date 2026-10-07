@@ -5,6 +5,7 @@ __pycache__
 *.pyo
 *.db
 .secret_key
+.startup.lock
 build/
 dist/
 *.spec

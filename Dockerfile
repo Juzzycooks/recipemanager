@@ -24,7 +24,13 @@ RUN apk update && apk upgrade --no-cache \
     && apk add --no-cache --upgrade openssl libcrypto3 libssl3 sqlite-libs \
     && apk add --no-cache su-exec libjpeg-turbo zlib libwebp tesseract-ocr tesseract-ocr-data-eng
 
-RUN pip install --no-cache-dir --upgrade pip
+# expat (pulled in by tesseract via fontconfig): the fixed 2.9.0 is only in edge so far.
+# It depends on nothing but musl. Drop this line once the stable branch ships >= 2.9.0.
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main 'libexpat>=2.9.0'
+
+# The app never runs pip, and pip carries its own vendored urllib3, msgpack and
+# setuptools that scanners flag, so leave it out of the shipped image.
+RUN pip uninstall -y pip
 
 COPY --from=builder /install /usr/local
 COPY . .

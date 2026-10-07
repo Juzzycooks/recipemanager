@@ -1,5 +1,6 @@
 import os
 import secrets
+from contextlib import contextmanager
 from datetime import timedelta
 from flask import Flask, url_for, g, request
 from flask_login import LoginManager
@@ -10,6 +11,23 @@ csrf = CSRFProtect()
 
 # The name shown wherever the admin has not set one (Admin → Site settings).
 APP_NAME = "Spoonmate"
+
+
+@contextmanager
+def _startup_lock(data_dir):
+    """Let one process at a time do first-run setup. Gunicorn starts several workers at once,
+    and on an empty data folder they would race to write the secret key and create tables."""
+    try:
+        import fcntl
+    except ImportError:  # not on Unix: nothing to coordinate with
+        yield
+        return
+    with open(os.path.join(data_dir, ".startup.lock"), "w") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
 
 
 def create_app():
@@ -23,14 +41,15 @@ def create_app():
     secret_file = os.path.join(data_dir, ".secret_key")
     secret_key = os.environ.get("FLASK_SECRET_KEY", "")
     if not secret_key or secret_key == "change-me-in-production":
-        if os.path.exists(secret_file):
-            with open(secret_file) as f:
-                secret_key = f.read().strip()
-        if not secret_key:
-            secret_key = secrets.token_hex(32)
-            with open(secret_file, "w") as f:
-                f.write(secret_key)
-            os.chmod(secret_file, 0o600)
+        with _startup_lock(data_dir):
+            if os.path.exists(secret_file):
+                with open(secret_file) as f:
+                    secret_key = f.read().strip()
+            if not secret_key:
+                secret_key = secrets.token_hex(32)
+                with open(secret_file, "w") as f:
+                    f.write(secret_key)
+                os.chmod(secret_file, 0o600)
 
     app.config["SECRET_KEY"] = secret_key
     app.config["DATA_DIR"] = data_dir
@@ -147,7 +166,7 @@ def create_app():
             response.headers["ETag"] = response.headers["ETag"].rstrip('"') + '-gzip"'
         return response
 
-    with app.app_context():
+    with app.app_context(), _startup_lock(data_dir):
         # Run migrations first (adds missing columns/tables to existing DB)
         from migrate import migrate
         migrate(f"{data_dir}/recipes.db")
