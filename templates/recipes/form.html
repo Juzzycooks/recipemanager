@@ -101,6 +101,10 @@
     </div>
     {% if recipe and recipe.image_url %}
     <p class="hint-sm">Current image: {{ recipe.image_url[:60] }}{% if recipe.image_url|length > 60 %}...{% endif %}</p>
+    <label class="check-row">
+        <input type="checkbox" name="remove_image" value="1">
+        Remove picture
+    </label>
     {% endif %}
 </div>
 

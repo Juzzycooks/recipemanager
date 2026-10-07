@@ -283,16 +283,17 @@ def edit(recipe_id):
         recipe.source_url = request.form.get("source_url", "").strip()
         recipe.notes = request.form.get("notes", "").strip()
 
-        # Handle image: upload takes priority over URL
-        if "image_file" in request.files:
-            uploaded = _save_uploaded_image(request.files["image_file"])
-            if uploaded:
-                recipe.image_url = uploaded
-            else:
-                recipe.image_url = request.form.get("image_url", "").strip()
-        else:
-            recipe.image_url = request.form.get("image_url", "").strip()
-        
+        # Handle image: upload takes priority over URL. An empty URL field keeps the current
+        # picture (uploaded pictures never show in that field); only "Remove picture" clears it.
+        uploaded = _save_uploaded_image(request.files["image_file"]) if "image_file" in request.files else None
+        pasted = request.form.get("image_url", "").strip()
+        if uploaded:
+            recipe.image_url = uploaded
+        elif request.form.get("remove_image"):
+            recipe.image_url = ""
+        elif pasted:
+            recipe.image_url = pasted
+
         _save_recipe_categories(recipe, request.form)
         db.session.commit()
         flash("Recipe updated.", "success")

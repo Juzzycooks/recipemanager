@@ -166,6 +166,12 @@ class TestRecipes(Api):
         self.assertEqual(self.patch(f"/recipes/{rid}", json={"title": ""}).status_code, 422)
         self.assertEqual(self.get(f"/recipes/{rid}").get_json()["title"], "Better Pasta")
 
+    def test_edit_without_image_url_keeps_picture(self):
+        """The app's editor PATCHes text fields only; the picture must survive."""
+        rid = self.new_recipe("Pictured", image_url="recipe_abc.jpg")["id"]
+        self.patch(f"/recipes/{rid}", json={"title": "Pictured again", "notes": "x"})
+        self.assertIn("recipe_abc.jpg", self.get(f"/recipes/{rid}").get_json()["image_url"])
+
     def test_create_requires_title_and_valid_image_url(self):
         self.assertEqual(self.post("/recipes", json={"ingredients": "x"}).status_code, 422)
         r = self.post("/recipes", json={"title": "T", "image_url": "/etc/passwd"})

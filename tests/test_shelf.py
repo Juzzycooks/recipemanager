@@ -253,3 +253,31 @@ class TrashTests(ShelfTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EditImageTests(ShelfTestCase):
+    def edit(self, rid, **extra):
+        data = {"title": "Soup", "ingredients": "1 egg", "instructions": "Cook.", "image_url": "", **extra}
+        return self.client.post(f"/recipe/{rid}/edit", data=data)
+
+    def image(self, rid):
+        from models import Recipe
+        with self.app.app_context():
+            return self.db.session.get(Recipe, rid).image_url
+
+    def test_edit_keeps_uploaded_picture(self):
+        rid = self.make("Soup", image="recipe_abc.jpg")
+        self.assertEqual(self.edit(rid).status_code, 302)
+        self.assertEqual(self.image(rid), "recipe_abc.jpg")
+
+    def test_edit_keeps_linked_picture_and_can_replace_it(self):
+        rid = self.make("Soup", image="https://example.com/a.jpg")
+        self.edit(rid, image_url="https://example.com/a.jpg")
+        self.assertEqual(self.image(rid), "https://example.com/a.jpg")
+        self.edit(rid, image_url="https://example.com/b.jpg")
+        self.assertEqual(self.image(rid), "https://example.com/b.jpg")
+
+    def test_remove_picture(self):
+        rid = self.make("Soup", image="recipe_abc.jpg")
+        self.edit(rid, remove_image="1")
+        self.assertEqual(self.image(rid), "")
