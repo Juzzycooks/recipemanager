@@ -37,46 +37,39 @@ struct SearchView: View {
     private enum Sheet: String, Identifiable { case category, ingredient, sort; var id: String { rawValue } }
 
     @Environment(Session.self) private var session
-    @Environment(AppState.self) private var app
     @State private var model = SearchModel()
     @State private var sheet: Sheet?
-    @State private var path: [AppRoute] = []
-    @FocusState private var focused: Bool
     @AppStorage("recentSearches") private var recentData = Data()
 
     private var recents: [String] { (try? JSONDecoder().decode([String].self, from: recentData)) ?? [] }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            VerticalScroll {
-                VStack(alignment: .leading, spacing: Spacing.m) {
-                    SearchBar(text: $model.query, prompt: "Try “chicken”, “pasta” or “soup”…", focus: $focused) { remember(model.query) }
-                        .screenPadding()
-                    chips
-                    if model.isActive { results } else { suggestions }
-                }
-                .padding(.bottom, Spacing.xl)
+        VerticalScroll {
+            VStack(alignment: .leading, spacing: Spacing.m) {
+                chips
+                if model.isActive { results } else { suggestions }
             }
-            .scrollDismissesKeyboard(.interactively)
-            .background(AppColors.background)
-            .withAppTabBar()
-            .onChange(of: app.homeRequest) { path = [] }
-            .navigationTitle("Search")
-            .appDestinations()
-            .task { await model.loadCategories(session) }
-            .task(id: "\(model.filterKey)#\(session.dataVersion)") {
-                guard model.isActive else { return }
-                if !model.query.isEmpty { try? await Task.sleep(for: .milliseconds(300)) }
-                guard !Task.isCancelled else { return }
-                await model.feed.reload(session, params: model.params)
-            }
-            .onChange(of: app.searchFocusRequest) { focused = true }
-            .sheet(item: $sheet) { sheet in
-                switch sheet {
-                case .category: CategoryFilterSheet(model: model)
-                case .ingredient: IngredientFilterSheet(model: model)
-                case .sort: SortFilterSheet(model: model)
-                }
+            .padding(.bottom, Spacing.xl)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(AppColors.background)
+        .navigationTitle("Search")
+        // The system field: on iOS 26 the search tab carries it in the tab bar; earlier it sits under the title.
+        .searchable(text: $model.query, prompt: "Try “chicken”, “pasta” or “soup”")
+        .textInputAutocapitalization(.never).autocorrectionDisabled()
+        .onSubmit(of: .search) { remember(model.query) }
+        .task { await model.loadCategories(session) }
+        .task(id: "\(model.filterKey)#\(session.dataVersion)") {
+            guard model.isActive else { return }
+            if !model.query.isEmpty { try? await Task.sleep(for: .milliseconds(300)) }
+            guard !Task.isCancelled else { return }
+            await model.feed.reload(session, params: model.params)
+        }
+        .sheet(item: $sheet) { sheet in
+            switch sheet {
+            case .category: CategoryFilterSheet(model: model)
+            case .ingredient: IngredientFilterSheet(model: model)
+            case .sort: SortFilterSheet(model: model)
             }
         }
     }
@@ -96,6 +89,7 @@ struct SearchView: View {
             }
             .screenPadding()
         }
+        .padding(.top, Spacing.xs)
     }
 
     @ViewBuilder private var results: some View {
@@ -113,14 +107,14 @@ struct SearchView: View {
 
     @ViewBuilder private var suggestions: some View {
         VStack(alignment: .leading, spacing: Spacing.xxs) {
-            NavigationLink(value: AppRoute.recipeList(.all)) { libraryRow("All Recipes", symbol: "book.closed") }.buttonStyle(.plain)
+            NavigationLink(value: AppRoute.recipeList(.all)) { libraryRow("All recipes", symbol: "book.closed") }.buttonStyle(.plain)
             NavigationLink(value: AppRoute.recipeList(.favorites)) { libraryRow("Favorites", symbol: "heart") }.buttonStyle(.plain)
         }
         .screenPadding()
         if !recents.isEmpty {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 HStack {
-                    Text("Recent Searches").font(AppTypography.title3).accessibilityAddTraits(.isHeader)
+                    Text("Recent searches").font(AppTypography.title3).accessibilityAddTraits(.isHeader)
                     Spacer()
                     Button("Clear") { recentData = Data() }.font(.subheadline).foregroundStyle(AppColors.textSecondary)
                 }
@@ -132,7 +126,7 @@ struct SearchView: View {
         }
         if !model.categories.isEmpty {
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Browse by Category").font(AppTypography.title3).accessibilityAddTraits(.isHeader)
+                Text("Browse by category").font(AppTypography.title3).accessibilityAddTraits(.isHeader)
                 ForEach(model.categories) { cat in
                     Button { model.categoryIds = [cat.id] } label: { suggestionRow(cat.name, symbol: "magnifyingglass") }.buttonStyle(.plain)
                 }
@@ -149,8 +143,8 @@ struct SearchView: View {
             Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(AppColors.textSecondary)
         }
         .padding(.horizontal, Spacing.m).frame(minHeight: 52)
-        .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.field))
-        .overlay(RoundedRectangle(cornerRadius: Radius.field).stroke(AppColors.separator, lineWidth: 0.5))
+        .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 1))
     }
 
     private func suggestionRow(_ text: String, symbol: String) -> some View {

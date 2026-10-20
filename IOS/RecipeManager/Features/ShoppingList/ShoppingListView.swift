@@ -4,6 +4,8 @@ import SwiftUI
 final class ShoppingModel {
     var list: ShoppingList?
     var error: String?
+    /// Ticked items taken off by "Clear completed" but not yet deleted, so Undo can put them back as they were.
+    private(set) var cleared: [ShoppingItem] = []
 
     var open: [ShoppingItem] { list?.items.filter { !$0.checked } ?? [] }
     var done: [ShoppingItem] { list?.items.filter(\.checked) ?? [] }
@@ -25,7 +27,7 @@ final class ShoppingModel {
         do { list = try await session.run { try await $0.get("/shopping") } }
         catch is CancellationError {}
         catch let e as URLError where e.code == .cancelled {}
-        catch { self.error = error.localizedDescription }
+        catch { self.error = "Couldn't load your shopping list. \(error.localizedDescription)" }
     }
 
     /// Saves the list as it is now, so a relaunch without a connection shows your latest edits.
@@ -46,17 +48,17 @@ final class ShoppingModel {
         } catch let e as APIError where e.isOffline {
             // Add it on this phone now (a temporary negative id) and send it later.
             let local = ShoppingItem(id: -Int.random(in: 1...Int.max / 2), name: trimmed, checked: false, recipeId: nil, recipeTitle: nil, aisle: "Other", storeUrl: nil)
-            withAnimation(.snappy) { list?.items.insert(local, at: 0) }
+            withAnimation(.listChange) { list?.items.insert(local, at: 0) }
             Outbox.shared.enqueue(.addShoppingItem(name: trimmed, checked: false))
             await persist(session)
-        } catch { self.error = error.localizedDescription }
+        } catch { self.error = "Couldn't add “\(trimmed)”. \(error.localizedDescription)" }
     }
 
     func toggle(_ item: ShoppingItem, _ session: Session) async {
         guard let i = list?.items.firstIndex(where: { $0.id == item.id }) else { return }
         struct Body: Encodable, Sendable { let checked: Bool }
         let wanted = !item.checked
-        withAnimation(.snappy) { list?.items[i].checked = wanted }
+        withAnimation(.listChange) { list?.items[i].checked = wanted }
         if item.id < 0 {   // added offline, not sent yet
             Outbox.shared.setAddChecked(name: item.name, checked: wanted)
             await persist(session)
@@ -67,11 +69,11 @@ final class ShoppingModel {
                 try await $0.send("PATCH", "/shopping/items/\(item.id)", body: Body(checked: wanted))
             }
             await persist(session)
-        } catch { self.error = error.localizedDescription; await load(session) }
+        } catch { self.error = "Couldn't update “\(item.name)”. \(error.localizedDescription)"; await load(session) }
     }
 
     func remove(_ item: ShoppingItem, _ session: Session) async {
-        withAnimation(.snappy) { list?.items.removeAll { $0.id == item.id } }
+        withAnimation(.listChange) { list?.items.removeAll { $0.id == item.id } }
         if item.id < 0 {
             Outbox.shared.cancelAdd(name: item.name)
             await persist(session)
@@ -80,38 +82,80 @@ final class ShoppingModel {
         do {
             _ = try await session.runOrQueue(.deleteShoppingItem(itemID: item.id)) { try await $0.send("DELETE", "/shopping/items/\(item.id)") }
             await persist(session)
-        } catch { self.error = error.localizedDescription; await load(session) }
+        } catch { self.error = "Couldn't delete “\(item.name)”. \(error.localizedDescription)"; await load(session) }
     }
 
-    func clear(checkedOnly: Bool, _ session: Session) async {
+    func clearEverything(_ session: Session) async {
+        await commitClear(session)
         do {
-            try await session.run { try await $0.send("DELETE", "/shopping/items", query: checkedOnly ? ["checked": "1"] : [:]) }
+            try await session.run { try await $0.send("DELETE", "/shopping/items") }
             await load(session)
             await persist(session)
-        } catch { self.error = error.localizedDescription }
+        } catch { self.error = "Couldn't clear the list. \(error.localizedDescription)" }
+    }
+
+    /// Takes the ticked items off now; they're deleted for real when the Undo offer ends (or the screen closes).
+    func clearCompleted(_ session: Session) async {
+        await commitClear(session)
+        let ticked = done
+        guard !ticked.isEmpty else { return }
+        withAnimation(.listChange) { list?.items.removeAll(where: \.checked) }
+        cleared = ticked
+    }
+
+    func undoClear() {
+        guard !cleared.isEmpty else { return }
+        withAnimation(.listChange) { list?.items.append(contentsOf: cleared) }
+        cleared = []
+    }
+
+    /// Deletes what "Clear completed" took off (queued when offline).
+    func commitClear(_ session: Session) async {
+        let items = cleared
+        guard !items.isEmpty else { return }
+        cleared = []
+        for item in items where item.id < 0 { Outbox.shared.cancelAdd(name: item.name) }
+        let sent = items.filter { $0.id > 0 }
+        do {
+            if done.isEmpty && Outbox.shared.count == 0 {
+                // Nothing else is ticked here or waiting to be sent, so one request clears exactly these.
+                try await session.run { try await $0.send("DELETE", "/shopping/items", query: ["checked": "1"]) }
+            } else {
+                for item in sent { try await session.run { try await $0.send("DELETE", "/shopping/items/\(item.id)") } }
+            }
+        } catch let e as APIError where e.isOffline {
+            for item in sent { Outbox.shared.enqueue(.deleteShoppingItem(itemID: item.id)) }
+        } catch {
+            self.error = "Couldn't clear the ticked items. \(error.localizedDescription)"
+            await load(session)
+            return
+        }
+        await persist(session)
     }
 }
 
 struct ShoppingListView: View {
-    private enum Grouping: String, CaseIterable, Identifiable { case all = "All Items", recipe = "By Recipe"; var id: String { rawValue } }
+    private enum Grouping: String, CaseIterable, Identifiable { case all = "All items", recipe = "By recipe"; var id: String { rawValue } }
 
     @Environment(Session.self) private var session
     @AppStorage("showStoreLinks") private var showStoreLinks = true
     @State private var model = ShoppingModel()
     @State private var grouping = Grouping.all
-    @State private var showingAdd = false
     @State private var newItem = ""
     @State private var confirmClear = false
+    @FocusState private var addFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         List {
             Section {
-                Picker("Group", selection: $grouping.animation(.snappy)) { ForEach(Grouping.allCases) { Text($0.rawValue).tag($0) } }
+                Picker("Group", selection: $grouping.animation(.listChange)) { ForEach(Grouping.allCases) { Text($0.rawValue).tag($0) } }
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: Spacing.xxs, trailing: 0))
             }
+            Section { addField }
             if let list = model.list, list.items.isEmpty {
-                EmptyStateView(title: "Your list is empty", systemImage: "cart", message: "Add items below, or from a recipe's ingredients.")
+                EmptyStateView(title: "Your list is empty", systemImage: "cart", message: "Add items above, or from a recipe's ingredients.")
                     .listRowBackground(Color.clear).listRowSeparator(.hidden)
             }
             ForEach(grouping == .all ? model.byAisle : model.byRecipe, id: \.title) { group in
@@ -123,29 +167,61 @@ struct ShoppingListView: View {
         }
         .appBackground()
         .listStyle(.insetGrouped)
-        .navigationTitle("Shopping List")
-        .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                Button("Add item", systemImage: "plus") { showingAdd = true }
-                Menu {
-                    Button("Clear completed", systemImage: "checkmark.circle") { Task { await model.clear(checkedOnly: true, session) } }.disabled(model.done.isEmpty)
-                    Button("Clear everything", systemImage: "trash", role: .destructive) { confirmClear = true }.disabled(model.list?.items.isEmpty ?? true)
-                } label: { Image(systemName: "ellipsis") }.accessibilityLabel("More")
+        .scrollDismissesKeyboard(.interactively)
+        .overlay(alignment: .bottom) {
+            if !model.cleared.isEmpty {
+                let count = model.cleared.count
+                UndoToast(text: "Cleared \(count) ticked item\(count == 1 ? "" : "s")", id: model.cleared.map(\.id),
+                          onUndo: { model.undoClear() },
+                          onExpire: { Task { await model.commitClear(session) } })
             }
         }
-        .homeBar { SecondaryButton(title: "Add Item", systemImage: "plus") { showingAdd = true } }
-        .hidesAppTabBar()
+        .animation(reduceMotion ? nil : .snappy, value: model.cleared.isEmpty)
+        .navigationTitle("Shopping list")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button("Clear completed", systemImage: "checkmark.circle") { Task { await model.clearCompleted(session) } }.disabled(model.done.isEmpty)
+                    Button("Clear everything", systemImage: "trash", role: .destructive) { confirmClear = true }.disabled(model.list?.items.isEmpty ?? true)
+                } label: { Image(systemName: "ellipsis.circle") }.accessibilityLabel("List options")
+            }
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { addFocused = false }
+            }
+        }
         .task { await model.load(session) }
         .refreshable { await model.load(session) }
-        .alert("Add item", isPresented: $showingAdd) {
-            TextField("e.g. 2 onions", text: $newItem).textInputAutocapitalization(.sentences)
-            Button("Add") { let name = newItem; newItem = ""; Task { await model.add(name, session) } }
-            Button("Cancel", role: .cancel) { newItem = "" }
-        }
+        .onDisappear { Task { await model.commitClear(session) } }
         .confirmationDialog("Clear the whole list?", isPresented: $confirmClear, titleVisibility: .visible) {
-            Button("Clear everything", role: .destructive) { Task { await model.clear(checkedOnly: false, session) } }
-        }
+            Button("Clear everything", role: .destructive) { Task { await model.clearEverything(session) } }
+        } message: { Text("This removes every item, ticked or not, and can't be undone.") }
         .errorAlert($model.error)
+    }
+
+    /// Type, press return, type the next one: the field keeps the keyboard up so a run of items goes in quickly.
+    private var addField: some View {
+        HStack(spacing: Spacing.s) {
+            Image(systemName: "plus").foregroundStyle(AppColors.primary).accessibilityHidden(true)
+            TextField("Add an item, like 2 onions", text: $newItem)
+                .textInputAutocapitalization(.sentences)
+                .submitLabel(.next).focused($addFocused).onSubmit(addItem)
+                .accessibilityLabel("New item")
+            if !newItem.trimmingCharacters(in: .whitespaces).isEmpty {
+                Button("Add", action: addItem).fontWeight(.semibold).frame(minHeight: Size.tap)
+            }
+        }
+        .frame(minHeight: Size.tap)
+        .listRowBackground(AppColors.card)
+    }
+
+    private func addItem() {
+        let name = newItem.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { addFocused = false; return }   // return on an empty field ends the run
+        newItem = ""
+        // Return ends editing first; asking for focus on the next turn keeps the keyboard up.
+        Task { @MainActor in addFocused = true }
+        Task { await model.add(name, session) }
     }
 
     private func row(_ item: ShoppingItem) -> some View {

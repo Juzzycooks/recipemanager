@@ -2,65 +2,98 @@ import Foundation
 import Observation
 import UIKit
 
-/// The kitchen timer. App-wide (it survives closing cooking mode), backed by a system timer that rings with
-/// the app closed (see `SystemTimer`). This class only tracks what the UI needs to show.
+/// The kitchen timers. App-wide (they survive closing cooking mode), each backed by a system timer that rings
+/// with the app closed (see `SystemTimer`). Several can run at once ("Pasta", "Sauce"). This class only tracks
+/// what the UI needs to show.
 @MainActor @Observable
 final class CookTimer {
-    private(set) var startDate: Date?
-    private(set) var fireDate: Date?
-    private(set) var title = ""
-    private(set) var finished = false
+    struct Running: Identifiable, Equatable {
+        let id: UUID
+        let name: String
+        let startDate: Date
+        let fireDate: Date
+        var finished = false
+        /// True when a real alarm (not the notification fallback) is backing this timer.
+        var isAlarm = false
+    }
+
+    /// The most a cook can sensibly watch at once (and it keeps the notification fallback under iOS's pending limit).
+    static let maxTimers = 6
+
+    private(set) var timers: [Running] = []
     /// Set when both Alarms and Notifications are turned off, so the UI can explain why nothing will ring.
     private(set) var permissionDenied = false
-    /// True when a real alarm (not the notification fallback) is backing the timer.
-    private(set) var isAlarm = false
 
-    private var id: UUID?
-    private var finishTask: Task<Void, Never>?
+    private var finishTasks: [UUID: Task<Void, Never>] = [:]
 
-    var isRunning: Bool { fireDate != nil && !finished }
-    var isActive: Bool { fireDate != nil }
+    var isActive: Bool { !timers.isEmpty }
+    var canAddMore: Bool { timers.count < Self.maxTimers }
+    /// True when any running timer is on the notification fallback rather than a ringing alarm.
+    var usesFallback: Bool { timers.contains { !$0.isAlarm && !$0.finished } }
+    /// A finished timer first (it needs attention), otherwise the one that rings next.
+    var soonest: Running? { timers.first { $0.finished } ?? timers.min { $0.fireDate < $1.fireDate } }
 
-    func start(minutes: Int, title: String, detail: String) async {
-        cancel()
-        let seconds = minutes * 60
+    /// The name a new timer gets when the cook doesn't type one: "Timer 2" and so on.
+    var nextDefaultName: String { "Timer \(timers.count + 1)" }
+
+    @discardableResult
+    func start(seconds: Int, name: String, recipeTitle: String) async -> UUID? {
+        guard seconds > 0, canAddMore else { return nil }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let label = trimmed.isEmpty ? nextDefaultName : trimmed
         let newID = UUID()
-        id = newID
-        self.title = title
         let now = Date.now
-        startDate = now; fireDate = now.addingTimeInterval(TimeInterval(seconds)); finished = false; permissionDenied = false
+        timers.append(Running(id: newID, name: label, startDate: now, fireDate: now.addingTimeInterval(TimeInterval(seconds))))
+        permissionDenied = false
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
 
-        switch await SystemTimer.schedule(id: newID, seconds: seconds, title: title, detail: detail) {
-        case .alarm: isAlarm = true
-        case .notification: isAlarm = false
-        case .denied: isAlarm = false; permissionDenied = true
+        let outcome = await SystemTimer.schedule(id: newID, seconds: seconds, name: label, recipeTitle: recipeTitle)
+        guard let i = timers.firstIndex(where: { $0.id == newID }) else {
+            SystemTimer.cancel(id: newID)   // cancelled while we were asking for permission: don't leave it ringing
+            return nil
         }
-        guard id == newID else { return }   // cancelled or replaced while we were asking for permission
-        let fire = fireDate ?? now
-        finishTask = Task { [weak self] in
+        switch outcome {
+        case .alarm: timers[i].isAlarm = true
+        case .notification: timers[i].isAlarm = false
+        case .denied: timers[i].isAlarm = false; permissionDenied = true
+        }
+        let fire = timers[i].fireDate
+        finishTasks[newID] = Task { [weak self] in
             try? await Task.sleep(for: .seconds(max(0, fire.timeIntervalSinceNow)))
-            guard !Task.isCancelled, let self, self.id == newID else { return }
-            self.finished = true
+            guard !Task.isCancelled, let self, let j = self.timers.firstIndex(where: { $0.id == newID }) else { return }
+            self.timers[j].finished = true
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         }
+        return newID
     }
 
-    /// Stops the countdown (and the ringing, if it already started).
-    func cancel() {
-        finishTask?.cancel(); finishTask = nil
-        if let id { SystemTimer.cancel(id: id) }
-        id = nil; startDate = nil; fireDate = nil; finished = false; permissionDenied = false; isAlarm = false
+    func start(minutes: Int, name: String, recipeTitle: String) async {
+        await start(seconds: minutes * 60, name: name, recipeTitle: recipeTitle)
     }
 
-    /// Call when the app returns to the foreground: if the system timer was stopped elsewhere, drop ours.
+    /// Stops one countdown (and its ringing, if it already started).
+    func cancel(_ id: UUID) {
+        finishTasks.removeValue(forKey: id)?.cancel()
+        SystemTimer.cancel(id: id)
+        timers.removeAll { $0.id == id }
+        if timers.isEmpty { permissionDenied = false }
+    }
+
+    func cancelAll() {
+        for timer in timers { cancel(timer.id) }
+    }
+
+    /// Call when the app returns to the foreground: drop timers the system stopped elsewhere, mark the ones that rang.
     func reconcile() {
-        guard let id, isActive else { return }
-        if isAlarm && !SystemTimer.isStillScheduled(id: id) {
-            finishTask?.cancel(); finishTask = nil
-            self.id = nil; startDate = nil; fireDate = nil; finished = false; isAlarm = false
-        } else if let fireDate, fireDate <= .now, !finished {
-            finished = true
+        for timer in timers {
+            if timer.isAlarm && !SystemTimer.isStillScheduled(id: timer.id) {
+                finishTasks.removeValue(forKey: timer.id)?.cancel()
+                timers.removeAll { $0.id == timer.id }
+            } else if timer.fireDate <= .now, !timer.finished, let i = timers.firstIndex(where: { $0.id == timer.id }) {
+                timers[i].finished = true
+            }
         }
+        if timers.isEmpty { permissionDenied = false }
     }
 
     /// "cook for 1–2 minutes" → 2; "simmer 20 min" → 20; "bake for 1 hour" → 60. Nil when the step names no time.

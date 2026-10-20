@@ -24,12 +24,17 @@ struct RecipeImage: View {
         }
     }
 
+    /// The recipe's first letter as written (never uppercased), in Alegreya bold italic on one of the four tints.
     private var tile: some View {
         let tint = AppColors.tiles[abs(id) % AppColors.tiles.count]
-        return tint.wash.overlay(
-            Text(String(title.trimmingCharacters(in: .whitespaces).first ?? "?").uppercased())
-                .font(.system(size: 44, weight: .semibold, design: .serif))
-                .foregroundStyle(tint.ink))
+        return tint.wash.overlay {
+            GeometryReader { geo in
+                Text(String(title.trimmingCharacters(in: .whitespaces).first ?? "?"))
+                    .font(AppTypography.monogram(size: min(max(20, min(geo.size.width, geo.size.height) * 0.5), 120)))
+                    .foregroundStyle(tint.ink)
+                    .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
     }
 }
 

@@ -39,6 +39,12 @@ targets:
         UILaunchScreen:
           UIColorName: Background                # the cream/dark ground, so there is no white flash at launch
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIAppFonts:                              # Alegreya (OFL), the cookbook's reading face; files in Resources/Fonts
+          - Alegreya-Regular.ttf
+          - Alegreya-Medium.ttf
+          - Alegreya-Bold.ttf
+          - Alegreya-MediumItalic.ttf
+          - Alegreya-BoldItalic.ttf
         NSLocalNetworkUsageDescription: Spoonmate connects to the recipe server you choose. If it runs on your home network, iOS asks for this permission so the app can reach it.
         ITSAppUsesNonExemptEncryption: false
         NSSupportsLiveActivities: true

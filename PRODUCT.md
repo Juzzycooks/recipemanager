@@ -4,7 +4,7 @@
 
 ## Platform
 
-web
+adaptive
 
 ## Users
 Primary: a home cook (the owner) running the app on their own home server (Docker/Unraid). They cook from it in the kitchen (phone/tablet, hands busy, hands-free cook mode) and plan/organise on desktop. Secondary: public followers who open shared recipe/collection links (often from social media) without logging in, to read, cook, or print. Household members are additional logged-in users managed by an admin.
@@ -17,6 +17,8 @@ Cooking tools are built in, not bolted on: embedded calculators (pizza dough, so
 
 ## Operating Context
 Flask + Jinja templates, static HTML pages for calculators/guides in `static/pages/` (embedded via iframe, sharing `_theme.css`), PWA manifest and service worker. Runs on a home server (Unraid), SMTP optional for emailing recipes. Light and dark themes with system detection; public pages also support dark mode.
+
+Two clients share one server: the web app (Flask + Jinja, also installable as a PWA) and a native iPhone app in `IOS/` (SwiftUI, iOS 18+, iPhone only, portrait only) with a Safari share extension ("Save to Spoonmate") and a timer Live Activity widget. The iPhone app talks to the token-authenticated `/api/v1` JSON API, works offline (cached library and pictures, queued changes synced later), and uses AlarmKit timers on iOS 26.1+. The web follows web conventions; the iPhone app follows Apple's Human Interface Guidelines and expresses the brand through tint, type and content.
 
 ## Capabilities and Constraints
 Recipes (import, edit, duplicate, export, print, categories, tags, favourites, ratings, comments, notes, cook history), collections with custom slugs and public share links, weekly meal plan with drag-and-drop and auto-generation, shopping lists, cook mode (wake lock, timers, audio/browser notifications), converter, calculators, admin (users, SMTP, site name/logo, Mealie import), CSRF, rate limiting, security headers (CSP). Stack is existing Flask/Jinja; no front-end framework.

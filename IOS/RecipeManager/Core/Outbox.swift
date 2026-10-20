@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// A change made while offline, replayed to the server when the connection returns.
+/// A change made while offline (favourites, ratings, made-it, shopping and the meal plan), replayed to the server when the connection returns.
 enum OutboxOp: Codable, Sendable, Equatable {
     case favorite(recipeID: Int, wanted: Bool)
     case rate(recipeID: Int, score: Int)
@@ -9,6 +9,10 @@ enum OutboxOp: Codable, Sendable, Equatable {
     case addShoppingItem(name: String, checked: Bool)
     case setShoppingChecked(itemID: Int, checked: Bool)
     case deleteShoppingItem(itemID: Int)
+    /// `localID` is the temporary negative id the entry has on this phone until it's sent.
+    case addPlanEntry(localID: Int, recipeID: Int, date: String, mealType: String)
+    case movePlanEntry(entryID: Int, date: String, mealType: String)
+    case deletePlanEntry(entryID: Int)
 }
 
 /// Persistent queue of offline changes. Later changes to the same thing replace earlier ones.
@@ -36,6 +40,8 @@ final class Outbox {
         case .setShoppingChecked(let id, _): ops.removeAll { if case .setShoppingChecked(let other, _) = $0 { other == id } else { false } }
         case .deleteShoppingItem(let id):
             ops.removeAll { if case .setShoppingChecked(let other, _) = $0 { other == id } else { false } }
+        case .movePlanEntry(let id, _, _): ops.removeAll { if case .movePlanEntry(let other, _, _) = $0 { other == id } else { false } }
+        case .deletePlanEntry(let id): ops.removeAll { if case .movePlanEntry(let other, _, _) = $0 { other == id } else { false } }
         default: break
         }
         ops.append(op)
@@ -52,6 +58,26 @@ final class Outbox {
         if let i = ops.lastIndex(where: { if case .addShoppingItem(let n, _) = $0 { n == name } else { false } }) {
             ops[i] = .addShoppingItem(name: name, checked: checked); save()
         }
+    }
+
+    /// Removes a not-yet-sent meal-plan add (the entry was removed again before we were online).
+    func cancelPlanAdd(localID: Int) {
+        ops.removeAll { if case .addPlanEntry(let id, _, _, _) = $0 { id == localID } else { false } }
+        save()
+    }
+
+    /// Moves a not-yet-sent meal-plan add to another day or meal.
+    func movePlanAdd(localID: Int, date: String, mealType: String) {
+        guard let i = ops.firstIndex(where: { if case .addPlanEntry(let id, _, _, _) = $0 { id == localID } else { false } }),
+              case .addPlanEntry(_, let recipeID, _, _) = ops[i] else { return }
+        ops[i] = .addPlanEntry(localID: localID, recipeID: recipeID, date: date, mealType: mealType); save()
+    }
+
+    /// Takes back a not-yet-sent meal-plan removal (undo while offline). False if it was already sent.
+    func cancelPlanDelete(entryID: Int) -> Bool {
+        guard let i = ops.lastIndex(where: { if case .deletePlanEntry(let id) = $0 { id == entryID } else { false } }) else { return false }
+        ops.remove(at: i); save()
+        return true
     }
 
     func clear() { ops = []; save() }
@@ -79,6 +105,8 @@ final class Outbox {
         struct Checked: Encodable, Sendable { let checked: Bool }
         struct Name: Encodable, Sendable { let name: String }
         struct Score: Encodable, Sendable { let score: Int }
+        struct PlanAdd: Encodable, Sendable { let recipeId: Int; let date: String; let mealType: String }
+        struct PlanMove: Encodable, Sendable { let date: String; let mealType: String }
         switch op {
         case .favorite(let id, let wanted):
             try await session.run { try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(id)/favorite") }
@@ -100,6 +128,12 @@ final class Outbox {
                     try await session.run { try await $0.send("PATCH", "/shopping/items/\(item.id)", body: Checked(checked: true)) }
                 }
             }
+        case .addPlanEntry(_, let recipeID, let date, let mealType):
+            try await session.run { try await $0.send("POST", "/mealplan", body: PlanAdd(recipeId: recipeID, date: date, mealType: mealType)) }
+        case .movePlanEntry(let id, let date, let mealType):
+            try await session.run { try await $0.send("PATCH", "/mealplan/\(id)", body: PlanMove(date: date, mealType: mealType)) }
+        case .deletePlanEntry(let id):
+            try await session.run { try await $0.send("DELETE", "/mealplan/\(id)") }
         }
     }
 

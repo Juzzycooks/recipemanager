@@ -29,14 +29,18 @@ struct RecipeCard: View {
                         .foregroundStyle(AppColors.textSecondary).lineLimit(1)
                 }
                 Spacer(minLength: 0)
+                // The heart takes 32pt of the layout but its tappable square is the full 44pt (it spills into the
+                // padding), and as the front-most button it wins those taps from the card's link.
                 FavoriteButton(isFavorite: recipe.isFavorite, size: 16, action: onFavorite)
-                    .frame(width: 32, height: 32).padding(.trailing, -Spacing.xxs)
+                    .frame(width: Size.tap, height: Size.tap).padding(-(Size.tap - 32) / 2)
+                    .padding(.trailing, -Spacing.xxs)
             }
             .padding(.horizontal, Spacing.s).padding(.vertical, Spacing.s)
         }
         .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
         .clipShape(RoundedRectangle(cornerRadius: Radius.card))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 0.5))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 1))
+        .shadow(color: AppColors.textPrimary.opacity(0.05), radius: 1.5, y: 1)
         .accessibilityElement(children: .contain)
     }
 }

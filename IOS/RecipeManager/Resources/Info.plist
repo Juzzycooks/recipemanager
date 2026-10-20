@@ -33,6 +33,14 @@
 	<string>Spoonmate connects to the recipe server you choose. If it runs on your home network, iOS asks for this permission so the app can reach it.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Alegreya-Regular.ttf</string>
+		<string>Alegreya-Medium.ttf</string>
+		<string>Alegreya-Bold.ttf</string>
+		<string>Alegreya-MediumItalic.ttf</string>
+		<string>Alegreya-BoldItalic.ttf</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

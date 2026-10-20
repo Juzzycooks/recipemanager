@@ -26,6 +26,8 @@ struct RecipeEditorView: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     let mode: EditorMode
+    /// True when pushed inside the Add sheet's stack: the system back button stays until there are edits to lose.
+    var pushed = false
     let onClose: () -> Void
     let onSaved: (RecipeDetail) -> Void
 
@@ -48,10 +50,33 @@ struct RecipeEditorView: View {
     @State private var isSaving = false
     @State private var error: String?
     @State private var didLoad = false
+    /// The form as loaded (empty, the recipe being edited, or what the import found), to tell whether anything changed.
+    @State private var baseline: Snapshot?
+    @State private var confirmDiscard = false
 
     private var editingID: Int? { if case .edit(let r) = mode { r.id } else { nil } }
-    private var heading: String { if case .edit = mode { "Edit Recipe" } else { "New Recipe" } }
+    private var heading: String { if case .edit = mode { "Edit recipe" } else { "New recipe" } }
     private var canSave: Bool { !isSaving && !title.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var isImport: Bool { if case .imported = mode { true } else { false } }
+
+    /// Everything the person can change, compared as text.
+    private struct Snapshot: Equatable {
+        var fields: [String]
+        var categoryIds: Set<Int>
+        var hasNewPhoto: Bool
+    }
+
+    private var snapshot: Snapshot {
+        Snapshot(fields: [title, summary, servings, prepTime, cookTime, LineRow.text(from: ingredients), LineRow.text(from: steps), notes, sourceUrl],
+                 categoryIds: categoryIds, hasNewPhoto: photoData != nil)
+    }
+
+    /// Edited since it was loaded.
+    private var isEdited: Bool { baseline.map { $0 != snapshot } ?? false }
+    /// Closing would lose something: edits, or an import that hasn't been saved yet.
+    private var hasUnsavedWork: Bool { isEdited || isImport }
+    /// Inside the Add stack, back only goes one step (to the link or photo screen), so it's guarded by edits alone.
+    private var guardsBack: Bool { pushed && isEdited }
 
     var body: some View {
         List {
@@ -73,17 +98,33 @@ struct RecipeEditorView: View {
         .appBackground()
         .listStyle(.insetGrouped)
         .navigationTitle(heading).navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden()
+        // Pushed in the Add sheet, the system back (and its edge swipe) stays until there are edits that going back
+        // would throw away; then Cancel takes its place and asks first.
+        .navigationBarBackButtonHidden(guardsBack)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onClose) }
+            if !pushed || guardsBack {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: cancel) }
+            }
             ToolbarItem(placement: .confirmationAction) {
                 if isSaving { ProgressView() } else { Button("Save") { Task { await save() } }.disabled(!canSave) }
             }
         }
+        .confirmationDialog(isImport || editingID == nil ? "Discard this recipe?" : "Discard changes?",
+                            isPresented: $confirmDiscard, titleVisibility: .visible) {
+            Button(editingID == nil ? "Discard recipe" : "Discard changes", role: .destructive, action: onClose)
+            Button("Keep editing", role: .cancel) {}
+        } message: {
+            Text(editingID == nil ? "It hasn't been saved yet." : "Your changes to this recipe haven't been saved.")
+        }
         .task { await load() }
         .onChange(of: photoItem) { Task { await loadPhoto() } }
         .errorAlert($error)
-        .interactiveDismissDisabled(isSaving)
+        // Swiping the sheet down can't ask first, so it's held while there's unsaved work; Cancel asks instead.
+        .interactiveDismissDisabled(isSaving || hasUnsavedWork)
+    }
+
+    private func cancel() {
+        if hasUnsavedWork { confirmDiscard = true } else { onClose() }
     }
 
     // MARK: Sections
@@ -100,7 +141,7 @@ struct RecipeEditorView: View {
                 }
                 .frame(maxWidth: .infinity).frame(height: 190).clipped()
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Change Photo", systemImage: "camera").font(.subheadline.weight(.medium)).foregroundStyle(.white)
+                    Label(photoData == nil && existingImage.isEmpty && importImageName.isEmpty ? "Add photo" : "Change photo", systemImage: "camera").font(.subheadline.weight(.medium)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: Size.tap).background(.black.opacity(0.45))
                 }
             }
@@ -129,7 +170,7 @@ struct RecipeEditorView: View {
             .onMove { rows.wrappedValue.move(fromOffsets: $0, toOffset: $1) }
             .onDelete { rows.wrappedValue.remove(atOffsets: $0) }
             .environment(\.editMode, .constant(.active))
-            Button { withAnimation(.snappy) { rows.wrappedValue.append(LineRow(text: "")) } } label: { Label(prompt, systemImage: "plus.circle.fill") }
+            Button { withAnimation(.listChange) { rows.wrappedValue.append(LineRow(text: "")) } } label: { Label(prompt, systemImage: "plus.circle.fill") }
         } header: { Text(title) } footer: { if let footer { Text(footer) } }
         .listRowBackground(AppColors.card)
     }
@@ -159,6 +200,7 @@ struct RecipeEditorView: View {
             ingredients = LineRow.rows(from: d.ingredients); steps = LineRow.rows(from: d.instructions)
             notes = d.notes; sourceUrl = p.sourceUrl; importImageName = p.imageName; existingImage = p.imageUrl; warning = p.warning
         }
+        baseline = snapshot
         let cats: ItemList<Category>? = try? await session.run { try await $0.get("/categories") }
         categories = cats?.items ?? []
     }
@@ -191,16 +233,25 @@ struct RecipeEditorView: View {
                 }
             }
             if let photo {
+                // The recipe is saved by now; a failed upload mustn't leave the form open (Save again would make a copy).
                 struct Uploaded: Decodable, Sendable { let imageUrl: String }
                 let id = saved.id
-                let _: Uploaded = try await session.run { try await $0.upload("PUT", "/recipes/\(id)/image", field: "image_file",
-                                                                             files: [.init(filename: "photo.jpg", mime: "image/jpeg", data: photo)]) }
-                saved = try await session.run { try await $0.get("/recipes/\(id)") }
+                do {
+                    let _: Uploaded = try await session.run { try await $0.upload("PUT", "/recipes/\(id)/image", field: "image_file",
+                                                                                 files: [.init(filename: "photo.jpg", mime: "image/jpeg", data: photo)]) }
+                    saved = try await session.run { try await $0.get("/recipes/\(id)") }
+                } catch {
+                    session.recipesChanged()
+                    onSaved(saved)
+                    app.say("Saved “\(saved.title)”, but the photo didn't upload. Add it again from Edit.")
+                    onClose()
+                    return
+                }
             }
             session.recipesChanged()
             onSaved(saved)
             onClose()
-        } catch { self.error = error.localizedDescription }
+        } catch { self.error = "\(error.localizedDescription) Your recipe is still here; tap Save to try again." }
     }
 }
 

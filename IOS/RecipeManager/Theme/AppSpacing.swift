@@ -12,16 +12,18 @@ enum Spacing {
     static let screen: CGFloat = 20
 }
 
+/// Index-card corners, as on the web: 4pt on controls, fields, buttons and thumbnails, 6pt on cards.
+/// Sheets keep the system shape.
 enum Radius {
-    static let small: CGFloat = 10
-    static let field: CGFloat = 14
-    static let card: CGFloat = 16
+    static let control: CGFloat = 4
+    static let small: CGFloat = control
+    static let field: CGFloat = control
+    static let card: CGFloat = 6
     static let sheet: CGFloat = 28
 }
 
 enum Size {
     /// Minimum comfortable tap target.
     static let tap: CGFloat = 44
-    static let addButton: CGFloat = 56
     static let avatar: CGFloat = 40
 }

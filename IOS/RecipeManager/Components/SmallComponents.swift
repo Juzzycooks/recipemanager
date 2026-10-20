@@ -1,6 +1,9 @@
 import SwiftUI
 
+/// Pill chip: card stock with a hairline edge, or the accent fill when selected. The pill is 38pt tall,
+/// its tappable area the full 44pt.
 struct FilterChip: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let title: String
     var isSelected = false
     var showsChevron = false
@@ -12,19 +15,22 @@ struct FilterChip: View {
                 Text(title).font(AppTypography.label)
                 if showsChevron { Image(systemName: "chevron.down").font(.caption2.weight(.bold)) }
             }
-            .foregroundStyle(isSelected ? AppColors.onPrimary : AppColors.textPrimary)
-            .padding(.horizontal, Spacing.m).frame(minHeight: 36)
-            .background(isSelected ? AppColors.primary : AppColors.surface, in: Capsule())
+            .foregroundStyle(isSelected ? AppColors.onPrimary : AppColors.textSecondary)
+            .padding(.horizontal, Spacing.m).frame(minHeight: 38)
+            .background(isSelected ? AppColors.primaryFill : AppColors.card, in: Capsule())
+            .overlay(Capsule().stroke(isSelected ? Color.clear : AppColors.separator, lineWidth: 1))
+            .padding(.vertical, (Size.tap - 38) / 2)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .animation(.snappy(duration: 0.2), value: isSelected)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.2), value: isSelected)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
 struct SectionHeader: View {
     let title: String
-    var actionTitle: String? = "See All"
+    var actionTitle: String? = "See all"
     var action: (() -> Void)?
 
     var body: some View {
@@ -36,53 +42,6 @@ struct SectionHeader: View {
             }
         }
         .padding(.horizontal, Spacing.screen)
-    }
-}
-
-struct SearchBar: View {
-    @Binding var text: String
-    var prompt = "Search recipes, ingredients, or tags..."
-    var focus: FocusState<Bool>.Binding?
-    var onSubmit: () -> Void = {}
-
-    var body: some View {
-        HStack(spacing: Spacing.xs) {
-            Image(systemName: "magnifyingglass").foregroundStyle(AppColors.textSecondary)
-            field
-            if !text.isEmpty {
-                Button { text = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(AppColors.textSecondary) }
-                    .accessibilityLabel("Clear search")
-            }
-        }
-        .padding(.horizontal, Spacing.s).frame(minHeight: 46)
-        .background(AppColors.surface, in: RoundedRectangle(cornerRadius: Radius.field))
-    }
-
-    @ViewBuilder private var field: some View {
-        let base = TextField(prompt, text: $text).submitLabel(.search).onSubmit(onSubmit)
-            .textInputAutocapitalization(.never).autocorrectionDisabled()
-        if let focus { base.focused(focus) } else { base }
-    }
-}
-
-/// A search field that is really a button (Home): tapping opens the Search tab.
-struct SearchBarButton: View {
-    var prompt = "Search recipes, ingredients, or tags..."
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: Spacing.xs) {
-                Image(systemName: "magnifyingglass")
-                Text(prompt).lineLimit(1)
-                Spacer()
-            }
-            .foregroundStyle(AppColors.textSecondary)
-            .padding(.horizontal, Spacing.s).frame(minHeight: 46)
-            .background(AppColors.surface, in: RoundedRectangle(cornerRadius: Radius.field))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Search recipes")
     }
 }
 
@@ -104,6 +63,7 @@ struct RatingView: View {
         }
         .accessibilityElement(children: onRate == nil ? .ignore : .contain)
         .accessibilityLabel(rating.map { "Rated \(String(format: "%.1f", $0)) out of 5" } ?? "Not rated")
+        .accessibilityHint(onRate == nil ? "" : "Choose a star to give your own rating.")
     }
 
     private func symbol(for index: Int) -> String {
@@ -118,8 +78,9 @@ struct RatingView: View {
         let image = Image(systemName: name).font(.subheadline)
             .foregroundStyle(name == "star" ? AppColors.textSecondary.opacity(0.6) : AppColors.star)
         if let onRate {
-            Button { onRate(index) } label: { image.frame(minWidth: 32, minHeight: Size.tap) }
+            Button { onRate(index) } label: { image.frame(minWidth: Size.tap, minHeight: Size.tap).contentShape(Rectangle()) }
                 .buttonStyle(.plain).accessibilityLabel("\(index) star\(index == 1 ? "" : "s")")
+                .accessibilityHint("Sets your rating")
         } else {
             image
         }
@@ -135,6 +96,7 @@ struct MetaItem: View {
 }
 
 struct FavoriteButton: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let isFavorite: Bool
     var size: CGFloat = 20
     let action: () -> Void
@@ -144,6 +106,7 @@ struct FavoriteButton: View {
             Image(systemName: isFavorite ? "heart.fill" : "heart").font(.system(size: size))
                 .foregroundStyle(isFavorite ? AppColors.favorite : AppColors.textSecondary)
                 .symbolEffect(.bounce, value: isFavorite)
+                .symbolEffectsRemoved(reduceMotion)
                 .frame(minWidth: Size.tap, minHeight: Size.tap).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -169,50 +132,77 @@ struct EmptyStateView: View {
     }
 }
 
+/// One line of a ruled ingredient list: a short terracotta dash, the text in Alegreya, a rule-blue line beneath.
+/// Ticking means "I already have it": the dash becomes a terracotta tick and the line quietens.
 struct IngredientRow: View {
     let text: String
     let isChecked: Bool
     let toggle: () -> Void
+    /// Lifts the dash to the middle of the lower-case letters.
+    @ScaledMetric(relativeTo: .body) private var dashLift: CGFloat = 5.5
+    @ScaledMetric(relativeTo: .body) private var markWidth: CGFloat = 16
 
     var body: some View {
         Button(action: toggle) {
-            HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
-                Image(systemName: isChecked ? "checkmark.square.fill" : "square").font(.title3)
-                    .foregroundStyle(isChecked ? AppColors.primary : AppColors.textSecondary)
-                Text(text).font(AppTypography.reading).foregroundStyle(AppColors.textPrimary).multilineTextAlignment(.leading)
+            HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
+                ZStack(alignment: .leading) {
+                    if isChecked {
+                        Image(systemName: "checkmark").font(.footnote.weight(.bold))
+                    } else {
+                        Capsule().frame(width: 9, height: 2)
+                            .alignmentGuide(.firstTextBaseline) { $0[.bottom] + dashLift }
+                    }
+                }
+                .foregroundStyle(AppColors.primary)
+                .frame(width: markWidth, alignment: .leading)
+                Text(text).font(AppTypography.reading)
+                    .foregroundStyle(isChecked ? AppColors.textSecondary : AppColors.textPrimary)
+                    .multilineTextAlignment(.leading)
                 Spacer(minLength: 0)
             }
             .padding(.vertical, Spacing.xs).frame(minHeight: Size.tap).contentShape(Rectangle())
+            .overlay(alignment: .bottom) { RuledLine() }
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(text)
-        .accessibilityAddTraits(isChecked ? [.isButton, .isSelected] : .isButton)
+        .accessibilityValue(isChecked ? "Have it" : "")
+        .accessibilityHint(isChecked ? "Double-tap if you still need it" : "Double-tap if you already have it")
+        .accessibilityAddTraits(.isButton)
     }
 }
 
+/// The 1pt pale-blue rule between rows of a ruled list.
+struct RuledLine: View {
+    var body: some View { Rectangle().fill(AppColors.rule).frame(height: 1).accessibilityHidden(true) }
+}
+
 extension View {
+    /// The title names what kind of failure it was (from `APIError`'s wording); the message keeps the detail.
     func errorAlert(_ message: Binding<String?>) -> some View {
-        alert("Something went wrong", isPresented: Binding(get: { message.wrappedValue != nil },
+        alert(errorAlertTitle(for: message.wrappedValue), isPresented: Binding(get: { message.wrappedValue != nil },
                                                            set: { if !$0 { message.wrappedValue = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(message.wrappedValue ?? "") }
     }
 
-    /// Cream ground behind lists and forms.
+    /// Flour ground behind lists and forms.
     func appBackground() -> some View {
         scrollContentBackground(.hidden).background(AppColors.background)
     }
 
-    /// Cream bar with a hairline shadow, for pinned bottom actions and the tab bar.
-    func barBackground() -> some View {
-        background {
-            AppColors.background.shadow(color: .black.opacity(0.06), radius: 6, y: -1).ignoresSafeArea(edges: .bottom)
-        }
-    }
-
     /// The shared side margin.
     func screenPadding() -> some View { padding(.horizontal, Spacing.screen) }
+}
+
+/// Alert title for an error message: offline, unreachable, signed out, a garbled reply, or anything else.
+private func errorAlertTitle(for message: String?) -> String {
+    guard let message else { return "That didn't work" }
+    if message.hasPrefix("You're offline") { return "You're offline" }
+    if message.hasPrefix("Couldn't reach the server") { return "Can't reach the server" }
+    if message.hasPrefix("You've been signed out") { return "Signed out" }
+    if message.hasPrefix("The server sent something") { return "The server's reply didn't make sense" }
+    return "That didn't work"
 }
 
 /// A vertical ScrollView whose content is exactly as wide as the screen and which never bounces sideways,

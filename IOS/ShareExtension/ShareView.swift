@@ -6,7 +6,13 @@ struct ShareView: View {
     let finish: () -> Void
     let cancel: () -> Void
 
-    private let green = Color(red: 0.153, green: 0.306, blue: 0.231)
+    /// The terracotta theme's fill (AppTheme.terracotta in the app, #b83a12 / #c8501a): the extension can't read the
+    /// app's ThemeStore or asset catalog, so it carries the default accent itself. It tints the prominent button, which
+    /// carries white text, so dark mode uses the deeper ember fill rather than the lighter text accent.
+    private let accent = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? UIColor(red: 0.784, green: 0.314, blue: 0.102, alpha: 1)
+                                           : UIColor(red: 0.722, green: 0.227, blue: 0.071, alpha: 1)
+    })
 
     var body: some View {
         NavigationStack {
@@ -17,7 +23,7 @@ struct ShareView: View {
                 .navigationTitle("Save to Spoonmate").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: cancel) } }
         }
-        .tint(green)
+        .tint(accent)
         .task { await model.start() }
     }
 
@@ -86,7 +92,7 @@ struct ShareView: View {
 
     private func message(_ title: String, symbol: String, detail: String) -> some View {
         VStack(spacing: 10) {
-            Image(systemName: symbol).font(.system(size: 44)).foregroundStyle(green)
+            Image(systemName: symbol).font(.system(size: 44)).foregroundStyle(accent)
             Text(title).font(.headline)
             Text(detail).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }

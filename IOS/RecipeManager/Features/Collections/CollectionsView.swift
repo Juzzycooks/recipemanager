@@ -18,13 +18,12 @@ final class CollectionsModel {
 }
 
 struct CollectionsView: View {
-    private enum Segment: String, CaseIterable, Identifiable { case mine = "My Collections", shared = "Shared"; var id: String { rawValue } }
+    private enum Segment: String, CaseIterable, Identifiable { case mine = "My collections", shared = "Shared"; var id: String { rawValue } }
 
     @Environment(Session.self) private var session
     @State private var model = CollectionsModel()
     @State private var segment = Segment.mine
     @State private var showingNew = false
-    @State private var path: [AppRoute] = []
     @Environment(AppState.self) private var app
 
     private var visible: [CollectionSummary] {
@@ -33,46 +32,41 @@ struct CollectionsView: View {
     private let columns = [GridItem(.adaptive(minimum: 150), spacing: Spacing.s, alignment: .top)]
 
     var body: some View {
-        NavigationStack(path: $path) {
-            VerticalScroll {
-                VStack(spacing: Spacing.m) {
-                    Picker("Show", selection: $segment) { ForEach(Segment.allCases) { Text($0.rawValue).tag($0) } }
-                        .pickerStyle(.segmented).screenPadding()
-                    if visible.isEmpty && model.hasLoaded {
-                        EmptyStateView(title: segment == .mine ? "No collections yet" : "Nothing shared",
-                                       systemImage: segment == .mine ? "books.vertical" : "link",
-                                       message: segment == .mine ? "Group recipes into themed sets, like Weeknight Dinners." : "Collections you give a public link show up here.",
-                                       actionTitle: segment == .mine ? "New Collection" : nil) { showingNew = true }
-                            .padding(.top, Spacing.xl)
-                    } else {
-                        LazyVGrid(columns: columns, spacing: Spacing.s) {
-                            ForEach(visible) { c in
-                                NavigationLink(value: AppRoute.collection(c.id)) { CollectionCard(collection: c) }.buttonStyle(.plain)
-                            }
+        VerticalScroll {
+            VStack(spacing: Spacing.m) {
+                Picker("Show", selection: $segment) { ForEach(Segment.allCases) { Text($0.rawValue).tag($0) } }
+                    .pickerStyle(.segmented).screenPadding()
+                if visible.isEmpty && model.hasLoaded {
+                    EmptyStateView(title: segment == .mine ? "No collections yet" : "Nothing shared",
+                                   systemImage: segment == .mine ? "books.vertical" : "link",
+                                   message: segment == .mine ? "Group recipes into themed sets, like weeknight dinners." : "Collections you give a public link show up here.",
+                                   actionTitle: segment == .mine ? "New collection" : nil) { showingNew = true }
+                        .padding(.top, Spacing.xl)
+                } else {
+                    LazyVGrid(columns: columns, spacing: Spacing.s) {
+                        ForEach(visible) { c in
+                            NavigationLink(value: AppRoute.collection(c.id)) { CollectionCard(collection: c) }.buttonStyle(.plain)
                         }
-                        .screenPadding()
                     }
-                }
-                .padding(.bottom, Spacing.xl)
-            }
-            .background(AppColors.background)
-            .withAppTabBar()
-            .onChange(of: app.homeRequest) { path = [] }
-            .navigationTitle("Collections")
-            .appDestinations()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { Button("New collection", systemImage: "plus") { showingNew = true } }
-            }
-            .task(id: session.dataVersion) { await model.load(session) }
-            .refreshable { await model.load(session) }
-            .sheet(isPresented: $showingNew) {
-                CollectionEditorSheet(collection: nil) { saved in
-                    session.recipesChanged()
-                    path.append(.collection(saved.id))
+                    .screenPadding()
                 }
             }
-            .errorAlert($model.error)
+            .padding(.bottom, Spacing.xl)
         }
+        .background(AppColors.background)
+        .navigationTitle("Collections")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { Button("New collection", systemImage: "plus") { showingNew = true } }
+        }
+        .task(id: session.dataVersion) { await model.load(session) }
+        .refreshable { await model.load(session) }
+        .sheet(isPresented: $showingNew) {
+            CollectionEditorSheet(collection: nil) { saved in
+                session.recipesChanged()
+                app.push(.collection(saved.id), on: .collections)
+            }
+        }
+        .errorAlert($model.error)
     }
 }
 
@@ -96,7 +90,7 @@ struct CollectionEditorSheet: View {
                 Section("Description") { TextField("Optional", text: $description, axis: .vertical).lineLimit(1...4) }
             }
             .appBackground()
-            .navigationTitle(collection == nil ? "New Collection" : "Edit Collection").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(collection == nil ? "New collection" : "Edit collection").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

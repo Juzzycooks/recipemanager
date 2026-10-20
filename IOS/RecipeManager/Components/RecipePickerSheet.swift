@@ -25,6 +25,7 @@ struct RecipePickerSheet<Header: View>: View {
                             HStack(spacing: Spacing.s) {
                                 RecipeImage(path: recipe.thumbUrl, title: recipe.title, id: recipe.id)
                                     .frame(width: 48, height: 48).clipShape(RoundedRectangle(cornerRadius: Radius.small))
+                                    .overlay(RoundedRectangle(cornerRadius: Radius.small).stroke(AppColors.separator, lineWidth: 1))
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(recipe.title).font(AppTypography.cardTitle).foregroundStyle(AppColors.textPrimary)
                                     if !recipe.cardMeta.isEmpty { Text(recipe.cardMeta).font(.caption).foregroundStyle(AppColors.textSecondary) }

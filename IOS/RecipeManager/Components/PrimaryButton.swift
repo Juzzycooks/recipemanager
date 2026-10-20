@@ -15,13 +15,14 @@ struct PrimaryButton: View {
             }
             .foregroundStyle(AppColors.onPrimary)
             .frame(maxWidth: .infinity, minHeight: 52)
-            .background(AppColors.primary, in: RoundedRectangle(cornerRadius: Radius.field))
+            .background(AppColors.primaryFill, in: RoundedRectangle(cornerRadius: Radius.control))
         }
         .buttonStyle(PressableStyle())
         .disabled(isLoading)
     }
 }
 
+/// Card stock with a hairline edge and ink text, as on the web, so the primary button stays the one accent fill.
 struct SecondaryButton: View {
     let title: String
     var systemImage: String?
@@ -33,9 +34,10 @@ struct SecondaryButton: View {
                 if let systemImage { Image(systemName: systemImage) }
                 Text(title).fontWeight(.semibold)
             }
-            .foregroundStyle(AppColors.primary)
+            .foregroundStyle(AppColors.textPrimary)
             .frame(maxWidth: .infinity, minHeight: 48)
-            .background(AppColors.surface, in: RoundedRectangle(cornerRadius: Radius.field))
+            .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.control))
+            .overlay(RoundedRectangle(cornerRadius: Radius.control).stroke(AppColors.separator, lineWidth: 1))
         }
         .buttonStyle(PressableStyle())
     }
@@ -43,7 +45,18 @@ struct SecondaryButton: View {
 
 struct PressableStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.opacity(configuration.isPressed ? 0.85 : 1).scaleEffect(configuration.isPressed ? 0.99 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+        Pressable(label: configuration.label, isPressed: configuration.isPressed)
+    }
+
+    /// With Reduce Motion the press is only a dim, no scale.
+    private struct Pressable<Label: View>: View {
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        let label: Label
+        let isPressed: Bool
+
+        var body: some View {
+            label.opacity(isPressed ? 0.85 : 1).scaleEffect(isPressed && !reduceMotion ? 0.99 : 1)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: isPressed)
+        }
     }
 }

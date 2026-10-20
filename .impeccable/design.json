@@ -1,55 +1,339 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-30T00:00:00Z",
-  "title": "Design System: Recipe Manager",
+  "generatedAt": "2026-10-20T00:00:00Z",
+  "title": "Design System: Spoonmate",
   "extensions": {
     "colorMeta": {
-      "accent": { "role": "primary", "displayName": "Red-Pen Terracotta", "canonical": "#b83a12", "tonalRamp": ["#3a1305", "#5e1e08", "#8a2c0d", "#b83a12", "#d6653d", "#e9977a", "#f5c9b8", "#fbebe3"] },
-      "accent-ember": { "role": "primary", "displayName": "Ember", "canonical": "#f0784a", "tonalRamp": ["#3d1808", "#6b2c12", "#a4431c", "#c8501a", "#f0784a", "#f68d64", "#f9b9a0", "#fde3d8"] },
-      "ink": { "role": "neutral", "displayName": "Fountain-Pen Ink", "canonical": "#1b2431", "tonalRamp": ["#0b0f15", "#1b2431", "#2f3b4d", "#4a5566", "#5a6577", "#8a93a0", "#c3c9d1", "#e6e9ed"] },
-      "flour": { "role": "neutral", "displayName": "Flour", "canonical": "#f3f2ee", "tonalRamp": ["#8f8d85", "#b5b3ab", "#d9d7cf", "#e4e2db", "#ebe9e2", "#f3f2ee", "#f8f7f4", "#ffffff"] },
-      "card-stock": { "role": "neutral", "displayName": "Card Stock", "canonical": "#ffffff", "tonalRamp": ["#d9d7cf", "#e4e2db", "#ebe9e2", "#f3f2ee", "#f8f7f4", "#fbfbf9", "#fdfdfc", "#ffffff"] },
-      "rule-blue": { "role": "neutral", "displayName": "Ruled-Line Blue", "canonical": "#cfdde8", "tonalRamp": ["#3e5a70", "#5c7a92", "#7f9db4", "#a4bccd", "#cfdde8", "#dce7ef", "#e9f0f5", "#f5f8fa"] },
-      "chalkboard": { "role": "neutral", "displayName": "Chalkboard", "canonical": "#14181d", "tonalRamp": ["#0a0c0f", "#0f1216", "#14181d", "#1b2027", "#262d36", "#323b46", "#5b6572", "#a6adb8"] },
-      "chalk": { "role": "neutral", "displayName": "Chalk", "canonical": "#e9e6df", "tonalRamp": ["#6e6b64", "#8f8c85", "#b5b2ab", "#cfccc5", "#e9e6df", "#f0eee8", "#f4f1ea", "#faf9f6"] },
-      "success": { "role": "status", "displayName": "Garden Green", "canonical": "#1a7f37", "tonalRamp": ["#0b3319", "#11552a", "#1a7f37", "#3fb950", "#6fd07f", "#aceebb", "#dafbe1", "#effdf2"] },
-      "error": { "role": "status", "displayName": "Correction Red", "canonical": "#b42318", "tonalRamp": ["#3b0d09", "#661610", "#b42318", "#f85149", "#fa8a84", "#f4b8b2", "#fdecea", "#fef6f5"] },
-      "tint-1": { "role": "tertiary", "displayName": "Terracotta Monogram Wash", "canonical": "#f6e3d8", "tonalRamp": ["#4d1a08", "#7a2a0c", "#9a300e", "#c5583a", "#e09578", "#eeb9a2", "#f6e3d8", "#fbf1ea"] },
-      "tint-2": { "role": "tertiary", "displayName": "Herb Monogram Wash", "canonical": "#e2ecd9", "tonalRamp": ["#1e3315", "#2c4d1e", "#3d6a2a", "#6f9a5a", "#9bc088", "#c0d8b2", "#e2ecd9", "#f1f6ec"] },
-      "tint-3": { "role": "tertiary", "displayName": "Butter Monogram Wash", "canonical": "#f3e8c6", "tonalRamp": ["#3d2d05", "#5c4508", "#7a5c0d", "#a88322", "#cfaa4e", "#e3cb88", "#f3e8c6", "#faf4e3"] },
-      "tint-4": { "role": "tertiary", "displayName": "Slate Monogram Wash", "canonical": "#dde6ee", "tonalRamp": ["#1a2b3a", "#274257", "#3a5670", "#617f99", "#8fa8bc", "#b9cad8", "#dde6ee", "#eef3f7"] }
+      "accent": {
+        "role": "primary",
+        "displayName": "Red-Pen Terracotta",
+        "canonical": "#b83a12",
+        "tonalRamp": [
+          "#3a1305",
+          "#5e1e08",
+          "#8a2c0d",
+          "#b83a12",
+          "#d6653d",
+          "#e9977a",
+          "#f5c9b8",
+          "#fbebe3"
+        ]
+      },
+      "accent-ember": {
+        "role": "primary",
+        "displayName": "Ember",
+        "canonical": "#f0784a",
+        "tonalRamp": [
+          "#3d1808",
+          "#6b2c12",
+          "#a4431c",
+          "#c8501a",
+          "#f0784a",
+          "#f68d64",
+          "#f9b9a0",
+          "#fde3d8"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Fountain-Pen Ink",
+        "canonical": "#1b2431",
+        "tonalRamp": [
+          "#0b0f15",
+          "#1b2431",
+          "#2f3b4d",
+          "#4a5566",
+          "#5a6577",
+          "#8a93a0",
+          "#c3c9d1",
+          "#e6e9ed"
+        ]
+      },
+      "flour": {
+        "role": "neutral",
+        "displayName": "Flour",
+        "canonical": "#f3f2ee",
+        "tonalRamp": [
+          "#8f8d85",
+          "#b5b3ab",
+          "#d9d7cf",
+          "#e4e2db",
+          "#ebe9e2",
+          "#f3f2ee",
+          "#f8f7f4",
+          "#ffffff"
+        ]
+      },
+      "card-stock": {
+        "role": "neutral",
+        "displayName": "Card Stock",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#d9d7cf",
+          "#e4e2db",
+          "#ebe9e2",
+          "#f3f2ee",
+          "#f8f7f4",
+          "#fbfbf9",
+          "#fdfdfc",
+          "#ffffff"
+        ]
+      },
+      "rule-blue": {
+        "role": "neutral",
+        "displayName": "Ruled-Line Blue",
+        "canonical": "#cfdde8",
+        "tonalRamp": [
+          "#3e5a70",
+          "#5c7a92",
+          "#7f9db4",
+          "#a4bccd",
+          "#cfdde8",
+          "#dce7ef",
+          "#e9f0f5",
+          "#f5f8fa"
+        ]
+      },
+      "chalkboard": {
+        "role": "neutral",
+        "displayName": "Chalkboard",
+        "canonical": "#14181d",
+        "tonalRamp": [
+          "#0a0c0f",
+          "#0f1216",
+          "#14181d",
+          "#1b2027",
+          "#262d36",
+          "#323b46",
+          "#5b6572",
+          "#a6adb8"
+        ]
+      },
+      "chalk": {
+        "role": "neutral",
+        "displayName": "Chalk",
+        "canonical": "#e9e6df",
+        "tonalRamp": [
+          "#6e6b64",
+          "#8f8c85",
+          "#b5b2ab",
+          "#cfccc5",
+          "#e9e6df",
+          "#f0eee8",
+          "#f4f1ea",
+          "#faf9f6"
+        ]
+      },
+      "success": {
+        "role": "status",
+        "displayName": "Garden Green",
+        "canonical": "#1a7f37",
+        "tonalRamp": [
+          "#0b3319",
+          "#11552a",
+          "#1a7f37",
+          "#3fb950",
+          "#6fd07f",
+          "#aceebb",
+          "#dafbe1",
+          "#effdf2"
+        ]
+      },
+      "error": {
+        "role": "status",
+        "displayName": "Correction Red",
+        "canonical": "#b42318",
+        "tonalRamp": [
+          "#3b0d09",
+          "#661610",
+          "#b42318",
+          "#f85149",
+          "#fa8a84",
+          "#f4b8b2",
+          "#fdecea",
+          "#fef6f5"
+        ]
+      },
+      "tint-1": {
+        "role": "tertiary",
+        "displayName": "Terracotta Monogram Wash",
+        "canonical": "#f6e3d8",
+        "tonalRamp": [
+          "#4d1a08",
+          "#7a2a0c",
+          "#9a300e",
+          "#c5583a",
+          "#e09578",
+          "#eeb9a2",
+          "#f6e3d8",
+          "#fbf1ea"
+        ]
+      },
+      "tint-2": {
+        "role": "tertiary",
+        "displayName": "Herb Monogram Wash",
+        "canonical": "#e2ecd9",
+        "tonalRamp": [
+          "#1e3315",
+          "#2c4d1e",
+          "#3d6a2a",
+          "#6f9a5a",
+          "#9bc088",
+          "#c0d8b2",
+          "#e2ecd9",
+          "#f1f6ec"
+        ]
+      },
+      "tint-3": {
+        "role": "tertiary",
+        "displayName": "Butter Monogram Wash",
+        "canonical": "#f3e8c6",
+        "tonalRamp": [
+          "#3d2d05",
+          "#5c4508",
+          "#7a5c0d",
+          "#a88322",
+          "#cfaa4e",
+          "#e3cb88",
+          "#f3e8c6",
+          "#faf4e3"
+        ]
+      },
+      "tint-4": {
+        "role": "tertiary",
+        "displayName": "Slate Monogram Wash",
+        "canonical": "#dde6ee",
+        "tonalRamp": [
+          "#1a2b3a",
+          "#274257",
+          "#3a5670",
+          "#617f99",
+          "#8fa8bc",
+          "#b9cad8",
+          "#dde6ee",
+          "#eef3f7"
+        ]
+      }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Recipe titles, covers, page titles in Alegreya 700." },
-      "headline": { "displayName": "Headline", "purpose": "Section headings, stat values, empty-state lines." },
-      "title": { "displayName": "Card Title", "purpose": "Recipe card titles, two-line clamp." },
-      "reading": { "displayName": "Reading", "purpose": "Ingredient and method lists in Alegreya, max 68ch." },
-      "body": { "displayName": "Body / UI", "purpose": "System sans for forms and prose." },
-      "label": { "displayName": "Label", "purpose": "Buttons, nav, menu items in system sans 600." },
-      "meta": { "displayName": "Meta", "purpose": "Meta lines, hints, tags; tabular numerals." }
+      "display": {
+        "displayName": "Display",
+        "purpose": "Recipe titles, covers, page titles in Alegreya 700."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings, stat values, empty-state lines."
+      },
+      "title": {
+        "displayName": "Card Title",
+        "purpose": "Recipe card titles, two-line clamp."
+      },
+      "reading": {
+        "displayName": "Reading",
+        "purpose": "Ingredient and method lists in Alegreya, max 68ch."
+      },
+      "body": {
+        "displayName": "Body / UI",
+        "purpose": "System sans for forms and prose."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, nav, menu items in system sans 600."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Meta lines, hints, tags; tabular numerals."
+      }
     },
     "shadows": [
-      { "name": "shadow-sm", "value": "0 1px 0 rgba(27,36,49,0.05), 0 1px 3px rgba(27,36,49,0.05)", "purpose": "Card at rest." },
-      { "name": "shadow", "value": "0 1px 0 rgba(27,36,49,0.05), 0 2px 8px rgba(27,36,49,0.07)", "purpose": "Detail hero image." },
-      { "name": "shadow-md", "value": "0 1px 0 rgba(27,36,49,0.06), 0 8px 24px rgba(27,36,49,0.12)", "purpose": "Open menus, hovered cards, mobile nav sheet." },
-      { "name": "focus-ring", "value": "0 0 0 3px rgba(184,58,18,0.18)", "purpose": "Field focus, paired with an accent border." },
-      { "name": "shadow-sm-dark", "value": "0 1px 2px rgba(0,0,0,0.3)", "purpose": "Card at rest on the chalkboard theme." },
-      { "name": "shadow-md-dark", "value": "0 8px 24px rgba(0,0,0,0.5)", "purpose": "Menus and hovered cards on the chalkboard theme." }
+      {
+        "name": "shadow-sm",
+        "value": "0 1px 0 rgba(27,36,49,0.05), 0 1px 3px rgba(27,36,49,0.05)",
+        "purpose": "Card at rest."
+      },
+      {
+        "name": "shadow",
+        "value": "0 1px 0 rgba(27,36,49,0.05), 0 2px 8px rgba(27,36,49,0.07)",
+        "purpose": "Detail hero image."
+      },
+      {
+        "name": "shadow-md",
+        "value": "0 1px 0 rgba(27,36,49,0.06), 0 8px 24px rgba(27,36,49,0.12)",
+        "purpose": "Open menus, hovered cards, mobile nav sheet."
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 3px rgba(184,58,18,0.18)",
+        "purpose": "Field focus, paired with an accent border."
+      },
+      {
+        "name": "shadow-sm-dark",
+        "value": "0 1px 2px rgba(0,0,0,0.3)",
+        "purpose": "Card at rest on the chalkboard theme."
+      },
+      {
+        "name": "shadow-md-dark",
+        "value": "0 8px 24px rgba(0,0,0,0.5)",
+        "purpose": "Menus and hovered cards on the chalkboard theme."
+      }
     ],
     "motion": [
-      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Flash entry, step entry, progress bar." },
-      { "name": "duration-fast", "value": "0.15s", "purpose": "Color, border, and background state changes." },
-      { "name": "card-lift", "value": "0.2s box-shadow, transform (translateY -3px)", "purpose": "Recipe card hover on pointer devices only." },
-      { "name": "press", "value": "0.1s transform scale(0.97 to 0.98)", "purpose": "Button and cook-mode control active state." },
-      { "name": "step-in", "value": "0.28s ease-out, translateX(14px) to 0", "purpose": "Cook-mode step change; reduced-motion swaps to a 0.2s fade." }
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Flash entry, step entry, progress bar."
+      },
+      {
+        "name": "duration-fast",
+        "value": "0.15s",
+        "purpose": "Color, border, and background state changes."
+      },
+      {
+        "name": "card-lift",
+        "value": "0.2s box-shadow, transform (translateY -3px)",
+        "purpose": "Recipe card hover on pointer devices only."
+      },
+      {
+        "name": "press",
+        "value": "0.1s transform scale(0.97 to 0.98)",
+        "purpose": "Button and cook-mode control active state."
+      },
+      {
+        "name": "step-in",
+        "value": "0.28s ease-out, translateX(14px) to 0",
+        "purpose": "Cook-mode step change; reduced-motion swaps to a 0.2s fade."
+      },
+      {
+        "name": "ios-press",
+        "value": "ease-out 0.12s",
+        "purpose": "iPhone button press: dims to 85% (PressableStyle); no scale under Reduce Motion."
+      }
     ],
     "breakpoints": [
-      { "name": "narrow", "value": "480px" },
-      { "name": "form-collapse", "value": "560px" },
-      { "name": "public-narrow", "value": "600px" },
-      { "name": "nav-collapse", "value": "860px" },
-      { "name": "recipe-spread", "value": "900px" },
-      { "name": "meal-plan", "value": "1000px" }
+      {
+        "name": "narrow",
+        "value": "480px"
+      },
+      {
+        "name": "form-collapse",
+        "value": "560px"
+      },
+      {
+        "name": "public-narrow",
+        "value": "600px"
+      },
+      {
+        "name": "nav-collapse",
+        "value": "860px"
+      },
+      {
+        "name": "recipe-spread",
+        "value": "900px"
+      },
+      {
+        "name": "meal-plan",
+        "value": "1000px"
+      }
     ]
   },
   "components": [
@@ -116,11 +400,51 @@
       "description": "Instrument Panel control: 64px, ember fill on the fixed chalkboard bar.",
       "html": "<div class=\"ds-cook-bar\"><button class=\"ds-cook-prev\">Back</button><button class=\"ds-cook-next\">Next</button></div>",
       "css": ".ds-cook-bar { display: flex; gap: 0.75rem; padding: 0.75rem 1rem; background: var(--cook-bar, #0f1216); border-top: 1px solid var(--cook-line, #2c343e); } .ds-cook-prev, .ds-cook-next { flex: 1; min-height: 64px; border: 0; border-radius: 6px; font-family: system-ui, sans-serif; font-size: 1.375rem; font-weight: 700; cursor: pointer; transition: transform 0.1s, background-color 0.15s; } .ds-cook-prev { flex: 0 0 34%; background: var(--cook-surface, #262d36); color: var(--cook-text, #f4f1ea); } .ds-cook-next { background: var(--cook-accent-solid, #c8501a); color: #fff; } .ds-cook-prev:active, .ds-cook-next:active { transform: scale(0.97); } .ds-cook-prev:focus-visible, .ds-cook-next:focus-visible { outline: 2px solid var(--cook-text, #f4f1ea); outline-offset: 2px; }"
+    },
+    {
+      "name": "iPhone Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "PrimaryButton: full width, primaryFill (terracotta; ember fill in dark), white text, 52pt, 4pt corners.",
+      "html": "<button class=\"ds-ios-btn\">Start cooking</button>",
+      "css": ".ds-ios-btn { width: 320px; min-height: 52px; border: none; border-radius: 4px; background: #b83a12; color: #fff; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; font-size: 17px; font-weight: 600; cursor: pointer; transition: opacity 0.12s ease-out; } .ds-ios-btn:active { opacity: 0.85; } .ds-ios-btn:focus-visible { outline: 2px solid #b83a12; outline-offset: 2px; } @media (prefers-color-scheme: dark) { .ds-ios-btn { background: #c8501a; } }"
+    },
+    {
+      "name": "iPhone Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "SecondaryButton: card stock, 1pt hairline, ink text, 4pt corners.",
+      "html": "<button class=\"ds-ios-btn2\">Add 7 to shopping list</button>",
+      "css": ".ds-ios-btn2 { width: 320px; min-height: 48px; border: 1px solid #d9d7cf; border-radius: 4px; background: #fff; color: #1b2431; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; font-size: 17px; font-weight: 600; cursor: pointer; transition: opacity 0.12s ease-out; } .ds-ios-btn2:active { opacity: 0.85; } .ds-ios-btn2:focus-visible { outline: 2px solid #b83a12; outline-offset: 2px; } @media (prefers-color-scheme: dark) { .ds-ios-btn2 { background: #1b2027; border-color: #2c343e; color: #e9e6df; } }"
+    },
+    {
+      "name": "iPhone Recipe Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White card stock, 6pt corners, 1pt hairline, Alegreya title; photo-less recipes get an italic Alegreya monogram on a tint.",
+      "html": "<article class=\"ds-ios-card\"><div class=\"ds-ios-tile\">S</div><div class=\"ds-ios-card-body\"><h3>Shish barak</h3><p>45 min · Serves 4</p></div></article>",
+      "css": ".ds-ios-card { width: 170px; overflow: hidden; background: #fff; border: 1px solid #d9d7cf; border-radius: 6px; box-shadow: 0 1px 3px rgba(27,36,49,0.05); } .ds-ios-tile { aspect-ratio: 4 / 3; display: grid; place-items: center; background: #f6e3d8; color: #9a300e; font-family: 'Alegreya', Georgia, serif; font-style: italic; font-size: 52px; font-weight: 700; } .ds-ios-card-body { padding: 10px 12px 12px; } .ds-ios-card h3 { margin: 0 0 4px; font-family: 'Alegreya', Georgia, serif; font-size: 17px; font-weight: 700; color: #1b2431; } .ds-ios-card p { margin: 0; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; font-size: 12px; color: #4a5566; font-variant-numeric: tabular-nums; } @media (prefers-color-scheme: dark) { .ds-ios-card { background: #1b2027; border-color: #2c343e; } .ds-ios-card h3 { color: #e9e6df; } }"
+    },
+    {
+      "name": "iPhone Ruled Lists",
+      "kind": "custom",
+      "refersTo": "reading",
+      "description": "Recipe page ingredients and steps on 1pt rule-blue lines: terracotta dash ticks, italic terracotta step numerals.",
+      "html": "<div class=\"ds-ios-ruled\"><p class=\"ds-ios-sec\">For the dough</p><ul><li>500 g strong flour</li><li class=\"have\">7 g dried yeast</li></ul><ol><li><span>1</span>Mix the flour and yeast, then add the water.</li><li><span>2</span>Knead for ten minutes until smooth.</li></ol></div>",
+      "css": ".ds-ios-ruled { width: 340px; font-family: 'Alegreya', Georgia, serif; font-size: 18px; color: #1b2431; background: #fff; padding: 8px 16px; } .ds-ios-sec { margin: 8px 0 4px; font-style: italic; font-weight: 700; color: #b83a12; } .ds-ios-ruled ul, .ds-ios-ruled ol { list-style: none; margin: 0 0 12px; padding: 0; } .ds-ios-ruled li { position: relative; padding: 10px 0 10px 28px; border-bottom: 1px solid #cfdde8; line-height: 1.45; } .ds-ios-ruled ul li::before { content: ''; position: absolute; left: 4px; top: 50%; width: 10px; height: 2px; background: #b83a12; } .ds-ios-ruled li.have { color: #5a6577; } .ds-ios-ruled li.have::before { content: '✓'; background: none; width: auto; height: auto; top: 10px; color: #b83a12; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; } .ds-ios-ruled ol li { padding-left: 36px; } .ds-ios-ruled ol span { position: absolute; left: 0; top: 4px; font-style: italic; font-weight: 700; font-size: 26px; color: #b83a12; } @media (prefers-color-scheme: dark) { .ds-ios-ruled { background: #1b2027; color: #e9e6df; } .ds-ios-ruled li { border-color: #2c3a48; } .ds-ios-sec, .ds-ios-ruled ol span, .ds-ios-ruled li.have::before { color: #f0784a; } .ds-ios-ruled ul li::before { background: #f0784a; } }"
+    },
+    {
+      "name": "iPhone Cook Mode",
+      "kind": "custom",
+      "refersTo": "cook-next-button",
+      "description": "Always-chalkboard Instrument Panel: ember progress bar, italic numeral over large Alegreya step text, 64pt Previous / Next with Next in ember fill.",
+      "html": "<div class=\"ds-ios-cook\"><div class=\"ds-ios-prog\"><i></i></div><div class=\"ds-ios-step\"><span>2</span><p>Knead for ten minutes until the dough is smooth and springs back.</p></div><div class=\"ds-ios-bar\"><button class=\"ds-ios-prev\">Previous</button><button class=\"ds-ios-next\">Next</button></div></div>",
+      "css": ".ds-ios-cook { width: 360px; background: #14181d; color: #f4f1ea; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; } .ds-ios-prog { height: 4px; background: #262d36; } .ds-ios-prog i { display: block; width: 33%; height: 100%; background: #f0784a; } .ds-ios-step { padding: 24px 20px; } .ds-ios-step span { display: block; font-family: 'Alegreya', Georgia, serif; font-style: italic; font-weight: 700; font-size: 72px; line-height: 1; color: #f0784a; } .ds-ios-step p { margin: 12px 0 0; font-family: 'Alegreya', Georgia, serif; font-size: 27px; line-height: 1.4; } .ds-ios-bar { display: flex; gap: 12px; padding: 12px 16px; background: #0f1216; } .ds-ios-bar button { flex: 1; min-height: 64px; border-radius: 6px; font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif; font-size: 19px; font-weight: 600; cursor: pointer; } .ds-ios-prev { background: #262d36; color: #f4f1ea; border: 1px solid #323b46; } .ds-ios-next { background: #c8501a; color: #fff; border: none; } .ds-ios-bar button:focus-visible { outline: 2px solid #f4f1ea; outline-offset: 2px; } .ds-ios-bar button:active { opacity: 0.85; }"
     }
   ],
   "narrative": {
     "northStar": "The Well-Used Cookbook",
-    "overview": "A recipe is an index card you would hand to someone, not a row in a dashboard. The system is built from index-card materials: white card stock ruled with pale blue lines, blue-black fountain-pen ink, and a single red-pen terracotta for everything the cook marks. The ground is a cool-warm flour, not cream. Recipe text and titles are set in Alegreya, a calligraphic serif, with italic for notes and step numbers; interface chrome uses the system sans so controls stay quiet.\n\nReading and sharing surfaces (shelf, recipe page, public share pages) live in this paper world. Doing surfaces (cook mode, shopping, meal plan) borrow its rigour as a Kitchen Instrument Panel: big targets, tabular numerals, one action per screen. The dark theme is a chalkboard menu, and cook mode is always that chalkboard regardless of the theme toggle.",
+    "overview": "A recipe is an index card you would hand to someone, not a row in a dashboard. The system is built from index-card materials: white card stock ruled with pale blue lines, blue-black fountain-pen ink, and a single red-pen terracotta for everything the cook marks. The ground is a cool-warm flour, not cream. Recipe text and titles are set in Alegreya, a calligraphic serif, with italic for notes and step numbers; interface chrome uses the system sans so controls stay quiet.\n\nReading and sharing surfaces (shelf, recipe page, public share pages) live in this paper world. Doing surfaces (cook mode, shopping, meal plan) borrow its rigour as a Kitchen Instrument Panel: big targets, tabular numerals, one action per screen. The dark theme is a chalkboard menu, and cook mode is always that chalkboard regardless of the theme toggle.\n\nThe site name and logo are admin-set and appear in the masthead in Alegreya; nothing is hard-coded.\n\nThe native iPhone app (`IOS/`) is the same cookbook in Apple's idiom: flour and card stock, Alegreya for what is read, the system sans for what is pressed, one red pen, and a chalkboard cook mode. It follows the Human Interface Guidelines for structure, navigation and controls; see **iPhone App** below.",
     "keyCharacteristics": [
       "Ruled stock, not boxed panels: pale blue rules divide lists; cards are white with a hairline edge and a paper shadow.",
       "One accent (red-pen terracotta), used for what the cook marks: links, active state, list ticks, step numbers, the primary button.",
@@ -129,35 +453,67 @@
       "Motion is short and functional: 0.15s state changes, one ease-out curve, all of it honoring reduced motion."
     ],
     "rules": [
-      { "name": "The Red-Pen Rule", "body": "There is one accent. Terracotta marks what the cook touches or has marked; no second hue is added for emphasis. Tints are for monograms only.", "section": "colors" },
-      { "name": "The Accent-Solid Rule", "body": "--accent is for text, lines, and marks. --accent-solid is the only accent that may fill a surface carrying white text. In light theme they are the same value (#b83a12). In dark theme they split: text accent #f0784a, fill #c8501a, whose white text contrast is only 4.55:1. That is the floor; do not lighten the fill, and never put white text on the dark-theme text accent.", "section": "colors" },
-      { "name": "The Wash Not Fill Rule", "body": "Quiet emphasis uses a wash (accent-subtle, hairline-light, a tint) rather than a solid fill. Solid accent fills are reserved for the primary action, the active chip, and the active segment.", "section": "colors" },
-      { "name": "The Cook Mode Is Always Chalkboard Rule", "body": "Cook mode reads the fixed --cook-* palette, never the theme tokens, so it is identical in a bright kitchen and a dark one.", "section": "colors" },
-      { "name": "The Sentence-Case Data Rule", "body": "User-supplied strings (titles, tags, ingredients, categories) are never uppercased or letter-spaced, and no kicker or eyebrow sits above a heading. Meta is a plain label and value pair.", "section": "typography" },
-      { "name": "The Two-Voices Rule", "body": "Alegreya is for what is read (titles, recipe text, notes); the sans is for what is pressed (buttons, nav, inputs, menus).", "section": "typography" },
-      { "name": "The Paper Shadow Rule", "body": "Shadows are soft, low, and blurred with no offset x-axis. Hard offset shadows do not exist here.", "section": "elevation" },
-      { "name": "The One Primary Action Rule", "body": "Each surface has exactly one primary action. On the recipe page it is Start cooking; everything else sits in menus or secondary buttons.", "section": "components" },
-      { "name": "The Monogram Not 'No image' Rule", "body": "Photo-less recipes get a tinted monogram tile, never an empty 'No image' box.", "section": "components" },
-      { "name": "The Ruled Not Boxed Rule", "body": "Lists sit on blue rules; cards are white stock. Do not wrap list rows in bordered boxes.", "section": "components" }
+      {
+        "name": "The Red-Pen Rule",
+        "body": "There is one accent. Terracotta marks what the cook touches or has marked; no second hue is added for emphasis. Tints are for monograms only.",
+        "section": "colors"
+      },
+      {
+        "name": "The Accent-Solid Rule",
+        "body": "`--accent` is for text, lines, and marks. `--accent-solid` is the only accent that may fill a surface carrying white text. In light theme they are the same value (#b83a12). In dark theme they split: text accent #f0784a, fill #c8501a, whose white text contrast is only 4.55:1. That is the floor; do not lighten the fill, and never put white text on the dark-theme text accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Wash Not Fill Rule",
+        "body": "Quiet emphasis uses a wash (`accent-subtle`, hairline-light, a tint) rather than a solid fill. Solid accent fills are reserved for the primary action, the active chip, and the active segment.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cook Mode Is Always Chalkboard Rule",
+        "body": "Cook mode reads the fixed `--cook-*` palette, never the theme tokens, so it is identical in a bright kitchen and a dark one.",
+        "section": "colors"
+      },
+      {
+        "name": "The Sentence-Case Data Rule",
+        "body": "User-supplied strings (titles, tags, ingredients, categories) are never uppercased or letter-spaced, and no kicker or eyebrow sits above a heading. Meta is a plain label and value pair.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two-Voices Rule",
+        "body": "Alegreya is for what is read (titles, recipe text, notes); the sans is for what is pressed (buttons, nav, inputs, menus). Do not set buttons in Alegreya or recipe text in the sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Paper Shadow Rule",
+        "body": "Shadows are soft, low, and blurred with no offset x-axis. Hard offset shadows do not exist here.",
+        "section": "elevation"
+      }
     ],
     "dos": [
-      "Do change tokens only in static/css/tokens.css; every stylesheet and the embedded-page adapter (static/pages/_theme.css) reads them.",
-      "Do give each surface exactly one primary action. On the recipe page it is Start cooking; Share, More, and everything else sit in menus or secondary buttons.",
-      "Do use --accent for text and lines and --accent-solid for fills that carry white text.",
-      "Do keep touch targets at 44px minimum on coarse pointers and 56px or larger in cook mode.",
-      "Do give photo-less recipes a monogram tile in a category tint.",
-      "Do honor prefers-reduced-motion on every animation and transition you add.",
-      "Do divide lists with rule-blue lines; keep cards white."
+      "**Do** change tokens only in `static/css/tokens.css`; every stylesheet and the embedded-page adapter (`static/pages/_theme.css`) reads them.",
+      "**Do** give each surface exactly one primary action. On the recipe page it is Start cooking; Share, More, and everything else sit in menus or secondary buttons.",
+      "**Do** use `--accent` for text and lines and `--accent-solid` for fills that carry white text.",
+      "**Do** keep touch targets at 44px minimum on coarse pointers and 56px or larger in cook mode.",
+      "**Do** give photo-less recipes a monogram tile in a category tint.",
+      "**Do** honor `prefers-reduced-motion` on every animation and transition you add.",
+      "**Do** divide lists with rule-blue lines; keep cards white.",
+      "**Do** keep the four kitchen actions (Recipes, Plan, Shop, Add) in the thumb-reach tab bar on phones (<=860px); the top masthead carries the rest.",
+      "iPhone: **Do** put new colours in `Assets.xcassets` with light and dark values and read them through `AppColors`; use `primaryFill`, never `primary`, behind white text.",
+      "iPhone: **Do** use `AppTypography` (Alegreya, Dynamic Type relative) for what is read and system text styles for what is pressed; never fixed point sizes for text.",
+      "iPhone: **Do** use SF Symbols, give every icon-only button an accessibility label, keep targets at 44pt or larger, and honour Reduce Motion on every animation.",
+      "iPhone: **Do** keep cook mode on the `Cook*` colours only."
     ],
     "donts": [
-      "Don't use border-left or border-right stripes as accents.",
-      "Don't use emoji as icons; use inline SVG (stroke 2, round caps, 22px in cook mode).",
-      "Don't show a \"No image\" box; use the monogram.",
-      "Don't uppercase, letter-space, or set kickers or eyebrows above headings, and never transform user strings.",
-      "Don't add a second accent hue or use the tints outside monograms.",
-      "Don't theme cook mode; it always reads --cook-*.",
-      "Don't hard-code hex values in component CSS or use offset-style shadows.",
-      "Don't put a dashboard shell on the app: no flat many-link bar, no bordered grey boxes, no sans on every surface."
+      "**Don't** use `border-left` or `border-right` stripes as accents.",
+      "**Don't** use emoji as icons; use inline SVG (stroke 2, round caps, 22px in cook mode).",
+      "**Don't** show a \"No image\" box; use the monogram.",
+      "**Don't** uppercase, letter-space, or set kickers or eyebrows above headings, and never transform user strings.",
+      "**Don't** add a second accent hue or use the tints outside monograms.",
+      "**Don't** theme cook mode; it always reads `--cook-*`.",
+      "**Don't** hard-code hex values in component CSS or use offset-style shadows.",
+      "**Don't** put a dashboard shell on the app: no flat many-link bar, no bordered grey boxes, no sans on every surface.",
+      "iPhone: **Don't** reintroduce a custom tab bar or a Home button; the system tab bar and back button do that job.",
+      "iPhone: **Don't** disable edge-swipe back or hide the system back button except while unsaved edits are guarded."
     ]
   }
 }

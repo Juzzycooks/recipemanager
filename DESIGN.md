@@ -127,6 +127,8 @@ Reading and sharing surfaces (shelf, recipe page, public share pages) live in th
 
 The site name and logo are admin-set and appear in the masthead in Alegreya; nothing is hard-coded.
 
+The native iPhone app (`IOS/`) is the same cookbook in Apple's idiom: flour and card stock, Alegreya for what is read, the system sans for what is pressed, one red pen, and a chalkboard cook mode. It follows the Human Interface Guidelines for structure, navigation and controls; see **iPhone App** below.
+
 **Key Characteristics:**
 - Ruled stock, not boxed panels: pale blue rules divide lists; cards are white with a hairline edge and a paper shadow.
 - One accent (red-pen terracotta), used for what the cook marks: links, active state, list ticks, step numbers, the primary button.
@@ -233,6 +235,55 @@ Fixed chalkboard palette. Sticky header with a 48px Close, two 52px tabs (ingred
 
 ### Public cover
 Share pages carry the admin's site name and a cover: full-bleed photo under a bottom-up dark gradient with chalk text, or a tinted monogram band. Below it, a two-column recipe spread mirroring the in-app recipe page.
+
+## iPhone App
+
+The SwiftUI app in `IOS/RecipeManager` is the same cookbook in Apple's idiom. Apple's platform rules govern structure, navigation and controls; the cookbook lives in the materials, the type, the one red pen and the chalkboard. Its tokens live in `IOS/RecipeManager/Theme/` and `Resources/Assets.xcassets`, mirroring the values in `tokens.css`.
+
+### Colour
+- **Named colours only.** Every colour is a colour set with a light and a dark value, read through `AppColors`; screens never use hex literals. Light: flour Background #f3f2ee, card-stock Card #ffffff, Surface #ebe9e2, Hairline #d9d7cf, HairlineLight, RuleBlue #cfdde8, Text #1b2431, Text Secondary #4a5566, Text Tertiary. Dark is the chalkboard: Background #14181d, Card #1b2027, Surface #222932, chalk text #e9e6df.
+- **One red pen.** Terracotta is the default theme. `AppColors.primary` is the accent for text, lines, icons and ticks (#b83a12, ember #f0784a in dark); `AppColors.primaryFill` is the only colour that may sit behind white text (#b83a12, ember fill #c8501a in dark). `OnPrimary` is white in both appearances. `AccentWash` is the quiet emphasis. Favourite and rating marks use the accent, not extra hues.
+- **Other themes** (Forest, Ocean, Plum, Slate) stay selectable in Settings, each with its own text and fill pair; they recolour the accent only.
+- **Status:** Danger and Success, for destructive actions and confirmations only.
+- **Monogram tints** for photo-less recipes: TileTerracotta, TileHerb, TileButter, TileSlate, each a wash with a matching ink, deeper washes in dark mode.
+
+### Type
+- **Alegreya is bundled** (`Resources/Fonts`, OFL: Regular, Medium, Bold, Medium Italic, Bold Italic) and set through `AppTypography` with `Font.custom(_:size:relativeTo:)`, so it follows Dynamic Type. Titles, card titles, navigation titles, recipe text and notes are Alegreya; step numerals, list section headings and monograms are Alegreya italic in the accent.
+- **Controls stay in San Francisco:** buttons, tabs, labels, inputs and meta.
+
+### Space, shape, size
+- Spacing scale (pt): 4, 8, 12, 16, 20, 28, 40; screen side margin 20.
+- Index-card corners: `Radius.control` 4pt on buttons, fields, chips' fills and thumbnails; `Radius.card` 6pt on cards; sheets keep the system shape. Card edges are a 1pt hairline.
+- Touch targets are 44pt minimum (chips, stars, the card heart and clear buttons all have 44pt hit areas even when drawn smaller); primary buttons are 52pt; cook mode uses 56 to 64pt.
+
+### Navigation
+- The **system tab bar**: Recipes, Plan, Shop, Collections, and Search in the search role. Each tab has its own `NavigationStack`, with paths kept in `AppState`; tapping the current tab again pops it to its root. The system back button and edge-swipe back are never hidden.
+- **Add is an action:** a + in the Recipes toolbar opens the Add sheet. **Profile and Settings** open as a sheet from the avatar in the Recipes toolbar.
+- The Recipes title is the admin-set site name in Alegreya, falling back to "Recipes".
+- Screens with one real bottom action (recipe page: Start cooking; meal plan: Plan a meal) pin it with `.bottomActionBar { }`. Status pills (offline, sync, timer, toast, undo) sit in a bottom safe-area inset above the tab bar, never over content.
+- Vertical pages scroll with `VerticalScroll`, pinned to the screen width, never a bare `ScrollView`.
+
+### Components
+- **PrimaryButton:** full width, `primaryFill`, white text, 4pt corners, 52pt, optional SF Symbol and loading spinner. **SecondaryButton:** card stock, 1pt hairline, ink text. Pressing dims to 85% (the slight scale is dropped under Reduce Motion).
+- **Recipe card:** white card stock, 6pt corners, 1pt hairline, light paper shadow, photo-led; Alegreya title; no photo shows an italic Alegreya monogram on a tint (the letter as written, never uppercased).
+- **Ruled lists:** on the recipe page, ingredients and steps sit on 1pt rule-blue lines. Ingredients lead with a terracotta dash; ticking one ("I already have it") turns the dash to a tick and dims the line, and VoiceOver says "Have it". Steps carry an italic terracotta numeral; section headings are italic terracotta.
+- **Chips:** card stock with a hairline, `primaryFill` when selected.
+- **System controls first:** segmented controls (fill selection on a Surface track), lists, sheets, alerts, confirmation dialogs, swipe actions, context menus, `.searchable` and pull to refresh are the platform's own.
+
+### Cook mode (Instrument Panel)
+A full-screen cover that is **always chalkboard**, whatever the theme or appearance: it reads only the fixed `Cook*` colour sets (bar #0f1216, ground #14181d, surface #262d36, raised #323b46, text #f4f1ea, muted #a6adb8, ember #f0784a, ember fill #c8501a) and forces dark appearance. A 4pt ember progress bar; a 56pt labelled Close; "Step X of N"; two 52pt tabs, Ingredients and Steps, with an ember underline. The step is a large italic Alegreya ember numeral over large Alegreya step text, with a "For this step" ingredient card; no photo. The bottom bar carries 64pt Previous and Next (Next in ember fill). Up to six named timers run at once as pills with 56pt cancel targets (AlarmKit on iOS 26.1+, notifications before that). Done logs "I made this" and shows a short "Marked as made" panel with optional rating. Light haptics on step change, tick and timer start; Reduce Motion turns step slides into crossfades.
+
+### Safety
+- Leaving the recipe editor with unsaved work asks first ("Discard changes?" / "Discard this recipe?"), and swipe-down is held while there is unsaved work.
+- Removing a meal-plan entry and clearing ticked shopping items both offer Undo; meal-plan changes queue offline like favourites and shopping.
+
+### iPhone rules
+- **Do** put new colours in `Assets.xcassets` with light and dark values and read them through `AppColors`; use `primaryFill`, never `primary`, behind white text.
+- **Do** use `AppTypography` (Alegreya, Dynamic Type relative) for what is read and system text styles for what is pressed; never fixed point sizes for text.
+- **Do** use SF Symbols, give every icon-only button an accessibility label, keep targets at 44pt or larger, and honour Reduce Motion on every animation.
+- **Do** keep cook mode on the `Cook*` colours only.
+- **Don't** reintroduce a custom tab bar or a Home button; the system tab bar and back button do that job.
+- **Don't** disable edge-swipe back or hide the system back button except while unsaved edits are guarded.
 
 ## Do's and Don'ts
 

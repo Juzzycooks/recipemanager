@@ -5,23 +5,21 @@ final class ProfileModel {
     var recipes = 0
     var favorites = 0
     var collections = 0
-    var store: ShoppingList.Store?
-    var siteName = ""
 
     func load(_ session: Session) async {
         async let all: Page<RecipeSummary>? = try? session.run { try await $0.get("/recipes", query: ["per_page": "1"]) }
         async let favs: Page<RecipeSummary>? = try? session.run { try await $0.get("/recipes", query: ["per_page": "1", "favorites": "1"]) }
         async let colls: ItemList<CollectionSummary>? = try? session.run { try await $0.get("/collections") }
-        async let info: SiteInfo? = try? session.run { try await $0.get("/site") }
-        let (a, f, c, i) = await (all, favs, colls, info)
+        let (a, f, c) = await (all, favs, colls)
         recipes = a?.total ?? recipes; favorites = f?.total ?? favorites; collections = c?.items.count ?? collections
-        siteName = i?.name ?? siteName
     }
 }
 
+/// Profile and settings, opened from the avatar on Recipes as a sheet with its own stack. Kitchen preferences
+/// come first; account plumbing (email, password, devices, signing out) sits apart below them.
 struct ProfileView: View {
     @Environment(Session.self) private var session
-    @Environment(AppState.self) private var app
+    @Environment(\.dismiss) private var dismiss
     @State private var model = ProfileModel()
     @State private var path: [AppRoute] = []
     @State private var showingAccount = false
@@ -29,30 +27,37 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            VerticalScroll {
-                VStack(spacing: Spacing.l) {
+            List {
+                Section {
                     header
                     stats
-                    settings
-                    Button("Sign Out", role: .destructive) { confirmSignOut = true }
-                        .frame(maxWidth: .infinity, minHeight: Size.tap)
-                        .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
-                        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 0.5))
-                        .foregroundStyle(AppColors.danger)
                 }
-                .screenPadding().padding(.bottom, Spacing.xl)
+                .listRowBackground(Color.clear).listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Spacing.xs, leading: 0, bottom: Spacing.xs, trailing: 0))
+                Section("Kitchen") {
+                    NavigationLink(value: AppRoute.settings) { Label("Settings", systemImage: "gearshape") }
+                }
+                Section {
+                    Button { showingAccount = true } label: { Label("Account", systemImage: "person.crop.circle") }
+                        .foregroundStyle(AppColors.textPrimary)
+                    NavigationLink(value: AppRoute.devices) { Label("Signed-in devices", systemImage: "iphone") }
+                } header: { Text("Account") }
+                Section {
+                    Button("Sign out", role: .destructive) { confirmSignOut = true }.foregroundStyle(AppColors.danger)
+                }
             }
-            .background(AppColors.background)
-            .withAppTabBar()
-            .onChange(of: app.homeRequest) { path = [] }
-            .navigationTitle("Profile")
+            .listStyle(.insetGrouped)
+            .appBackground()
+            .navigationTitle("Profile").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .appDestinations()
             .task(id: session.dataVersion) { await model.load(session) }
             .sheet(isPresented: $showingAccount) { AccountSheet() }
             .confirmationDialog("Sign out of this device?", isPresented: $confirmSignOut, titleVisibility: .visible) {
-                Button("Sign Out", role: .destructive) { Task { await session.signOut() } }
+                Button("Sign out", role: .destructive) { Task { await session.signOut() } }
             }
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { StatusStack() }
     }
 
     private var header: some View {
@@ -60,22 +65,23 @@ struct ProfileView: View {
             AvatarView(name: session.user?.username ?? "", size: 84)
             Text(session.user?.username ?? "").font(AppTypography.title).foregroundStyle(AppColors.textPrimary)
             if let email = session.user?.email, !email.isEmpty { Text(email).font(.subheadline).foregroundStyle(AppColors.textSecondary) }
-            if session.user?.isAdmin == true { Text("Admin").font(.caption.weight(.semibold)).foregroundStyle(AppColors.secondary) }
+            if session.user?.isAdmin == true { Text("Admin").font(.caption.weight(.semibold)).foregroundStyle(AppColors.primary) }
         }
-        .padding(.top, Spacing.s)
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 
     private var stats: some View {
         HStack(spacing: 0) {
             stat(model.recipes, "Recipes")
-            Divider().frame(height: 32)
+            Rectangle().fill(AppColors.separator).frame(width: 1, height: 32)
             stat(model.favorites, "Favorites")
-            Divider().frame(height: 32)
+            Rectangle().fill(AppColors.separator).frame(width: 1, height: 32)
             stat(model.collections, "Collections")
         }
         .padding(.vertical, Spacing.m)
         .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 0.5))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 1))
     }
 
     private func stat(_ value: Int, _ label: String) -> some View {
@@ -84,50 +90,6 @@ struct ProfileView: View {
             Text(label).font(.caption).foregroundStyle(AppColors.textSecondary)
         }
         .frame(maxWidth: .infinity).accessibilityElement(children: .combine)
-    }
-
-    private var settings: some View {
-        VStack(spacing: 0) {
-            button("Settings", symbol: "gearshape") { path.append(.settings) }
-            divider
-            button("Meal Plan", symbol: "calendar") { path.append(.mealPlan) }
-            divider
-            button("Shopping List", symbol: "cart") { path.append(.shoppingList) }
-            divider
-            button("Account", symbol: "person.crop.circle") { showingAccount = true }
-            divider
-            button("Signed-in Devices", symbol: "iphone") { path.append(.devices) }
-            divider
-            row("Server", symbol: "server.rack") {
-                Text(session.baseURL?.host() ?? "").font(.subheadline).foregroundStyle(AppColors.textSecondary).lineLimit(1)
-            }
-            divider
-            row("Version", symbol: "info.circle") {
-                Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "").font(.subheadline).foregroundStyle(AppColors.textSecondary)
-            }
-        }
-        .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 0.5))
-    }
-
-    private var divider: some View { Divider().padding(.leading, 52) }
-
-    private func row<Trailing: View>(_ title: String, symbol: String, @ViewBuilder trailing: () -> Trailing) -> some View {
-        HStack(spacing: Spacing.s) {
-            Image(systemName: symbol).foregroundStyle(AppColors.primary).frame(width: 28)
-            Text(title).foregroundStyle(AppColors.textPrimary)
-            Spacer(minLength: Spacing.xs)
-            trailing()
-        }
-        .padding(.horizontal, Spacing.m).frame(minHeight: 52)
-    }
-
-    private func button(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            row(title, symbol: symbol) { Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(AppColors.textSecondary) }
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 }
 

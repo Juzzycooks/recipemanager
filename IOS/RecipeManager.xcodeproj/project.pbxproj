@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F0A1E6A10000000000000002 /* Alegreya-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A1E6A10000000000000001 /* Alegreya-Regular.ttf */; };
+		F0A1E6A10000000000000004 /* Alegreya-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A1E6A10000000000000003 /* Alegreya-Medium.ttf */; };
+		F0A1E6A10000000000000006 /* Alegreya-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A1E6A10000000000000005 /* Alegreya-Bold.ttf */; };
+		F0A1E6A10000000000000008 /* Alegreya-MediumItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A1E6A10000000000000007 /* Alegreya-MediumItalic.ttf */; };
+		F0A1E6A1000000000000000A /* Alegreya-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F0A1E6A10000000000000009 /* Alegreya-BoldItalic.ttf */; };
+		F0A1E6A1000000000000000C /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = F0A1E6A1000000000000000B /* OFL.txt */; };
 		003FC86093FC592146819DBA /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73D7DB6DB0206288B5067373 /* SearchView.swift */; };
 		0445F4E599A8C401D6CB558D /* AppSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A03B0EF9B948C249DFF98A8 /* AppSpacing.swift */; };
 		0B2597BBD9BDE8B4B8E53BAB /* CollectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748198BF6054A808F4BA121A /* CollectionsView.swift */; };
@@ -127,6 +133,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F0A1E6A10000000000000001 /* Alegreya-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Alegreya-Regular.ttf; sourceTree = "<group>"; };
+		F0A1E6A10000000000000003 /* Alegreya-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Alegreya-Medium.ttf; sourceTree = "<group>"; };
+		F0A1E6A10000000000000005 /* Alegreya-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Alegreya-Bold.ttf; sourceTree = "<group>"; };
+		F0A1E6A10000000000000007 /* Alegreya-MediumItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Alegreya-MediumItalic.ttf; sourceTree = "<group>"; };
+		F0A1E6A10000000000000009 /* Alegreya-BoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Alegreya-BoldItalic.ttf; sourceTree = "<group>"; };
+		F0A1E6A1000000000000000B /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		0335F4C5DD94B01838E77179 /* RecipeFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeFeed.swift; sourceTree = "<group>"; };
 		042A7EA9394A882812888D37 /* AppRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRoute.swift; sourceTree = "<group>"; };
 		06E925DF03DD34F754975F03 /* RecipeImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeImage.swift; sourceTree = "<group>"; };
@@ -444,10 +456,24 @@
 			path = ShoppingList;
 			sourceTree = "<group>";
 		};
+		F0A1E6A10000000000000F00 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				F0A1E6A10000000000000001 /* Alegreya-Regular.ttf */,
+				F0A1E6A10000000000000003 /* Alegreya-Medium.ttf */,
+				F0A1E6A10000000000000005 /* Alegreya-Bold.ttf */,
+				F0A1E6A10000000000000007 /* Alegreya-MediumItalic.ttf */,
+				F0A1E6A10000000000000009 /* Alegreya-BoldItalic.ttf */,
+				F0A1E6A1000000000000000B /* OFL.txt */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
 		E554DE174E87ED3EF5948C58 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
 				4C170412932B43729E245F52 /* Assets.xcassets */,
+				F0A1E6A10000000000000F00 /* Fonts */,
 				75E072F9D308815DB982BAF3 /* Info.plist */,
 				EE75005B63BBBACC757F6662 /* PrivacyInfo.xcprivacy */,
 			);
@@ -618,6 +644,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				1253A6002CCEA39C376C5DCB /* Assets.xcassets in Resources */,
+				F0A1E6A10000000000000002 /* Alegreya-Regular.ttf in Resources */,
+				F0A1E6A10000000000000004 /* Alegreya-Medium.ttf in Resources */,
+				F0A1E6A10000000000000006 /* Alegreya-Bold.ttf in Resources */,
+				F0A1E6A10000000000000008 /* Alegreya-MediumItalic.ttf in Resources */,
+				F0A1E6A1000000000000000A /* Alegreya-BoldItalic.ttf in Resources */,
+				F0A1E6A1000000000000000C /* OFL.txt in Resources */,
 				A6155FAA6F97ECA642DB61BF /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

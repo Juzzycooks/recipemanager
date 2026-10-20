@@ -6,6 +6,8 @@ struct RecipeDetailView: View {
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var model: RecipeDetailModel
     @State private var tab = DetailTab.ingredients
     @State private var picked: Set<String> = []
@@ -18,6 +20,7 @@ struct RecipeDetailView: View {
     @State private var showingPlan = false
     @State private var confirmDelete = false
     @State private var newComment = ""
+    @ScaledMetric(relativeTo: .title2) private var stepNumeralWidth: CGFloat = 24
 
     init(id: Int) { _model = State(initialValue: RecipeDetailModel(id: id)) }
 
@@ -36,12 +39,11 @@ struct RecipeDetailView: View {
         .background(AppColors.background)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar { if let recipe = model.recipe { toolbar(recipe) } }
-        .homeBar { if let recipe = model.recipe { startBar(recipe) } else { Spacer() } }
-        .hidesAppTabBar()
+        .bottomActionBar { if let recipe = model.recipe { startBar(recipe) } else { Spacer() } }
         .task(id: session.dataVersion) { await model.load(session) }
         .refreshable { await model.load(session) }
         .fullScreenCover(isPresented: $showingCook) {
-            if let recipe = model.recipe { CookingView(recipe: recipe, units: units) { Task { await model.madeIt(session, app) } } }
+            if let recipe = model.recipe { CookingView(recipe: recipe, units: units, onFinished: { Task { await model.madeIt(session, app) } }, onRate: { score in Task { await model.rate(score, session) } }) }
         }
         .sheet(isPresented: $showingEditor) {
             NavigationStack { RecipeEditorView(mode: .edit(model.recipe!), onClose: { showingEditor = false }) { model.recipe = $0 } }
@@ -59,9 +61,19 @@ struct RecipeDetailView: View {
 
     private func hero(_ r: RecipeDetail) -> some View {
         RecipeImage(path: r.imageUrl, title: r.title, id: r.id)
-            .frame(maxWidth: .infinity).frame(height: 340).clipped()
+            .frame(maxWidth: .infinity).frame(height: heroHeight(hasPhoto: !r.imageUrl.isEmpty)).clipped()
             .accessibilityHidden(true)
     }
+
+    /// The photo gives way as the text grows, so large Dynamic Type still reaches the ingredients quickly.
+    /// A letter tile is a band, not a picture, so it stays short.
+    private func heroHeight(hasPhoto: Bool) -> CGFloat {
+        if typeSize.isAccessibilitySize { return hasPhoto ? 200 : 150 }
+        if typeSize >= .xxLarge { return hasPhoto ? 280 : 180 }
+        return hasPhoto ? 340 : 200
+    }
+
+    private var tabAnimation: Animation? { reduceMotion ? nil : .snappy(duration: 0.2) }
 
     private func sheet(_ r: RecipeDetail) -> some View {
         VStack(alignment: .leading, spacing: Spacing.m) {
@@ -70,20 +82,17 @@ struct RecipeDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading).accessibilityAddTraits(.isHeader)
                 FavoriteButton(isFavorite: r.isFavorite, size: 24) { Task { await model.toggleFavorite(session) } }
             }
-            VStack(alignment: .leading, spacing: 2) {
-                RatingView(rating: r.avgRating, count: r.ratingCount) { score in Task { await model.rate(score, session) } }
-                if let mine = r.myRating {
-                    Text("You rated it \(mine) star\(mine == 1 ? "" : "s")").font(.caption).foregroundStyle(AppColors.textSecondary)
-                } else {
-                    Text("Tap a star to rate").font(.caption).foregroundStyle(AppColors.textSecondary)
-                }
-            }
+            // Title, then meta, then the lede; rating and tags follow quietly (the stars stay tappable,
+            // with a VoiceOver hint instead of a permanent "tap a star" line).
             metaRow(r)
             if !r.description.isEmpty {
-                Text(r.description).font(AppTypography.reading).foregroundStyle(AppColors.textSecondary)
+                Text(r.description).font(AppTypography.note).foregroundStyle(AppColors.textSecondary)
             }
+            RatingView(rating: r.avgRating, count: r.ratingCount) { score in Task { await model.rate(score, session) } }
+                .padding(.vertical, -Spacing.xs)   // the 44pt star targets need no extra air around them
+                .accessibilityValue(r.myRating.map { "You rated it \($0)" } ?? "")
             if !r.categories.isEmpty {
-                Text(r.categories.map(\.name).joined(separator: " · ")).font(.footnote.weight(.medium)).foregroundStyle(AppColors.secondary)
+                Text(r.categories.map(\.name).joined(separator: " · ")).font(.footnote.weight(.semibold)).foregroundStyle(AppColors.primary)
             }
             tabs
             switch tab {
@@ -113,7 +122,7 @@ struct RecipeDetailView: View {
     private var tabs: some View {
         HStack(spacing: 0) {
             ForEach(DetailTab.allCases) { t in
-                Button { withAnimation(.snappy(duration: 0.2)) { tab = t } } label: {
+                Button { withAnimation(tabAnimation) { tab = t } } label: {
                     Text(t.rawValue).font(AppTypography.label)
                         .foregroundStyle(tab == t ? AppColors.textPrimary : AppColors.textSecondary)
                         .frame(maxWidth: .infinity, minHeight: Size.tap)
@@ -125,7 +134,7 @@ struct RecipeDetailView: View {
                 .accessibilityAddTraits(tab == t ? .isSelected : [])
             }
         }
-        .overlay(alignment: .bottom) { Rectangle().fill(AppColors.separator).frame(height: 0.5) }
+        .overlay(alignment: .bottom) { Rectangle().fill(AppColors.rule).frame(height: 1) }
     }
 
     // MARK: Tab content
@@ -141,13 +150,13 @@ struct RecipeDetailView: View {
         }
         ForEach(Array(r.ingredientSections.enumerated()), id: \.offset) { sectionIndex, section in
             VStack(alignment: .leading, spacing: 0) {
-                if let heading = section.heading {
-                    Text(heading).font(.subheadline.weight(.semibold)).foregroundStyle(AppColors.secondary).padding(.top, Spacing.xs)
-                }
+                if let heading = section.heading { listHeading(heading) }
                 ForEach(Array(section.lines.enumerated()), id: \.offset) { lineIndex, line in
                     let key = "\(sectionIndex)-\(lineIndex)"
                     IngredientRow(text: UnitConversion.convert(line, to: units), isChecked: picked.contains(key)) {
-                        withAnimation(.snappy(duration: 0.15)) { if picked.contains(key) { picked.remove(key) } else { picked.insert(key) } }
+                        withAnimation(reduceMotion ? nil : .snappy(duration: 0.15)) {
+                            if picked.contains(key) { picked.remove(key) } else { picked.insert(key) }
+                        }
                     }
                 }
             }
@@ -169,24 +178,33 @@ struct RecipeDetailView: View {
         if let n = r.nutrition { nutrition(n) }
     }
 
+    /// The method as a ruled list: an italic terracotta numeral beside each step, a rule-blue line beneath.
     private func steps(_ r: RecipeDetail) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.m) {
+        VStack(alignment: .leading, spacing: 0) {
             if r.steps.isEmpty { Text("No method yet.").foregroundStyle(AppColors.textSecondary) }
             ForEach(r.numberedSteps) { step in
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    if let heading = step.heading {
-                        Text(heading).font(.subheadline.weight(.semibold)).foregroundStyle(AppColors.secondary).padding(.top, Spacing.xs)
-                    }
+                VStack(alignment: .leading, spacing: 0) {
+                    if let heading = step.heading { listHeading(heading) }
                     HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
-                        Text("\(step.number)").font(.headline.monospacedDigit()).foregroundStyle(AppColors.onPrimary)
-                            .frame(width: 28, height: 28).background(AppColors.primary, in: Circle()).accessibilityHidden(true)
-                        Text(UnitConversion.convert(step.text, to: units)).font(AppTypography.reading).foregroundStyle(AppColors.textPrimary).lineSpacing(3)
+                        Text("\(step.number)").font(AppTypography.stepNumeral.monospacedDigit()).foregroundStyle(AppColors.primary)
+                            .frame(minWidth: stepNumeralWidth, alignment: .leading).accessibilityHidden(true)
+                        Text(UnitConversion.convert(step.text, to: units)).font(AppTypography.reading).foregroundStyle(AppColors.textPrimary)
+                            .lineSpacing(3).frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .padding(.vertical, Spacing.s)
+                    .overlay(alignment: .bottom) { RuledLine() }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Step \(step.number). \(UnitConversion.convert(step.text, to: units))")
                 }
             }
         }
+    }
+
+    /// A section heading inside an ingredient or step list: italic, in the accent.
+    private func listHeading(_ text: String) -> some View {
+        Text(text).font(AppTypography.sectionHeading).foregroundStyle(AppColors.primary)
+            .padding(.top, Spacing.m).padding(.bottom, Spacing.xxs)
+            .accessibilityAddTraits(.isHeader)
     }
 
     @ViewBuilder private func notes(_ r: RecipeDetail) -> some View {
@@ -248,7 +266,7 @@ struct RecipeDetailView: View {
     // MARK: Chrome
 
     private func startBar(_ r: RecipeDetail) -> some View {
-        PrimaryButton(title: "Start Cooking", systemImage: "flame") { showingCook = true }
+        PrimaryButton(title: "Start cooking", systemImage: "flame") { showingCook = true }
             .disabled(r.steps.isEmpty).opacity(r.steps.isEmpty ? 0.5 : 1)
     }
 

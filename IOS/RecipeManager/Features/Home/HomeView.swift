@@ -3,7 +3,7 @@ import SwiftUI
 @MainActor @Observable
 final class HomeModel {
     enum Filter: String, CaseIterable, Identifiable {
-        case all = "All", favorites = "Favorites", recent = "Recently Added"
+        case all = "All", favorites = "Favorites"
         var id: String { rawValue }
     }
 
@@ -19,7 +19,7 @@ final class HomeModel {
             var query = ["per_page": "12", "sort": "newest"]
             if favorites { query["favorites"] = "1" }
             let page: Page<RecipeSummary> = try await session.run { [query] in try await $0.get("/recipes", query: query) }
-            picks = filter == .recent ? page.items.filter { Self.isRecent($0) } : page.items
+            picks = page.items
             let colls: ItemList<CollectionSummary> = try await session.run { try await $0.get("/collections") }
             collections = colls.items
             error = nil
@@ -29,9 +29,10 @@ final class HomeModel {
         hasLoaded = true
     }
 
-    private static func isRecent(_ recipe: RecipeSummary) -> Bool {
-        guard let created = recipe.createdAt else { return false }
-        return created > Date.now.addingTimeInterval(-14 * 24 * 3600)
+    /// The admin's site name titles the shelf; it's remembered so the title doesn't flicker (or vanish offline).
+    func loadSiteName(_ session: Session) async {
+        guard let info: SiteInfo = try? await session.run({ try await $0.get("/site") }) else { return }
+        UserDefaults.standard.set(info.name.trimmingCharacters(in: .whitespaces), forKey: HomeView.siteNameKey)
     }
 
     func toggleFavorite(_ recipe: RecipeSummary, _ session: Session) async {
@@ -49,64 +50,45 @@ final class HomeModel {
 }
 
 struct HomeView: View {
+    static let siteNameKey = "siteName"
+
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     @State private var model = HomeModel()
-    @State private var path: [AppRoute] = []
-
-    private var greeting: String {
-        switch Calendar.current.component(.hour, from: .now) {
-        case 5..<12: "Good morning,"
-        case 12..<18: "Good afternoon,"
-        default: "Good evening,"
-        }
-    }
+    @State private var showingProfile = false
+    @AppStorage(HomeView.siteNameKey) private var siteName = ""
 
     var body: some View {
-        NavigationStack(path: $path) {
-            VerticalScroll {
-                VStack(alignment: .leading, spacing: Spacing.xl) {
-                    header
-                    VStack(alignment: .leading, spacing: Spacing.s) {
-                        SearchBarButton { app.openSearch() }
-                        chips
-                    }
-                    .screenPadding()
-                    quickPicks
-                    collections
-                    planAndShop
+        VerticalScroll {
+            VStack(alignment: .leading, spacing: Spacing.xl) {
+                VStack(alignment: .leading, spacing: Spacing.s) {
+                    chips
+                    shelf
                 }
-                .padding(.top, Spacing.xs).padding(.bottom, Spacing.xl)
+                collections
             }
-            .background(AppColors.background)
-            .withAppTabBar()
-            .onChange(of: app.homeRequest) { path = [] }
-            .toolbar(.hidden, for: .navigationBar)
-            .appDestinations()
-            .task(id: "\(model.filter.rawValue)#\(session.dataVersion)") { await model.load(session) }
-            .refreshable { await model.load(session) }
-            .errorAlert($model.error)
-            .onChange(of: app.pendingRecipeID, initial: true) {
-                if let id = app.pendingRecipeID { path.append(.recipe(id)); app.pendingRecipeID = nil }
+            .padding(.bottom, Spacing.xl)
+        }
+        .background(AppColors.background)
+        .navigationTitle(siteName.isEmpty ? "Recipes" : siteName)
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Add recipe", systemImage: "plus") { app.showingAdd = true }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { showingProfile = true } label: { AvatarView(name: session.user?.username ?? "", size: 30) }
+                    .accessibilityLabel("Profile and settings")
             }
         }
+        .sheet(isPresented: $showingProfile) { ProfileView() }
+        .task(id: "\(model.filter.rawValue)#\(session.dataVersion)") { await model.load(session) }
+        .task(id: session.dataVersion) { await model.loadSiteName(session) }
+        .refreshable { await model.load(session) }
+        .errorAlert($model.error)
     }
 
     // MARK: Sections
-
-    private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(greeting).font(.system(.title, design: .serif, weight: .regular)).foregroundStyle(AppColors.textPrimary)
-                Text(session.user?.username ?? "").font(.system(.title, design: .serif, weight: .bold)).foregroundStyle(AppColors.textPrimary)
-            }
-            .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
-            Spacer()
-            Button { app.tab = .profile } label: { AvatarView(name: session.user?.username ?? "") }
-                .buttonStyle(.plain).accessibilityLabel("Profile")
-        }
-        .screenPadding()
-    }
 
     private var chips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -115,12 +97,16 @@ struct HomeView: View {
                     FilterChip(title: f.rawValue, isSelected: model.filter == f) { model.filter = f }
                 }
             }
+            .screenPadding()
         }
     }
 
-    private var quickPicks: some View {
+    /// The shelf: the newest recipes, or your favorites.
+    private var shelf: some View {
         VStack(alignment: .leading, spacing: Spacing.s) {
-            SectionHeader(title: "Quick Picks") { path.append(.recipeList(model.filter == .favorites ? .favorites : .all)) }
+            SectionHeader(title: model.filter == .favorites ? "Favorites" : "Newest") {
+                app.push(.recipeList(model.filter == .favorites ? .favorites : .all), on: .recipes)
+            }
             if model.picks.isEmpty && model.hasLoaded {
                 Text(emptyMessage).font(.subheadline).foregroundStyle(AppColors.textSecondary).screenPadding().padding(.vertical, Spacing.m)
             } else {
@@ -133,13 +119,12 @@ struct HomeView: View {
         switch model.filter {
         case .all: "No recipes yet. Tap + to add your first."
         case .favorites: "Tap the heart on a recipe to keep it here."
-        case .recent: "Nothing added in the last two weeks."
         }
     }
 
     private var collections: some View {
         VStack(alignment: .leading, spacing: Spacing.s) {
-            SectionHeader(title: "Your Collections") { app.tab = .collections }
+            SectionHeader(title: "Your collections") { app.tab = .collections }
             if model.collections.isEmpty && model.hasLoaded {
                 Text("Group recipes into collections from the Collections tab.").font(.subheadline)
                     .foregroundStyle(AppColors.textSecondary).screenPadding()
@@ -156,41 +141,17 @@ struct HomeView: View {
             }
         }
     }
-
-    private var planAndShop: some View {
-        VStack(alignment: .leading, spacing: Spacing.s) {
-            SectionHeader(title: "Plan & Shop", actionTitle: nil)
-            HStack(spacing: Spacing.s) {
-                shortcut("Meal Plan", "calendar", .mealPlan)
-                shortcut("Shopping List", "cart", .shoppingList)
-            }
-            .screenPadding()
-        }
-    }
-
-    private func shortcut(_ title: String, _ symbol: String, _ route: AppRoute) -> some View {
-        NavigationLink(value: route) {
-            HStack(spacing: Spacing.xs) {
-                Image(systemName: symbol).foregroundStyle(AppColors.primary)
-                Text(title).font(AppTypography.label).foregroundStyle(AppColors.textPrimary)
-                Spacer(minLength: 0)
-            }
-            .padding(Spacing.m).frame(maxWidth: .infinity, minHeight: Size.tap)
-            .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
-            .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 0.5))
-        }
-        .buttonStyle(.plain)
-    }
 }
 
+/// The account monogram: the user's initial in italic Alegreya, white on the accent fill.
 struct AvatarView: View {
     let name: String
     var size: CGFloat = Size.avatar
 
     var body: some View {
         Text(String(name.first ?? "?").uppercased())
-            .font(.system(size: size * 0.42, weight: .semibold, design: .serif)).foregroundStyle(AppColors.onPrimary)
-            .frame(width: size, height: size).background(AppColors.secondary, in: Circle())
+            .font(AppTypography.monogram(size: size * 0.5)).foregroundStyle(AppColors.onPrimary)
+            .frame(width: size, height: size).background(AppColors.primaryFill, in: Circle())
             .accessibilityHidden(true)
     }
 }

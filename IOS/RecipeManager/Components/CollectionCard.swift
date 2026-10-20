@@ -19,7 +19,8 @@ struct CollectionCard: View {
         }
         .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
         .clipShape(RoundedRectangle(cornerRadius: Radius.card))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 0.5))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 1))
+        .shadow(color: AppColors.textPrimary.opacity(0.05), radius: 1.5, y: 1)
         .accessibilityElement(children: .combine)
     }
 }

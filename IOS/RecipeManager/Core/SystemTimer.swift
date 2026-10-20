@@ -23,14 +23,15 @@ enum SystemTimer {
     static let burstInterval = 10
     static let burstCount = 6
 
-    static func schedule(id: UUID, seconds: Int, title: String, detail: String) async -> Outcome {
+    /// `name` is what the cook called this timer ("Pasta", "Step 3"); several can be scheduled at once, each under its own id.
+    static func schedule(id: UUID, seconds: Int, name: String, recipeTitle: String) async -> Outcome {
         if #available(iOS 26.1, *) {
-            switch await scheduleAlarm(id: id, seconds: seconds, title: title, detail: detail) {
+            switch await scheduleAlarm(id: id, seconds: seconds, name: name, recipeTitle: recipeTitle) {
             case .some(let outcome): return outcome
             case .none: break   // AlarmKit refused; try notifications
             }
         }
-        return await scheduleNotifications(id: id, seconds: seconds, title: title, detail: detail)
+        return await scheduleNotifications(id: id, seconds: seconds, name: name, recipeTitle: recipeTitle)
     }
 
     static func cancel(id: UUID) {
@@ -50,7 +51,7 @@ enum SystemTimer {
     // MARK: AlarmKit
 
     @available(iOS 26.1, *)
-    private static func scheduleAlarm(id: UUID, seconds: Int, title: String, detail: String) async -> Outcome? {
+    private static func scheduleAlarm(id: UUID, seconds: Int, name: String, recipeTitle: String) async -> Outcome? {
         let manager = AlarmManager.shared
         if manager.authorizationState == .notDetermined {
             do { _ = try await manager.requestAuthorization() }
@@ -62,11 +63,12 @@ enum SystemTimer {
         }
 
         let presentation = AlarmPresentation(
-            alert: AlarmPresentation.Alert(title: "\(title): time's up"),
-            countdown: AlarmPresentation.Countdown(title: LocalizedStringResource(stringLiteral: title)),
+            alert: AlarmPresentation.Alert(title: "\(name): time's up"),
+            countdown: AlarmPresentation.Countdown(title: LocalizedStringResource(stringLiteral: name)),
             paused: nil)
+        // `detail` carries the timer's name, so the Live Activity can tell "Pasta" from "Sauce".
         let attributes = AlarmAttributes(presentation: presentation,
-                                         metadata: TimerMetadata(recipeTitle: title, detail: detail),
+                                         metadata: TimerMetadata(recipeTitle: recipeTitle, detail: name),
                                          tintColor: ThemeStore.shared.theme.tint)
         let configuration = AlarmManager.AlarmConfiguration.timer(duration: TimeInterval(seconds), attributes: attributes, sound: .default)
         do {
@@ -82,14 +84,15 @@ enum SystemTimer {
 
     private static func notificationIDs(for id: UUID) -> [String] { (0..<burstCount).map { "\(id.uuidString)-\($0)" } }
 
-    private static func scheduleNotifications(id: UUID, seconds: Int, title: String, detail: String) async -> Outcome {
+    private static func scheduleNotifications(id: UUID, seconds: Int, name: String, recipeTitle: String) async -> Outcome {
         let center = UNUserNotificationCenter.current()
         let granted = (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
         guard granted else { return .denied }
         for n in 0..<burstCount {
             let content = UNMutableNotificationContent()
-            content.title = "\(title): time's up"
-            content.body = detail.isEmpty ? "Your kitchen timer has finished." : detail
+            content.title = "\(name): time's up"
+            content.body = recipeTitle.isEmpty ? "Your kitchen timer has finished." : recipeTitle
+            content.threadIdentifier = id.uuidString   // each timer's rings group together
             content.sound = .default
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(seconds + n * burstInterval), repeats: false)
             try? await center.add(UNNotificationRequest(identifier: "\(id.uuidString)-\(n)", content: content, trigger: trigger))
