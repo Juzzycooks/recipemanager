@@ -40,12 +40,27 @@ final class Connectivity {
         update(wasOffline: wasOffline)
     }
 
+    /// What a state change means: only offline → online is a reconnect, so `onRegained` runs once per reconnect
+    /// however many path or reachability updates arrive while already online.
+    enum Change: Equatable { case none, lost, regained }
+
+    nonisolated static func change(wasOffline: Bool, isOffline: Bool) -> Change {
+        switch (wasOffline, isOffline) {
+        case (true, false): .regained
+        case (false, true): .lost
+        default: .none
+        }
+    }
+
     private func update(wasOffline: Bool) {
-        if wasOffline && !isOffline {
+        switch Self.change(wasOffline: wasOffline, isOffline: isOffline) {
+        case .regained:
             probing?.cancel(); probing = nil
             onRegained?()
-        } else if !wasOffline && isOffline {
+        case .lost:
             startProbing()
+        case .none:
+            break
         }
     }
 

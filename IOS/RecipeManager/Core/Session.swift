@@ -11,15 +11,12 @@ final class Session {
 
     /// Bumped whenever recipes change so the shelf reloads (create, edit, delete, undo).
     private(set) var dataVersion = 0
-    /// The most recently deleted recipe, offered for undo.
-    private(set) var deleted: DeletedRecipe?
-
-    struct DeletedRecipe: Equatable { let title: String; let token: String }
-
     private let defaults = UserDefaults.standard
     private static let serverKey = "serverURL"
 
     var isSignedIn: Bool { user != nil }
+    /// A server and token are saved (true before `/me` has answered at launch; what App Intents check).
+    var hasCredentials: Bool { baseURL != nil && token != nil }
     var lastServer: String { defaults.string(forKey: Self.serverKey) ?? "" }
 
     init() {
@@ -48,17 +45,8 @@ final class Session {
 
     func recipesChanged() { dataVersion += 1 }
 
-    func recipeDeleted(title: String, token: String) {
-        deleted = DeletedRecipe(title: title, token: token)
-        recipesChanged()
-    }
-
-    func dismissDeleted(_ token: String) { if deleted?.token == token { deleted = nil } }
-
-    func undoDelete() async {
-        guard let deleted else { return }
-        self.deleted = nil
-        let token = deleted.token
+    /// Brings back a deleted recipe (the server keeps it for 24 hours); the Undo after a delete.
+    func restoreDeleted(token: String) async {
         _ = try? await run { client in
             let _: RecipeDetail = try await client.send("POST", "/recipes/restore/\(token)")
         }
@@ -94,6 +82,7 @@ final class Session {
         defaults.set(url.absoluteString, forKey: Self.serverKey)   // only to prefill the sign-in screen next time
         await OfflineStore.shared.clear()                          // never show a previous account's data
         Outbox.shared.clear()
+        WidgetBridge.clear()
         baseURL = url
         token = response.token
         user = response.user
@@ -119,6 +108,7 @@ final class Session {
         Task { await OfflineStore.shared.clear() }
         URLCache.shared.removeAllCachedResponses()
         Outbox.shared.clear()
+        WidgetBridge.clear()                                       // widgets show "Sign in" instead of the old plan and list
     }
 
     /// The server deleted this account: forget everything on this phone too.

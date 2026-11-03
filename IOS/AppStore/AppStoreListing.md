@@ -53,6 +53,7 @@ COOK WITHOUT FUSS
 • Step-by-step cooking mode keeps the screen awake and shows one step at a time
 • Start timers straight from the method ("simmer for 20 minutes")
 • Timers ring like the Clock app, with a countdown on your Lock Screen and Dynamic Island
+• Hands-free: say "next", "repeat", "how much butter?" or "set a timer for ten minutes" with floury hands. Your voice is recognised on your iPhone and never sent anywhere
 
 PLAN THE WEEK, SHOP ONCE
 • Drop recipes into a weekly meal plan
@@ -122,8 +123,8 @@ Captions live in `Screenshots/generate.sh`; edit there and re-run it to change t
 > Server: `<demo server URL>`
 > Username: `<reviewer username>`   Password: `<reviewer password>`
 >
-> After signing in you can browse recipes, open one and tap Start Cooking (timers ring like the Clock app; alarms and notifications will ask permission), add a recipe from a link, build a meal plan and a shopping list, and try offline mode with airplane mode. Account deletion is under Profile → Account → Delete account. Please use the demo account for that, as it is reset daily.
+> After signing in you can browse recipes, open one and tap Start Cooking (timers ring like the Clock app; alarms and notifications will ask permission), add a recipe from a link, build a meal plan and a shopping list, and try offline mode with airplane mode. In cook mode the microphone button turns on hands-free voice commands (it asks for Microphone and Speech Recognition; recognition runs on the device only). Account deletion is under Profile → Account → Delete account. Please use the demo account for that, as it is reset daily.
 >
-> The app collects no data, has no analytics or advertising, and talks only to the server the user enters.
+> The app collects no data, has no analytics or advertising, and talks only to the server the user enters. Hands-free speech is recognised on the device (`requiresOnDeviceRecognition`); audio and transcripts are never stored or sent.
 
 Fill in the three placeholders once your demo server is up. Use a non-admin account.

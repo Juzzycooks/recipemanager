@@ -13,6 +13,11 @@ class CookJs(unittest.TestCase):
         result = subprocess.run(["node", os.path.join(root, "tests", "test_unitconv.js")], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_scaling(self):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        result = subprocess.run(["node", os.path.join(root, "tests", "test_units.js")], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

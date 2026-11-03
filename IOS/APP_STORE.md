@@ -19,7 +19,7 @@ A working guide for the first submission. It covers what is already done in the 
 | Version | 1.0.0 (build 1), read from `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` by the app **and** both extensions (they must match or validation fails) |
 | Icon | 1024 px light, dark and tinted, no transparency |
 | Privacy manifest | `PrivacyInfo.xcprivacy`: no tracking, no data collected, UserDefaults reason `CA92.1` |
-| Permission texts | Alarms, Local Network (app and share extension); Photos uses the system picker, so no permission is needed |
+| Permission texts | Alarms, Local Network (app and share extension), Microphone and Speech Recognition (hands-free cook mode, asked only when turned on); Photos uses the system picker, so no permission is needed |
 | Encryption | `ITSAppUsesNonExemptEncryption = NO` (only standard HTTPS), so no export-compliance paperwork |
 | Account deletion | *Profile → Account → Delete account* (needs server v1.0+ with `DELETE /api/v1/me`). Required for apps with sign-in (guideline 5.1.1(v)) |
 | Explaining the server | Sign-in screen says a server is needed and links to setup instructions (guidelines 2.3 and 4.2) |
@@ -64,6 +64,7 @@ xcodebuild -exportArchive -archivePath build/Spoonmate.xcarchive \
 - [ ] The local-network permission prompt when connecting to a server on your home Wi-Fi
 - [ ] Sign in, offline mode (airplane mode), queued changes syncing, account deletion
 - [ ] Small screen (iPhone SE class), large text (Dynamic Type) and VoiceOver on the main flows
+- [ ] Hands-free cook mode: the Microphone and Speech prompts, commands with music playing, an interruption (call or Siri), and a timer ringing while it listens (see HANDOFF.md)
 
 Internal testers (up to 100, your own team) need no review. External testers need a short TestFlight review.
 
@@ -140,7 +141,7 @@ Self-hosted apps are approved regularly, but **only when the reviewer can try th
 >
 > Enter the server address, username and password on the sign-in screen (tap "Get Started" then sign in). The account is a normal user; all features can be tried: browsing, search, cooking mode with timers, meal plan, shopping list, collections, and Profile → Account → Delete account (please use the demo account only for this last step if you need it; it can be recreated).
 >
-> Notes: the app uses the local-network permission only to reach servers on a user's home network; photos are chosen through the system picker; the timer uses AlarmKit on iOS 26.1+ and notifications on earlier versions. The app collects no data and contains no third-party SDKs.
+> Notes: the app uses the local-network permission only to reach servers on a user's home network; photos are chosen through the system picker; the timer uses AlarmKit on iOS 26.1+ and notifications on earlier versions; the microphone and speech recognition are used only for optional hands-free commands in cooking mode, recognised on the device. The app collects no data and contains no third-party SDKs.
 
 Also tick **"Sign-in required"** and enter the same credentials in the demo-account fields.
 

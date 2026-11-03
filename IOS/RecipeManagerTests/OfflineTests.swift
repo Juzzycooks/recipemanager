@@ -115,6 +115,23 @@ struct OfflineTests {
         let data = try JSONEncoder().encode(Credentials(server: "https://r.example", token: "rm_abc"))
         #expect(try JSONDecoder().decode(Credentials.self, from: data) == Credentials(server: "https://r.example", token: "rm_abc"))
     }
+
+    /// `onRegained` (outbox replay, sync and the unit-table refetch) fires only on offline → online, so repeated
+    /// "still online" updates after a reconnect don't refetch again.
+    @Test func reconnectFiresOncePerOfflineSpell() {
+        #expect(Connectivity.change(wasOffline: true, isOffline: false) == .regained)
+        #expect(Connectivity.change(wasOffline: false, isOffline: true) == .lost)
+        #expect(Connectivity.change(wasOffline: false, isOffline: false) == .none)
+        #expect(Connectivity.change(wasOffline: true, isOffline: true) == .none)
+
+        // Path and reachability updates as they might arrive: drop, probe fails, back, then more "online" updates.
+        let states = [false, true, true, false, false, false, true, false]
+        var regained = 0
+        for (was, now) in zip(states, states.dropFirst()) where Connectivity.change(wasOffline: was, isOffline: now) == .regained {
+            regained += 1
+        }
+        #expect(regained == 2)
+    }
 }
 
 private extension RecipeDetail {

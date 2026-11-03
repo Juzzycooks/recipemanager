@@ -85,6 +85,10 @@ final class OfflineSync {
                 await prefetch(Array(Set(urls)))
             }
 
+            // 5. Spotlight (changed and removed recipes only) and the recipe names Siri suggests in phrases.
+            await SpotlightIndexer.update(library: await OfflineStore.shared.allRecipes(), base: session.baseURL)
+            SpoonmateShortcuts.updateAppShortcutParameters()
+
             recipeCount = await OfflineStore.shared.recipeCount
             lastSync = .now
             UserDefaults.standard.set(lastSync, forKey: Self.lastSyncKey)

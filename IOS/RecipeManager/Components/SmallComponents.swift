@@ -143,6 +143,7 @@ struct IngredientRow: View {
     @ScaledMetric(relativeTo: .body) private var markWidth: CGFloat = 16
 
     var body: some View {
+        let lift = dashLift   // read here: the alignment closure below is Sendable
         Button(action: toggle) {
             HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
                 ZStack(alignment: .leading) {
@@ -150,7 +151,7 @@ struct IngredientRow: View {
                         Image(systemName: "checkmark").font(.footnote.weight(.bold))
                     } else {
                         Capsule().frame(width: 9, height: 2)
-                            .alignmentGuide(.firstTextBaseline) { $0[.bottom] + dashLift }
+                            .alignmentGuide(.firstTextBaseline) { $0[.bottom] + lift }
                     }
                 }
                 .foregroundStyle(AppColors.primary)

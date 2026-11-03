@@ -119,8 +119,10 @@ struct RecipeEditorView: View {
         .task { await load() }
         .onChange(of: photoItem) { Task { await loadPhoto() } }
         .errorAlert($error)
-        // Swiping the sheet down can't ask first, so it's held while there's unsaved work; Cancel asks instead.
+        // Swiping the sheet down is held while there's unsaved work, and the held swipe asks the same question as Cancel.
+        // This works both as the edit sheet's root and pushed inside the Add sheet (where discarding closes the sheet).
         .interactiveDismissDisabled(isSaving || hasUnsavedWork)
+        .onSheetDismissAttempt { if !isSaving { cancel() } }
     }
 
     private func cancel() {
@@ -140,8 +142,10 @@ struct RecipeEditorView: View {
                     }
                 }
                 .frame(maxWidth: .infinity).frame(height: 190).clipped()
+                // PhotosPicker's label closure is Sendable, so it captures this value rather than the view's state.
+                let photoLabel = photoData == nil && existingImage.isEmpty && importImageName.isEmpty ? "Add photo" : "Change photo"
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label(photoData == nil && existingImage.isEmpty && importImageName.isEmpty ? "Add photo" : "Change photo", systemImage: "camera").font(.subheadline.weight(.medium)).foregroundStyle(.white)
+                    Label(photoLabel, systemImage: "camera").font(.subheadline.weight(.medium)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity, minHeight: Size.tap).background(.black.opacity(0.45))
                 }
             }

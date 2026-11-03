@@ -6,6 +6,10 @@
 	<false/>
 	<key>NSPrivacyTrackingDomains</key>
 	<array/>
+	<!-- Nothing is collected. Hands-free cook mode uses the microphone and Speech, but recognition is on-device only
+	     (requiresOnDeviceRecognition) and audio and transcripts never leave the phone, so it is not "collected" audio
+	     data in Apple's sense and App Store Connect's answer stays "Data Not Collected". Speech, AVAudioSession and
+	     AVSpeechSynthesizer are not required-reason APIs. -->
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array/>
 	<key>NSPrivacyAccessedAPITypes</key>

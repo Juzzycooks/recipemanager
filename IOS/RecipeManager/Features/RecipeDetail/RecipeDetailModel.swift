@@ -120,13 +120,15 @@ final class RecipeDetailModel {
         } catch { self.error = error.localizedDescription }
     }
 
-    /// Returns true when deleted (the caller pops the screen).
-    func delete(_ session: Session) async -> Bool {
+    /// Returns true when deleted (the caller pops the screen). Offers Undo, which restores it from the server's trash.
+    func delete(_ session: Session, _ app: AppState) async -> Bool {
         struct Result: Decodable, Sendable { let restoreToken: String }
         guard let title = recipe?.title else { return false }
         do {
             let result: Result = try await session.run { [id] in try await $0.send("DELETE", "/recipes/\(id)") }
-            session.recipeDeleted(title: title, token: result.restoreToken)
+            session.recipesChanged()
+            let token = result.restoreToken
+            await app.offerUndo("Deleted “\(title)”") { await session.restoreDeleted(token: token) }
             return true
         } catch { self.error = error.localizedDescription; return false }
     }

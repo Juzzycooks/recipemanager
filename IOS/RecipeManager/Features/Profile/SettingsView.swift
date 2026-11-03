@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(Session.self) private var session
     @AppStorage("appearance") private var appearance = Appearance.system.rawValue
     @AppStorage("keepAwake") private var keepAwake = true
+    @AppStorage(HandsFreeController.readStepsKey) private var readStepsAloud = false
     @AppStorage(UnitSystem.storageKey) private var unitSystem = UnitSystem.original.rawValue
     @AppStorage("showStoreLinks") private var showStoreLinks = true
     @AppStorage("recentSearches") private var recentSearches = Data()
@@ -26,8 +27,11 @@ struct SettingsView: View {
             } header: { Text("Units") } footer: {
                 Text("Converts weights, volumes and oven temperatures when you view a recipe. The saved recipe isn't changed, and you can switch a single recipe from its Ingredients tab.")
             }
-            Section("Cooking") {
+            Section {
                 Toggle("Keep screen awake while cooking", isOn: $keepAwake)
+                Toggle("Read steps aloud in hands-free", isOn: $readStepsAloud)
+            } header: { Text("Cooking") } footer: {
+                Text("Turn on hands-free with the microphone button in cook mode, then say “next”, “repeat” or “set a timer for ten minutes”. Speech is recognised on this iPhone and never leaves it.")
             }
             Section("Shopping list") {
                 Toggle("Show store search links", isOn: $showStoreLinks)

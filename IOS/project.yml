@@ -4,14 +4,16 @@ options:
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
+  xcodeVersion: "27.0"                          # LastUpgradeCheck 2700, matches the project Xcode last upgraded
 settings:
   base:
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    STRING_CATALOG_GENERATE_SYMBOLS: YES
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "11"
+    CURRENT_PROJECT_VERSION: "12"
     CODE_SIGN_STYLE: Automatic
-    # Set your Apple Developer Team here (or choose it once in Xcode → Signing & Capabilities):
-    # DEVELOPMENT_TEAM: ABCDE12345
+    # DEVELOPMENT_TEAM is set per target below (app, ShareExtension, TimerWidget); the test bundle has none.
     TARGETED_DEVICE_FAMILY: "1"                 # iPhone only (the iPad layout has not been designed or tested)
     SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO   # don't offer the iPhone app on Apple-silicon Macs ...
     SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO    # ... or Apple Vision Pro until it has been tried there
@@ -30,12 +32,16 @@ targets:
       path: RecipeManager/RecipeManager.entitlements
       properties:
         keychain-access-groups: ["$(AppIdentifierPrefix)com.justinrahme.Spoonmate.shared"]
+        com.apple.security.application-groups: [group.com.justinrahme.Spoonmate]   # widget snapshots (Shared/WidgetSnapshot.swift)
     info:
       path: RecipeManager/Resources/Info.plist
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Spoonmate
+        CFBundleURLTypes:                        # spoonmate://recipe/12, ://cook/12, ://plan, ://shop (widgets; Shared/DeepLink.swift)
+          - CFBundleURLName: com.justinrahme.Spoonmate
+            CFBundleURLSchemes: [spoonmate]
         UILaunchScreen:
           UIColorName: Background                # the cream/dark ground, so there is no white flash at launch
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
@@ -49,29 +55,53 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         NSSupportsLiveActivities: true
         NSAlarmKitUsageDescription: Kitchen timers ring like the Clock app, even when your phone is on silent.
+        NSMicrophoneUsageDescription: Hands-free cook mode listens for commands like “next step” while you cook. It only listens while cook mode is open and hands-free is on.
+        NSSpeechRecognitionUsageDescription: Hands-free cook mode turns what you say into commands. This happens on your iPhone; your voice is never sent anywhere.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.Spoonmate
+        DEVELOPMENT_TEAM: 6HTZR75UR8
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.food-and-drink
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
   RecipeManagerTimerWidget:
+    # The timer Live Activity plus the Tonight's Dinner and Shopping list widgets. It reads the App Group snapshots and,
+    # with the shared keychain credentials, calls the API itself (refresh, tick), hence the client and models.
     type: app-extension
     platform: iOS
-    sources: [TimerWidget, Shared]
+    sources:
+      - TimerWidget
+      - Shared
+      - path: RecipeManager/Core/APIClient.swift
+      - path: RecipeManager/Core/HTMLEntities.swift
+      - path: RecipeManager/Core/Models.swift
+      - path: RecipeManager/Resources/Fonts/Alegreya-Bold.ttf      # titles and the letter tile (about 215 KB together)
+        buildPhase: resources
+      - path: RecipeManager/Resources/Fonts/Alegreya-BoldItalic.ttf
+        buildPhase: resources
+    entitlements:
+      path: TimerWidget/TimerWidget.entitlements
+      properties:
+        keychain-access-groups: ["$(AppIdentifierPrefix)com.justinrahme.Spoonmate.shared"]
+        com.apple.security.application-groups: [group.com.justinrahme.Spoonmate]
     info:
       path: TimerWidget/Info.plist
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: Kitchen Timer
+        UIAppFonts:
+          - Alegreya-Bold.ttf
+          - Alegreya-BoldItalic.ttf
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.Spoonmate.TimerWidget
+        DEVELOPMENT_TEAM: 6HTZR75UR8
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         SKIP_INSTALL: YES
@@ -108,6 +138,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.justinrahme.Spoonmate.Share
+        DEVELOPMENT_TEAM: 6HTZR75UR8
         TARGETED_DEVICE_FAMILY: "1"
         SKIP_INSTALL: YES
   RecipeManagerTests:

@@ -49,12 +49,19 @@ struct MainView: View {
         }
         .task {
             // Reconnect: send what was changed offline, refresh what's on screen, and top up the offline copy.
-            Connectivity.shared.onRegained = { Task { await catchUp() } }
+            // The unit table is refetched here too (once per reconnect; a failure keeps the saved copy).
+            // It runs beside catchUp so a long offline sync doesn't hold it up.
+            Connectivity.shared.onRegained = {
+                Task { await catchUp() }
+                Task { await session.refreshUnitTable() }
+            }
             await catchUp()
         }
         .onChange(of: scenePhase) {
             // Coming back to the app: something may have been added elsewhere (the Safari extension, another device).
             if scenePhase == .active { session.recipesChanged(); Task { await catchUp() } }
+            // Leaving the app ends any Undo offer, so a held-back change (Clear completed) isn't lost if iOS closes it.
+            if scenePhase == .background { Task { await app.undo.commitNow() } }
         }
         .sheet(isPresented: $app.showingAdd) { AddRecipeView() }
     }
@@ -75,7 +82,6 @@ private struct TabStack<Root: View>: View {
 
 /// Offline/sync, the running timer, toasts and the undo banner, stacked above whatever ends the screen.
 struct StatusStack: View {
-    @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
     @Environment(CookTimer.self) private var timer
     @Environment(OfflineSync.self) private var sync
@@ -84,7 +90,7 @@ struct StatusStack: View {
     private var isSyncing: Bool { if case .syncing = sync.state { true } else { false } }
     private var hasContent: Bool {
         Connectivity.shared.isOffline || Outbox.shared.isReplaying || isSyncing
-            || timer.isActive || app.notice != nil || session.deleted != nil
+            || timer.isActive || app.notice != nil || app.undo.current != nil
     }
 
     var body: some View {
@@ -93,20 +99,22 @@ struct StatusStack: View {
                 OfflineBanner()
                 if timer.isActive { TimerPill().transition(.bannerSlide(reduceMotion)) }
                 if let notice = app.notice { Toast(text: notice) }
-                UndoBanner()
+                UndoPill()
             }
         }
         .padding(.vertical, hasContent ? Spacing.xs : 0)
         .frame(maxWidth: .infinity)
         .animation(.snappy, value: app.notice)
         .animation(.snappy, value: timer.isActive)
-        .animation(.snappy, value: session.deleted?.token)
+        .animation(.snappy, value: app.undo.current?.id)
     }
 }
 
 extension MainView {
     /// Replays queued changes, then keeps the offline copy current (skipped while offline).
     @MainActor fileprivate func catchUp() async {
+        // Ticks made on the Shopping list widget while offline join the queue first (even if still offline).
+        await WidgetBridge.drainPendingTicks(session)
         guard !Connectivity.shared.isOffline else { return }
         if Outbox.shared.count > 0 { await Outbox.shared.replay(session) }
         await sync.syncIfNeeded(session)
@@ -157,29 +165,29 @@ struct Toast: View {
     }
 }
 
-/// "Deleted “X”. Undo": the server keeps the recipe for 24 hours; the banner stays for a few seconds.
-struct UndoBanner: View {
-    @Environment(Session.self) private var session
+/// The one Undo offer (`AppState.undo`): what changed, and a 44pt Undo button. It expires on its own (`UndoCenter`).
+struct UndoPill: View {
+    @Environment(AppState.self) private var app
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        if let deleted = session.deleted {
+        if let offer = app.undo.current {
             HStack(spacing: Spacing.s) {
-                Text("Deleted “\(deleted.title)”").lineLimit(1).foregroundStyle(AppColors.textPrimary)
+                Text(offer.message).lineLimit(2).foregroundStyle(AppColors.textPrimary)
                 Spacer(minLength: Spacing.xs)
-                Button("Undo") { Task { await session.undoDelete() } }.fontWeight(.semibold)
+                Button("Undo") { Task { await app.undo.perform() } }
+                    .fontWeight(.semibold).foregroundStyle(AppColors.primary)
+                    .frame(minWidth: Size.tap, minHeight: Size.tap).contentShape(Rectangle())
+                    .accessibilityHint("Puts it back")
             }
             .font(.subheadline)
-            .padding(.horizontal, Spacing.m).padding(.vertical, Spacing.s)
-            .background(AppColors.card, in: Capsule())
-            .overlay(Capsule().stroke(AppColors.separator))
+            .padding(.leading, Spacing.m).padding(.trailing, Spacing.xs)
+            .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
+            .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 1))
             .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
             .padding(.horizontal, Spacing.screen)
             .transition(.bannerSlide(reduceMotion))
-            .task(id: deleted.token) {
-                try? await Task.sleep(for: .seconds(8))
-                session.dismissDeleted(deleted.token)
-            }
+            .accessibilityElement(children: .contain)
         }
     }
 }

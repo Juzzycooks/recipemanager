@@ -11,8 +11,6 @@ final class MealPlanModel {
     var weekStart = MealPlanModel.monday(of: .now)
     var entries: [PlanEntry] = []
     var error: String?
-    /// The entry just removed, offered for undo.
-    var removed: PlanEntry?
     private var shareUrl: String?
 
     var days: [Date] { (0..<7).compactMap { Self.calendar.date(byAdding: .day, value: $0, to: weekStart) } }
@@ -48,10 +46,10 @@ final class MealPlanModel {
         } catch { self.error = "Couldn't load this week's plan. \(error.localizedDescription)" }
     }
 
-    /// Removes at once (queued when offline) and keeps the entry so Undo can put it back.
-    func remove(_ entry: PlanEntry, _ session: Session) async {
+    /// Removes at once (queued when offline) and offers Undo, which puts the entry back.
+    func remove(_ entry: PlanEntry, _ session: Session, _ app: AppState) async {
         withAnimation(.listChange) { entries.removeAll { $0.id == entry.id } }
-        removed = entry
+        let offer = await app.offerUndo("Removed “\(entry.recipe.title)”") { await self.undoRemove(entry, session) }
         if entry.id < 0 {   // added offline, not sent yet
             Outbox.shared.cancelPlanAdd(localID: entry.id)
             await persist(session)
@@ -61,15 +59,13 @@ final class MealPlanModel {
             _ = try await session.runOrQueue(.deletePlanEntry(entryID: entry.id)) { try await $0.send("DELETE", "/mealplan/\(entry.id)") }
             await persist(session)
         } catch {
-            removed = nil
+            app.undo.withdraw(offer)
             self.error = "Couldn't remove “\(entry.recipe.title)” from the plan. \(error.localizedDescription)"
             await load(session)
         }
     }
 
-    func undoRemove(_ session: Session) async {
-        guard let entry = removed else { return }
-        removed = nil
+    func undoRemove(_ entry: PlanEntry, _ session: Session) async {
         if entry.id > 0, Outbox.shared.cancelPlanDelete(entryID: entry.id) {   // the removal never left this phone
             withAnimation(.listChange) { entries.append(entry) }
             await persist(session)
@@ -165,7 +161,6 @@ struct MealPlanView: View {
     @Environment(AppState.self) private var app
     @State private var model = MealPlanModel()
     @State private var picking: PlanTarget?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .subheadline) private var dayColumn: CGFloat = 54
     @ScaledMetric(relativeTo: .body) private var thumbSize: CGFloat = 48
 
@@ -182,14 +177,6 @@ struct MealPlanView: View {
         .listStyle(.plain)
         .contentMargins(.bottom, Spacing.xl, for: .scrollContent)
         .appBackground()
-        .overlay(alignment: .bottom) {
-            if let removed = model.removed {
-                UndoToast(text: "Removed “\(removed.recipe.title)”", id: removed.id,
-                          onUndo: { Task { await model.undoRemove(session) } },
-                          onExpire: { if model.removed == removed { model.removed = nil } })
-            }
-        }
-        .animation(reduceMotion ? nil : .snappy, value: model.removed)
         .navigationTitle("Meal plan")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -244,7 +231,7 @@ struct MealPlanView: View {
                 }
                 .planRow(first: index == 0)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    Button("Remove", systemImage: "trash", role: .destructive) { Task { await model.remove(entry, session) } }
+                    Button("Remove", systemImage: "trash", role: .destructive) { Task { await model.remove(entry, session, app) } }
                 }
             }
         }
@@ -293,9 +280,9 @@ struct MealPlanView: View {
                 }
             }
             Divider()
-            Button("Remove from plan", systemImage: "trash", role: .destructive) { Task { await model.remove(entry, session) } }
+            Button("Remove from plan", systemImage: "trash", role: .destructive) { Task { await model.remove(entry, session, app) } }
         }
-        .accessibilityAction(named: "Remove from plan") { Task { await model.remove(entry, session) } }
+        .accessibilityAction(named: "Remove from plan") { Task { await model.remove(entry, session, app) } }
     }
 }
 
@@ -309,40 +296,6 @@ private extension View {
     func planRow(first: Bool) -> some View {
         listRowInsets(EdgeInsets(top: first ? Spacing.xs : Spacing.xxs, leading: Spacing.screen, bottom: Spacing.xxs, trailing: Spacing.screen))
             .listRowBackground(Color.clear).listRowSeparator(.hidden)
-    }
-}
-
-/// "Removed “X”. Undo" for a change made on this screen; it stays a few seconds, like the recipe-delete banner.
-struct UndoToast: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let text: String
-    /// Restarts the timer when a different thing is removed.
-    let id: AnyHashable
-    let onUndo: () -> Void
-    let onExpire: () -> Void
-
-    init(text: String, id: some Hashable, onUndo: @escaping () -> Void, onExpire: @escaping () -> Void) {
-        self.text = text; self.id = AnyHashable(id); self.onUndo = onUndo; self.onExpire = onExpire
-    }
-
-    var body: some View {
-        HStack(spacing: Spacing.s) {
-            Text(text).lineLimit(2).foregroundStyle(AppColors.textPrimary)
-            Spacer(minLength: Spacing.xs)
-            Button("Undo", action: onUndo).fontWeight(.semibold).frame(minHeight: Size.tap)
-        }
-        .font(.subheadline)
-        .padding(.horizontal, Spacing.m).padding(.vertical, Spacing.xxs)
-        .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 1))
-        .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
-        .screenPadding().padding(.bottom, Spacing.s)
-        .transition(.bannerSlide(reduceMotion))
-        .task(id: id) {
-            UIAccessibility.post(notification: .announcement, argument: text)
-            try? await Task.sleep(for: .seconds(8))
-            if !Task.isCancelled { onExpire() }
-        }
     }
 }
 

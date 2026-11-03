@@ -4,8 +4,6 @@ import SwiftUI
 final class ShoppingModel {
     var list: ShoppingList?
     var error: String?
-    /// Ticked items taken off by "Clear completed" but not yet deleted, so Undo can put them back as they were.
-    private(set) var cleared: [ShoppingItem] = []
 
     var open: [ShoppingItem] { list?.items.filter { !$0.checked } ?? [] }
     var done: [ShoppingItem] { list?.items.filter(\.checked) ?? [] }
@@ -85,8 +83,8 @@ final class ShoppingModel {
         } catch { self.error = "Couldn't delete “\(item.name)”. \(error.localizedDescription)"; await load(session) }
     }
 
-    func clearEverything(_ session: Session) async {
-        await commitClear(session)
+    func clearEverything(_ session: Session, _ app: AppState) async {
+        await app.undo.commitNow()   // a pending "Clear completed" goes first, as it would have on its own
         do {
             try await session.run { try await $0.send("DELETE", "/shopping/items") }
             await load(session)
@@ -94,26 +92,31 @@ final class ShoppingModel {
         } catch { self.error = "Couldn't clear the list. \(error.localizedDescription)" }
     }
 
-    /// Takes the ticked items off now; they're deleted for real when the Undo offer ends (or the screen closes).
-    func clearCompleted(_ session: Session) async {
-        await commitClear(session)
+    /// Takes the ticked items off now; they're deleted for real when the Undo offer ends (a newer offer replaces it,
+    /// it times out, or the app goes to the background). Undo puts them back as they were.
+    func clearCompleted(_ session: Session, _ app: AppState) async {
+        // An earlier clear is sent first, while these are still ticked here, so its one-request "delete the ticked
+        // items" can't take these with it.
+        await app.undo.commitNow()
         let ticked = done
         guard !ticked.isEmpty else { return }
         withAnimation(.listChange) { list?.items.removeAll(where: \.checked) }
-        cleared = ticked
+        let count = ticked.count
+        await app.offerUndo("Cleared \(count) ticked item\(count == 1 ? "" : "s")",
+                            commit: { await self.commitClear(ticked, session) },
+                            undo: { self.undoClear(ticked) })
     }
 
-    func undoClear() {
-        guard !cleared.isEmpty else { return }
-        withAnimation(.listChange) { list?.items.append(contentsOf: cleared) }
-        cleared = []
+    func undoClear(_ items: [ShoppingItem]) {
+        // A reload in the meantime may already show them again (they're still on the server).
+        let missing = items.filter { item in !(list?.items.contains { $0.id == item.id } ?? true) }
+        guard !missing.isEmpty else { return }
+        withAnimation(.listChange) { list?.items.append(contentsOf: missing) }
     }
 
     /// Deletes what "Clear completed" took off (queued when offline).
-    func commitClear(_ session: Session) async {
-        let items = cleared
+    func commitClear(_ items: [ShoppingItem], _ session: Session) async {
         guard !items.isEmpty else { return }
-        cleared = []
         for item in items where item.id < 0 { Outbox.shared.cancelAdd(name: item.name) }
         let sent = items.filter { $0.id > 0 }
         do {
@@ -138,13 +141,13 @@ struct ShoppingListView: View {
     private enum Grouping: String, CaseIterable, Identifiable { case all = "All items", recipe = "By recipe"; var id: String { rawValue } }
 
     @Environment(Session.self) private var session
+    @Environment(AppState.self) private var app
     @AppStorage("showStoreLinks") private var showStoreLinks = true
     @State private var model = ShoppingModel()
     @State private var grouping = Grouping.all
     @State private var newItem = ""
     @State private var confirmClear = false
     @FocusState private var addFocused: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         List {
@@ -168,20 +171,11 @@ struct ShoppingListView: View {
         .appBackground()
         .listStyle(.insetGrouped)
         .scrollDismissesKeyboard(.interactively)
-        .overlay(alignment: .bottom) {
-            if !model.cleared.isEmpty {
-                let count = model.cleared.count
-                UndoToast(text: "Cleared \(count) ticked item\(count == 1 ? "" : "s")", id: model.cleared.map(\.id),
-                          onUndo: { model.undoClear() },
-                          onExpire: { Task { await model.commitClear(session) } })
-            }
-        }
-        .animation(reduceMotion ? nil : .snappy, value: model.cleared.isEmpty)
         .navigationTitle("Shopping list")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Clear completed", systemImage: "checkmark.circle") { Task { await model.clearCompleted(session) } }.disabled(model.done.isEmpty)
+                    Button("Clear completed", systemImage: "checkmark.circle") { Task { await model.clearCompleted(session, app) } }.disabled(model.done.isEmpty)
                     Button("Clear everything", systemImage: "trash", role: .destructive) { confirmClear = true }.disabled(model.list?.items.isEmpty ?? true)
                 } label: { Image(systemName: "ellipsis.circle") }.accessibilityLabel("List options")
             }
@@ -190,11 +184,12 @@ struct ShoppingListView: View {
                 Button("Done") { addFocused = false }
             }
         }
-        .task { await model.load(session) }
+        // Reloads on coming back to the app too (dataVersion), to pick up ticks made on the widget or another device;
+        // not while an Undo is on offer, which could bring back items a held-back "Clear completed" took off.
+        .task(id: session.dataVersion) { if model.list == nil || app.undo.current == nil { await model.load(session) } }
         .refreshable { await model.load(session) }
-        .onDisappear { Task { await model.commitClear(session) } }
         .confirmationDialog("Clear the whole list?", isPresented: $confirmClear, titleVisibility: .visible) {
-            Button("Clear everything", role: .destructive) { Task { await model.clearEverything(session) } }
+            Button("Clear everything", role: .destructive) { Task { await model.clearEverything(session, app) } }
         } message: { Text("This removes every item, ticked or not, and can't be undone.") }
         .errorAlert($model.error)
     }

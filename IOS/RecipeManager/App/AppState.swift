@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import Observation
 
 /// The system tab bar's sections. Add is an action (a toolbar button), Profile sits behind the avatar on Recipes.
@@ -45,6 +46,43 @@ final class AppState {
     func open(recipe id: Int) {
         tab = .recipes
         push(.recipe(id), on: .recipes)
+    }
+
+    /// A recipe that should go straight into cook mode once its page has loaded (Siri's "Cook …").
+    var pendingCook: Int?
+
+    /// Opens a recipe and starts cook mode on it.
+    func cook(recipe id: Int) {
+        pendingCook = id
+        if !isShowing(recipe: id) { open(recipe: id) }
+    }
+
+    /// True when that recipe's page is the screen on top of the current tab.
+    func isShowing(recipe id: Int) -> Bool { paths[tab]?.last == .recipe(id) }
+
+    /// Where a widget, Spotlight result or `spoonmate://` link points. Any sheet in the way is closed first.
+    func handle(_ link: DeepLink) {
+        showingAdd = false
+        switch link {
+        case .recipe(let id):
+            if !isShowing(recipe: id) { open(recipe: id) }   // already showing it: don't stack a second copy
+        case .cook(let id): cook(recipe: id)
+        case .plan: tab = .plan; paths[.plan] = []
+        case .shopping: tab = .shop; paths[.shop] = []
+        }
+    }
+
+    /// The one Undo offer, shown in `StatusStack` (see `UndoCenter`).
+    let undo = UndoCenter()
+
+    /// Offers to take a change back for a few seconds: `app.offerUndo("Removed “Soup”") { await … }`.
+    /// A newer offer replaces this one (which then commits). VoiceOver announces it, and gets longer to reach the button.
+    @discardableResult
+    func offerUndo(_ message: String, commit: @escaping @MainActor () async -> Void = {},
+                   undo action: @escaping @MainActor () async -> Void) async -> UndoCenter.Offer.ID {
+        let voiceOver = UIAccessibility.isVoiceOverRunning
+        if voiceOver { UIAccessibility.post(notification: .announcement, argument: "\(message). Undo available.") }
+        return await undo.offer(message, for: voiceOver ? .seconds(20) : nil, commit: commit, undo: action)
     }
 
     func say(_ text: String) {

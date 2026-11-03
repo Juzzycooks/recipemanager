@@ -18,6 +18,17 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.justinrahme.Spoonmate</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>spoonmate</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
@@ -31,6 +42,10 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Spoonmate connects to the recipe server you choose. If it runs on your home network, iOS asks for this permission so the app can reach it.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Hands-free cook mode listens for commands like “next step” while you cook. It only listens while cook mode is open and hands-free is on.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Hands-free cook mode turns what you say into commands. This happens on your iPhone; your voice is never sent anywhere.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIAppFonts</key>

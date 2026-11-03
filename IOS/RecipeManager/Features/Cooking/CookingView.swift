@@ -31,6 +31,8 @@ struct CookingView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let recipe: RecipeDetail
     var units: UnitSystem = .original
+    /// The recipe page's ½× / 1× / 2× / 3× choice; ingredient amounts are scaled, then converted. Method text isn't scaled (as on the web).
+    var scale: Double = 1
     let onFinished: () -> Void
     var onRate: ((Int) -> Void)? = nil
 
@@ -46,6 +48,10 @@ struct CookingView: View {
     @Environment(CookTimer.self) private var timer
     @AppStorage("keepAwake") private var keepAwake = true
     @State private var showingTimer = false
+    @Environment(\.scenePhase) private var scenePhase
+    /// Hands-free voice control (off unless the cook turned it on; see HandsFreeController).
+    @State private var handsFree = HandsFreeController()
+    @State private var showingVoiceHelp = false
     @ScaledMetric(relativeTo: .title3) private var checkbox: CGFloat = 30
     @ScaledMetric(relativeTo: .title3) private var dashLift: CGFloat = 7
 
@@ -58,6 +64,7 @@ struct CookingView: View {
         VStack(spacing: 0) {
             header
             pageTabs
+            if handsFree.isEnabled { handsFreeBar }
             if timer.isActive { CookTimerStack { showingTimer = true } }
             ZStack {
                 switch page {
@@ -77,8 +84,19 @@ struct CookingView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: index)
         .sensoryFeedback(.impact(weight: .light), trigger: checked)
         .sensoryFeedback(.selection, trigger: rating)
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = keepAwake }
-        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }   // the timers keep running
+        .sensoryFeedback(.impact(weight: .medium), trigger: handsFree.commandCount)
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = keepAwake
+            handsFree.onCommand = { perform($0) }
+            handsFree.appear()
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false   // the timers keep running
+            handsFree.disappear()
+        }
+        .onChange(of: scenePhase) { handsFree.setForeground(scenePhase == .active) }
+        .alert(item: $handsFree.notice) { notice in voiceAlert(notice) }
+        .sheet(isPresented: $showingVoiceHelp) { VoiceHelpSheet(readsStepsAloud: $handsFree.readsStepsAloud) }
         .sheet(isPresented: $showingTimer) {
             TimerSheet(recipeTitle: recipe.title,
                        defaultName: page == .steps ? current.map { "Step \($0.number)" } : nil,
@@ -112,6 +130,7 @@ struct CookingView: View {
                     .font(.headline.monospacedDigit()).foregroundStyle(CookColors.muted).lineLimit(1)
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: Spacing.xs)
+                handsFreeToggle
                 Button { showingTimer = true } label: {
                     Image(systemName: "timer").font(.title2.weight(.medium))
                         .frame(width: 56, height: 56)
@@ -177,6 +196,7 @@ struct CookingView: View {
     private func stepContent(_ step: RecipeDetail.NumberedStep) -> some View {
         let text = UnitConversion.convert(step.text, to: units)
         let section = step.section.map(Self.sectionLabel).flatMap { $0.isEmpty ? nil : $0 }
+        let lift = dashLift   // read here: the alignment closure below is Sendable
         return VStack(alignment: .leading, spacing: Spacing.l) {
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 if let section { Text(section).font(CookFonts.label).foregroundStyle(CookColors.muted) }
@@ -203,8 +223,8 @@ struct CookingView: View {
                     ForEach(Array(needed.enumerated()), id: \.offset) { _, line in
                         HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
                             Rectangle().fill(CookColors.ember).frame(width: 12, height: 2)
-                                .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + dashLift }
-                            Text(UnitConversion.convert(line, to: units)).font(CookFonts.ingredient).foregroundStyle(CookColors.text)
+                                .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + lift }
+                            Text(shown(line)).font(CookFonts.ingredient).foregroundStyle(CookColors.text)
                         }
                     }
                 }
@@ -239,9 +259,17 @@ struct CookingView: View {
 
     // MARK: Ingredients
 
+    private func shown(_ line: String) -> String { UnitConversion.convert(IngredientScaling.scale(line, by: scale), to: units) }
+
     private var ingredientsPage: some View {
         VerticalScroll {
             LazyVStack(alignment: .leading, spacing: 0) {
+                if scale != 1 {
+                    // Says why the amounts differ from the recipe as written (the scale is chosen on the recipe page).
+                    Text("Amounts \(IngredientScaling.title(scale))").font(.subheadline.weight(.semibold)).foregroundStyle(CookColors.muted)
+                        .padding(.bottom, Spacing.m)
+                        .accessibilityLabel("Amounts scaled: \(IngredientScaling.spokenTitle(scale))")
+                }
                 ForEach(Array(recipe.ingredientSections.enumerated()), id: \.offset) { s, section in
                     if let heading = section.heading.map(Self.sectionLabel), !heading.isEmpty {
                         Text(heading).font(CookFonts.label).foregroundStyle(CookColors.ember)
@@ -249,7 +277,7 @@ struct CookingView: View {
                             .accessibilityAddTraits(.isHeader)
                     }
                     ForEach(Array(section.lines.enumerated()), id: \.offset) { i, line in
-                        ingredientRow(key: "\(s)-\(i)", line: UnitConversion.convert(line, to: units))
+                        ingredientRow(key: "\(s)-\(i)", line: shown(line))
                     }
                 }
             }
@@ -317,6 +345,167 @@ struct CookingView: View {
         guard steps.indices.contains(next) else { return }
         goingForward = delta > 0
         withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .snappy(duration: 0.3)) { index = next }
+        if handsFree.readsStepsAloud { handsFree.say(spokenStep(next)) }   // only speaks while hands-free is listening
+    }
+
+    // MARK: Hands-free
+
+    private var handsFreeToggle: some View {
+        let on = handsFree.isEnabled
+        return Button { toggleHandsFree() } label: {
+            Image(systemName: on ? "mic.fill" : "mic.slash").font(.title2.weight(.medium))
+                .foregroundStyle(on ? Color.white : CookColors.text)
+                .frame(width: 56, height: 56)
+                .background(on ? CookColors.emberFill : CookColors.raised, in: RoundedRectangle(cornerRadius: 4))
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Hands-free")
+        .accessibilityValue(on ? "On" : "Off")
+        .accessibilityHint(on ? "Stops listening for voice commands." : "Listens for voice commands such as next step.")
+        .accessibilityAddTraits(.isToggle)
+    }
+
+    private func toggleHandsFree() {
+        if handsFree.isEnabled {
+            Task { await handsFree.setEnabled(false) }
+        } else if UIAccessibility.isVoiceOverRunning {
+            handsFree.notice = .voiceOverWarning     // explain, then let them turn it on anyway
+        } else {
+            Task { await handsFree.setEnabled(true) }
+        }
+    }
+
+    /// The strip under the tabs while hands-free is on: what it's doing, the last command heard, read-aloud and help.
+    private var handsFreeBar: some View {
+        HStack(spacing: Spacing.xs) {
+            ListeningIndicator(phase: handsFree.phase)
+            Text(handsFree.caption ?? phaseText).font(.subheadline.weight(handsFree.caption == nil ? .regular : .semibold))
+                .foregroundStyle(handsFree.caption == nil ? CookColors.muted : CookColors.ember)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityAddTraits(.updatesFrequently)
+            Button { handsFree.readsStepsAloud.toggle() } label: {
+                Image(systemName: handsFree.readsStepsAloud ? "speaker.wave.2.fill" : "speaker.slash")
+                    .font(.headline).frame(width: 44, height: 44).contentShape(Rectangle())
+            }
+            .accessibilityLabel("Read steps aloud")
+            .accessibilityValue(handsFree.readsStepsAloud ? "On" : "Off")
+            .accessibilityAddTraits(.isToggle)
+            Button { showingVoiceHelp = true } label: {
+                Image(systemName: "questionmark.circle").font(.headline).frame(width: 44, height: 44).contentShape(Rectangle())
+            }
+            .accessibilityLabel("What you can say")
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(CookColors.text)
+        .padding(.leading, Spacing.m).padding(.trailing, Spacing.xs)
+        .background(CookColors.bar)
+        .overlay(alignment: .bottom) { Rectangle().fill(CookColors.raised).frame(height: 1) }
+        .onChange(of: handsFree.caption) {
+            if let caption = handsFree.caption { UIAccessibility.post(notification: .announcement, argument: caption) }
+        }
+    }
+
+    private var phaseText: String {
+        switch handsFree.phase {
+        case .listening: "Listening. Say “next” or “repeat”."
+        case .speaking: "Reading aloud"
+        case .paused: "Paused"
+        case .off: "Starting…"
+        }
+    }
+
+    private func voiceAlert(_ notice: HandsFreeController.Notice) -> Alert {
+        switch notice {
+        case .denied:
+            return Alert(title: Text("Hands-free needs the microphone"),
+                         message: Text("Turn on Microphone and Speech Recognition for Spoonmate in Settings. Your voice is recognised on this iPhone and never leaves it."),
+                         primaryButton: .default(Text("Open Settings")) {
+                             if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                         },
+                         secondaryButton: .cancel(Text("Not now")))
+        case .unsupported:
+            return Alert(title: Text("Hands-free isn't available on this iPhone"),
+                         message: Text("It needs speech recognition that runs on the phone itself, which this iPhone or its language doesn't offer. Spoonmate won't send your voice to a server instead."),
+                         dismissButton: .default(Text("OK")))
+        case .couldNotStart:
+            return Alert(title: Text("Couldn't start listening"),
+                         message: Text("The microphone may be in use by another app or a call. Try hands-free again in a moment."),
+                         dismissButton: .default(Text("OK")))
+        case .voiceOverWarning:
+            return Alert(title: Text("VoiceOver is on"),
+                         message: Text("Hands-free listens while VoiceOver talks, so the two can talk over each other or VoiceOver may be heard as a command. You can still use both; headphones help."),
+                         primaryButton: .default(Text("Turn on hands-free")) { Task { await handsFree.setEnabled(true) } },
+                         secondaryButton: .cancel())
+        }
+    }
+
+    private var spokenStep: String { spokenStep(index) }
+
+    private func spokenStep(_ i: Int) -> String {
+        guard steps.indices.contains(i) else { return "" }
+        let step = steps[i]
+        return "Step \(step.number). " + VoiceCommand.spoken(UnitConversion.convert(step.text, to: units))
+    }
+
+    private var allIngredientLines: [String] { recipe.ingredientSections.flatMap(\.lines).map(shown) }
+
+    private func spokenList(_ lines: [String]) -> String {
+        lines.map { VoiceCommand.spoken($0) }.joined(separator: ". ")
+    }
+
+    /// What each voice command does. Speaking goes through `handsFree.say`, which pauses listening meanwhile.
+    private func perform(_ command: VoiceCommand) {
+        switch command {
+        case .next:
+            if page != .steps { page = .steps; handsFree.say(spokenStep); return }
+            if finished { handsFree.say("You've finished. Tap Close when you're done."); return }
+            if isLast { handsFree.say("That's the last step. Tap Done when you've finished."); return }
+            advance(1)
+        case .back:
+            if page != .steps { page = .steps; handsFree.say(spokenStep); return }
+            if index == 0 { handsFree.say("This is the first step."); return }
+            advance(-1)
+        case .repeatStep:
+            handsFree.say(steps.isEmpty ? "This recipe has no method yet." : spokenStep)
+        case .ingredients:
+            let forStep = page == .steps ? current.map { recipe.ingredients(for: $0).map(shown) } ?? [] : []
+            if !forStep.isEmpty {
+                handsFree.say("For this step: " + spokenList(forStep))
+            } else {
+                let all = allIngredientLines
+                handsFree.say(all.isEmpty ? "This recipe has no ingredients listed." : "You'll need: " + spokenList(all))
+            }
+        case .howMuch(let name):
+            let found = VoiceCommand.lines(matching: name, in: allIngredientLines)
+            handsFree.say(found.isEmpty ? "I couldn't find \(name) in the ingredients." : spokenList(found))
+        case .setTimer(let seconds):
+            startVoiceTimer(seconds: seconds, name: nil)
+        case .startStepTimer:
+            guard page == .steps, let step = current, let minutes = CookTimer.detectMinutes(in: step.text) else {
+                handsFree.say("This step doesn't mention a time. Say, set a timer for ten minutes.")
+                return
+            }
+            let name = "Step \(step.number)"
+            if timer.timers.contains(where: { $0.name == name }) { handsFree.say("The step \(step.number) timer is already running."); return }
+            startVoiceTimer(seconds: minutes * 60, name: name)
+        case .stopListening:
+            break   // handled by the controller
+        }
+    }
+
+    private func startVoiceTimer(seconds: Int, name: String?) {
+        guard timer.canAddMore else {
+            handsFree.say("That's \(CookTimer.maxTimers) timers already. Cancel one to start another.")
+            return
+        }
+        let stepName = current.map { "Step \($0.number)" }
+        let label = name ?? (stepName.flatMap { n in timer.timers.contains(where: { $0.name == n }) ? nil : n } ?? timer.nextDefaultName)
+        let spoken = VoiceCommand.spokenDuration(seconds)
+        Task {
+            let started = await timer.start(seconds: seconds, name: label, recipeTitle: recipe.title)
+            handsFree.say(started == nil ? "Couldn't start the timer." : "\(label) timer, \(spoken).")
+        }
     }
 
     // MARK: Finish

@@ -15,6 +15,10 @@ struct RecipeDetailView: View {
     /// Set from the Ingredients tab to flip just this recipe; otherwise the Settings choice applies.
     @State private var unitOverride: UnitSystem?
     private var units: UnitSystem { unitOverride ?? UnitSystem(rawValue: unitSetting) ?? .original }
+    /// ½× / 1× / 2× / 3×, as on the web. Kept only while this recipe is open (the web doesn't save it either).
+    @State private var scale: Double = 1
+    /// An ingredient line as shown: scaled first, then converted (the web's order, `static/units.js` render()).
+    private func shown(_ line: String) -> String { UnitConversion.convert(IngredientScaling.scale(line, by: scale), to: units) }
     @State private var showingCook = false
     @State private var showingEditor = false
     @State private var showingPlan = false
@@ -23,6 +27,14 @@ struct RecipeDetailView: View {
     @ScaledMetric(relativeTo: .title2) private var stepNumeralWidth: CGFloat = 24
 
     init(id: Int) { _model = State(initialValue: RecipeDetailModel(id: id)) }
+
+    /// Siri's "Cook …" opens this page with `app.pendingCook` set: go straight into cook mode once the recipe is here.
+    private func startCookingIfAsked() {
+        // Only the page on top answers (an older copy of the same recipe can sit lower in a stack).
+        guard app.pendingCook == model.id, model.recipe != nil, app.isShowing(recipe: model.id) else { return }
+        app.pendingCook = nil
+        showingCook = true
+    }
 
     var body: some View {
         VerticalScroll {
@@ -40,10 +52,14 @@ struct RecipeDetailView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar { if let recipe = model.recipe { toolbar(recipe) } }
         .bottomActionBar { if let recipe = model.recipe { startBar(recipe) } else { Spacer() } }
-        .task(id: session.dataVersion) { await model.load(session) }
+        .task(id: session.dataVersion) {
+            await model.load(session)
+            startCookingIfAsked()
+        }
+        .onChange(of: app.pendingCook) { startCookingIfAsked() }
         .refreshable { await model.load(session) }
         .fullScreenCover(isPresented: $showingCook) {
-            if let recipe = model.recipe { CookingView(recipe: recipe, units: units, onFinished: { Task { await model.madeIt(session, app) } }, onRate: { score in Task { await model.rate(score, session) } }) }
+            if let recipe = model.recipe { CookingView(recipe: recipe, units: units, scale: scale, onFinished: { Task { await model.madeIt(session, app) } }, onRate: { score in Task { await model.rate(score, session) } }) }
         }
         .sheet(isPresented: $showingEditor) {
             NavigationStack { RecipeEditorView(mode: .edit(model.recipe!), onClose: { showingEditor = false }) { model.recipe = $0 } }
@@ -52,7 +68,7 @@ struct RecipeDetailView: View {
             if let recipe = model.recipe { AddToPlanSheet(recipeId: recipe.id, title: recipe.title) { app.say("Added to your meal plan.") } }
         }
         .confirmationDialog("Delete this recipe?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Delete", role: .destructive) { Task { if await model.delete(session) { dismiss() } } }
+            Button("Delete", role: .destructive) { Task { if await model.delete(session, app) { dismiss() } } }
         } message: { Text("You can undo for a few seconds afterwards.") }
         .errorAlert($model.error)
     }
@@ -143,17 +159,18 @@ struct RecipeDetailView: View {
         if r.ingredientSections.isEmpty {
             Text("No ingredients yet.").foregroundStyle(AppColors.textSecondary)
         } else {
-            Picker("Units", selection: Binding(get: { units }, set: { unitOverride = $0 })) {
-                ForEach(UnitSystem.allCases) { Text($0.title).tag($0) }
+            // Scale and units side by side, as on the web's section bar; stacked when they don't fit (large text).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Spacing.s) { scalePicker.fixedSize(); unitPicker }
+                VStack(spacing: Spacing.xs) { scalePicker; unitPicker }
             }
-            .pickerStyle(.segmented)
         }
         ForEach(Array(r.ingredientSections.enumerated()), id: \.offset) { sectionIndex, section in
             VStack(alignment: .leading, spacing: 0) {
                 if let heading = section.heading { listHeading(heading) }
                 ForEach(Array(section.lines.enumerated()), id: \.offset) { lineIndex, line in
                     let key = "\(sectionIndex)-\(lineIndex)"
-                    IngredientRow(text: UnitConversion.convert(line, to: units), isChecked: picked.contains(key)) {
+                    IngredientRow(text: shown(line), isChecked: picked.contains(key)) {
                         withAnimation(reduceMotion ? nil : .snappy(duration: 0.15)) {
                             if picked.contains(key) { picked.remove(key) } else { picked.insert(key) }
                         }
@@ -165,17 +182,37 @@ struct RecipeDetailView: View {
             // Ticked means "I already have it", so only the unticked lines go on the list.
             let total = r.ingredientSections.reduce(0) { $0 + $1.lines.count }
             let toBuy = total - picked.count
+            // Like the web's picker (static/js/shopping.js), the lines go on the list as scaled; units stay as written.
             SecondaryButton(title: picked.isEmpty ? "Add all to shopping list"
                                   : toBuy > 0 ? "Add \(toBuy) to shopping list" : "You have everything", systemImage: "cart.badge.plus") {
                 guard toBuy > 0 else { return }
                 let lines = r.ingredientSections.enumerated().flatMap { s, section in
-                    section.lines.enumerated().compactMap { l, line in picked.contains("\(s)-\(l)") ? nil : line }
+                    section.lines.enumerated().compactMap { l, line in
+                        picked.contains("\(s)-\(l)") ? nil : IngredientScaling.scale(line, by: scale)
+                    }
                 }
                 Task { if await model.addToShopping(lines: lines, session, app) { picked = [] } }
             }
             .disabled(!picked.isEmpty && toBuy == 0)
         }
         if let n = r.nutrition { nutrition(n) }
+    }
+
+    private var scalePicker: some View {
+        Picker("Scale", selection: $scale) {
+            ForEach(IngredientScaling.factors, id: \.self) { factor in
+                Text(IngredientScaling.title(factor)).accessibilityLabel(IngredientScaling.spokenTitle(factor)).tag(factor)
+            }
+        }
+        .pickerStyle(.segmented)
+        .accessibilityLabel("Scale recipe")
+    }
+
+    private var unitPicker: some View {
+        Picker("Units", selection: Binding(get: { units }, set: { unitOverride = $0 })) {
+            ForEach(UnitSystem.allCases) { Text($0.title).tag($0) }
+        }
+        .pickerStyle(.segmented)
     }
 
     /// The method as a ruled list: an italic terracotta numeral beside each step, a rule-blue line beneath.

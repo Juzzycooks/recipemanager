@@ -1,6 +1,6 @@
 # Spoonmate Privacy Policy
 
-*Effective 1 October 2026*
+*Effective 4 November 2026*
 
 **Short version:** Spoonmate does not collect, sell or share your personal data. The app has no analytics, no advertising, no tracking and no third-party code that talks to the internet. It only ever talks to the server you tell it to.
 
@@ -15,7 +15,11 @@ The developer of Spoonmate does not run that server, cannot see what is on it, a
 - **Your server address and sign-in token**, in the iOS Keychain. The "Save to Spoonmate" share extension reads the same item so it can save recipes for you. Signing out, or deleting your account, removes it.
 - **An offline copy** of your recipes, collections, shopping list, recent meal plan and (optionally) pictures, so the app works without a connection. You can remove it any time in **Settings → Offline → Remove offline data**. Signing out also removes it. The offline library is excluded from iCloud backups.
 - **Changes made while offline**, until they can be sent to your server.
-- **Your preferences** (appearance, colour theme, recent searches). Recent searches never leave your phone.
+- **Your preferences** (appearance, colour theme, recent searches, whether hands-free is on). Recent searches never leave your phone.
+
+## Hands-free cook mode
+
+If you turn on hands-free in cook mode, the app listens through the microphone for commands such as "next step" while cook mode is open. Speech is recognised **on your iPhone** using Apple's on-device speech recognition; the app requires on-device recognition and does not use hands-free on phones that can't do it, rather than sending your voice to Apple's servers. Audio and transcripts are not recorded, stored or sent to your server, the developer or anyone else. Listening stops when you leave cook mode, switch apps or turn hands-free off. Steps read aloud use the iPhone's built-in voices, also on the device.
 
 ## Permissions the app may ask for
 
@@ -24,6 +28,7 @@ The developer of Spoonmate does not run that server, cannot see what is on it, a
 | Photos | Only the pictures you choose, through the system photo picker. The app cannot see the rest of your library. |
 | Alarms and Notifications | Kitchen timers that ring when time is up. |
 | Local network | To reach your server when it runs on your home network. |
+| Microphone and Speech Recognition | Only if you turn on hands-free in cook mode, to hear commands like "next step". Recognised on the iPhone; nothing is recorded or sent. |
 
 ## Third parties
 

@@ -24,6 +24,8 @@ actor OfflineStore: ResponseCaching {
 
     func store(_ data: Data, for url: URL) {
         try? data.write(to: file(for: url), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        // Today's plan and the shopping list also go to the widgets (App Group snapshots).
+        WidgetBridge.saved(data, for: url)
         // Keep the library fresh whenever a recipe is fetched normally.
         if Self.recipeID(in: url.path) != nil, let detail = try? APIClient.decoder.decode(RecipeDetail.self, from: data) {
             upsert(detail)
@@ -86,6 +88,8 @@ actor OfflineStore: ResponseCaching {
         memoryClear()
         try? FileManager.default.removeItem(at: directory)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        // The Spotlight entries mirror this library, so they go with it (sign-out, a new account, Settings → Erase).
+        Task { await SpotlightIndexer.clear() }
     }
 
     func byteCount() -> Int {
@@ -173,6 +177,12 @@ actor ImageStore {
 
     func has(_ url: URL) -> Bool { FileManager.default.fileExists(atPath: file(for: url).path) }
 
+    /// The saved file for a picture, if it has been downloaded (for Spotlight thumbnails and the widgets' copies).
+    nonisolated func storedFile(for url: URL) -> URL? {
+        let path = file(for: url)
+        return FileManager.default.fileExists(atPath: path.path) ? path : nil
+    }
+
     /// The picture from disk, downloading and saving it first if this is the first time.
     func image(_ url: URL) async -> UIImage? {
         if let hit = memory.object(forKey: url as NSURL) { return hit }
@@ -201,8 +211,8 @@ actor ImageStore {
 
     func clearMemory() { memory.removeAllObjects() }
 
-    private func file(for url: URL) -> URL {
-        let digest = SHA256.hash(data: Data(url.absoluteString.utf8)).map { String(format: "%02x", $0) }.joined()
-        return directory.appendingPathComponent(digest)
+    /// Named like the widgets' copies (`SnapshotStore.imageFile`), so a picture can be copied across as is.
+    private nonisolated func file(for url: URL) -> URL {
+        directory.appendingPathComponent(SnapshotStore.digest(url.absoluteString))
     }
 }

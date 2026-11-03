@@ -1,12 +1,14 @@
+import CoreSpotlight
 import SwiftUI
 import UserNotifications
 
 @main
 struct RecipeManagerApp: App {
-    @State private var session = Session()
-    @State private var appState = AppState()
-    @State private var timer = CookTimer()
-    @State private var offlineSync = OfflineSync()
+    // Shared with App Intents (see AppServices), so Siri and the screens use the same session, timers and plan.
+    @State private var session = AppServices.session
+    @State private var appState = AppServices.app
+    @State private var timer = AppServices.timer
+    @State private var offlineSync = AppServices.offlineSync
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("appearance") private var appearance = Appearance.system.rawValue
 
@@ -25,6 +27,11 @@ struct RecipeManagerApp: App {
                 .environment(timer)
                 .environment(offlineSync)
                 .onChange(of: scenePhase) { if scenePhase == .active { timer.reconcile() } }
+                // Widgets (spoonmate://recipe/12, ://plan, ://shop) and Spotlight results.
+                .onOpenURL { url in if let link = DeepLink(url: url) { appState.handle(link) } }
+                .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                    if let id = SpotlightIndexer.recipeID(from: activity) { appState.handle(.recipe(id)) }
+                }
                 .tint(ThemeStore.shared.theme.tint)
                 .preferredColorScheme(Appearance(rawValue: appearance)?.colorScheme)
         }

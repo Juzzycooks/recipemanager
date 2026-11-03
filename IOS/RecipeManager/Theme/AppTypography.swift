@@ -40,27 +40,29 @@ enum AppTypography {
     /// Alegreya navigation titles without touching every screen. UIFontMetrics scales them with Dynamic Type;
     /// UIKit reads the appearance when a bar is created, so it is rebuilt when the text size changes.
     @MainActor static func configureNavigationBar() {
-        func alegreya(_ name: String, _ size: CGFloat, _ style: UIFont.TextStyle) -> UIFont {
-            let base = UIFont(name: name, size: size) ?? .preferredFont(forTextStyle: style)
-            return UIFontMetrics(forTextStyle: style).scaledFont(for: base)
-        }
-        func apply() {
-            let ink = UIColor(named: "TextPrimary") ?? .label
-            let appearance = UINavigationBarAppearance()
-            appearance.configureWithTransparentBackground()
-            appearance.largeTitleTextAttributes = [.font: alegreya(Face.bold, 34, .largeTitle), .foregroundColor: ink]
-            appearance.titleTextAttributes = [.font: alegreya(Face.bold, 19, .headline), .foregroundColor: ink]
-            UINavigationBar.appearance().standardAppearance = appearance
-            UINavigationBar.appearance().scrollEdgeAppearance = appearance
-            UINavigationBar.appearance().compactAppearance = appearance
-        }
-        apply()
+        applyNavigationBarAppearance()
+        // A static method, not a local function, so the Sendable observer closure captures nothing.
         NotificationCenter.default.addObserver(forName: UIContentSizeCategory.didChangeNotification, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { apply() }
+            MainActor.assumeIsolated { AppTypography.applyNavigationBarAppearance() }
         }
 
         // Segmented controls: quiet track, accent-fill selection with white text.
         AppTheme.applyUIKitAppearance(ThemeStore.shared.theme)
+    }
+
+    @MainActor private static func applyNavigationBarAppearance() {
+        func alegreya(_ name: String, _ size: CGFloat, _ style: UIFont.TextStyle) -> UIFont {
+            let base = UIFont(name: name, size: size) ?? .preferredFont(forTextStyle: style)
+            return UIFontMetrics(forTextStyle: style).scaledFont(for: base)
+        }
+        let ink = UIColor(named: "TextPrimary") ?? .label
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.largeTitleTextAttributes = [.font: alegreya(Face.bold, 34, .largeTitle), .foregroundColor: ink]
+        appearance.titleTextAttributes = [.font: alegreya(Face.bold, 19, .headline), .foregroundColor: ink]
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
     }
 }
 
