@@ -16,7 +16,7 @@ A working guide for the first submission. It covers what is already done in the 
 | Area | State |
 |:--|:--|
 | Devices | iPhone only (`TARGETED_DEVICE_FAMILY = 1` for the app and both extensions); portrait only; not offered on Apple-silicon Macs or Vision Pro |
-| Version | 1.0.0 (build 1), read from `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` by the app **and** both extensions (they must match or validation fails) |
+| Version | 1.1.0 (build 14; 1.0.0 was build 11), read from `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` by the app **and** both extensions (they must match or validation fails) |
 | Icon | 1024 px light, dark and tinted, no transparency |
 | Privacy manifest | `PrivacyInfo.xcprivacy`: no tracking, no data collected, UserDefaults reason `CA92.1` |
 | Permission texts | Alarms, Local Network (app and share extension), Microphone and Speech Recognition (hands-free cook mode, asked only when turned on); Photos uses the system picker, so no permission is needed |
@@ -83,7 +83,7 @@ Paste-ready drafts. Adjust the tone freely.
 | **Marketing URL** | https://github.com/Juzzycooks/recipemanager |
 | **Privacy Policy URL** | https://github.com/Juzzycooks/recipemanager/blob/main/IOS/AppStore/PRIVACY.md |
 | **Copyright** | 2026 Justin Rahme |
-| **What's New** | First release. |
+| **What's New** | 1.0.0: First release. 1.1.0: see [What's New in 1.1.0](#whats-new-in-110) below. |
 | **Age rating** | Answer the questionnaire honestly; expect 4+. (No mature content and no web browsing. Comments are visible only to people on the same private server.) |
 | **Price** | Free |
 
@@ -187,3 +187,39 @@ Also tick **"Sign-in required"** and enter the same credentials in the demo-acco
 Finished 6.9" and 6.5" screenshot slides are in `IOS/AppStore/Screenshots/` (see its README).
 
 Paste-ready listing copy with alternates and the screenshot captions: [`AppStore/AppStoreListing.md`](AppStore/AppStoreListing.md).
+
+## What's New in 1.1.0
+
+Promotional text (148 of 170): Cook hands-free, share a shopping list with your household, save a photo every time you cook and send your week to Calendar. All on your own server.
+
+> The biggest Spoonmate update yet.
+>
+> COOKING
+> • Hands-free cook mode: say "next", "back", "repeat" or "how much butter?", and have each step read aloud.
+> • Smarter timers: "overnight", "until doubled" and ranges like "2–3 hours" now become timers. Ranges start at the low end and offer to add the rest.
+> • Each step lists the ingredients it uses. When a step says "the mixture" or "the batter", you'll see what went into it under "From earlier".
+> • Scale any recipe up or down, in cook mode too, with units converted to match.
+> • When you finish cooking, add a photo and a note. Your cook history keeps every one, and each recipe shows its photos.
+>
+> PLANNING AND SHOPPING
+> • Households: share one shopping list with the people you live with. You can see who added what, and the list updates on its own.
+> • Send the week's meal plan to Calendar and your shopping list to Reminders. Sending again updates them rather than adding copies.
+> • Calories per serving, with better estimates. Spoonmate uses the recipe site's own figures when it has them, or you can enter your own.
+>
+> ADDING RECIPES
+> • Import a recipe from a PDF.
+>
+> ON YOUR IPHONE
+> • Siri and Shortcuts: "What's for dinner tonight?", "Add milk to my shopping list", "Start a 10 minute pasta timer".
+> • New widgets: tonight's dinner, this week's plan, your shopping list (tick items from the Home Screen) and a random recipe from any collection.
+> • Find your recipes from Spotlight search.
+>
+> FIXES
+> • Undo when you delete a collection, and one undo button for everything.
+> • Swiping away a recipe with unsaved changes now asks before discarding them.
+> • Your offline copy is sturdier: a damaged file no longer wipes your saved recipes.
+> • Tidier cook mode on smaller phones.
+>
+> Households, cook photos and collection undo need your Spoonmate server updated to the latest version.
+
+New permissions in 1.1.0 for App Review notes: Calendars and Reminders (full access, only when you export), Microphone and Speech Recognition (hands-free mode, on-device), Camera (cook photos).
