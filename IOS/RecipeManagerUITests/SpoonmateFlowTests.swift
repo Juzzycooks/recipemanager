@@ -16,6 +16,99 @@ final class SpoonmateFlowTests: XCTestCase {
     }
 
     @MainActor
+    func testAllRecipesButtonOpensASearchableList() {
+        let app = XCUIApplication.spoonmate([Launch.reset])
+        app.signIn()
+        let allRecipes = app.buttons["home.allRecipes"]
+        XCTAssertTrue(allRecipes.waitForExistence(timeout: 15), "No All recipes button under the shelf")
+        if !allRecipes.isHittable { app.swipeUp() }
+        allRecipes.tap()
+        XCTAssertTrue(app.navigationBars["All recipes"].waitForExistence(timeout: 10), "All recipes didn't open")
+        XCTAssertTrue(app.element(labelStartingWith: "Shakshuka").waitForExistence(timeout: 15), "The list didn't load")
+
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "All recipes has no search field")
+        field.tap()
+        field.typeText("Coconut")
+        XCTAssertTrue(app.element(labelStartingWith: "Coconut Chicken Curry").waitForExistence(timeout: 15), "Search didn't find it")
+        XCTAssertTrue(app.element(labelStartingWith: "Shakshuka").wait(until: "exists == false", timeout: 10), "Search didn't narrow the list")
+    }
+
+    /// Regression: on All recipes, tapping Category or Ingredient opened a recipe instead of the filter sheet. The first
+    /// card's tall photo, filled and clipped, still took taps above the card, over the chips. The demo pictures are all
+    /// landscape, so this adds a recipe with a portrait photo (the newest, so it comes first) and removes it afterwards.
+    @MainActor
+    func testFilterChipsOpenTheirSheetsNotARecipe() async throws {
+        let tallID = try await ServerAPI.addTallPhotoRecipe("Tall Photo Tart")
+        addTeardownBlock { try? await ServerAPI.deleteRecipe(tallID) }
+        let app = XCUIApplication.spoonmate([Launch.reset])
+        app.signIn()
+
+        // All recipes
+        let allRecipes = app.buttons["home.allRecipes"]
+        XCTAssertTrue(allRecipes.waitForExistence(timeout: 15), "No All recipes button under the shelf")
+        if !allRecipes.isHittable { app.swipeUp() }
+        allRecipes.tap()
+        XCTAssertTrue(app.navigationBars["All recipes"].waitForExistence(timeout: 10), "All recipes didn't open")
+        XCTAssertTrue(app.element(labelStartingWith: "Tall Photo Tart").waitForExistence(timeout: 15), "The list didn't load")
+        checkChipOpensSheet(app, chip: "Category")
+        checkChipOpensSheet(app, chip: "Ingredient")
+
+        // Choosing in the sheets filters the list and stays on it.
+        app.buttons["Category"].firstMatch.tap()
+        let categorySheet = app.navigationBars["Category"]
+        XCTAssertTrue(categorySheet.waitForExistence(timeout: 5))
+        let firstCategory = app.cells.buttons.firstMatch
+        XCTAssertTrue(firstCategory.waitForExistence(timeout: 10), "No categories in the sheet")
+        firstCategory.tap()
+        categorySheet.buttons["Done"].tap()
+        XCTAssertTrue(categorySheet.wait(until: "exists == false", timeout: 5))
+        XCTAssertFalse(app.staticTexts["recipe.title"].waitForExistence(timeout: 2), "Choosing a category opened a recipe")
+        XCTAssertTrue(app.navigationBars["All recipes"].exists, "Choosing a category left All recipes")
+
+        app.element(labelStartingWith: "Ingredient").tap()
+        let ingredientSheet = app.navigationBars["Ingredient"]
+        XCTAssertTrue(ingredientSheet.waitForExistence(timeout: 5))
+        app.textFields.firstMatch.typeText("egg")
+        ingredientSheet.buttons["Done"].tap()
+        XCTAssertTrue(ingredientSheet.wait(until: "exists == false", timeout: 5))
+        XCTAssertFalse(app.staticTexts["recipe.title"].waitForExistence(timeout: 2), "Choosing an ingredient opened a recipe")
+        XCTAssertTrue(app.navigationBars["All recipes"].exists, "Choosing an ingredient left All recipes")
+
+        // Search: the chips over the results
+        let searchTab = app.tabBars.buttons["Search"]
+        XCTAssertTrue(searchTab.wait(until: "hittable == true"))
+        searchTab.tap()
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.tap()
+        field.typeText("a")
+        XCTAssertTrue(app.element(labelStartingWith: "Shakshuka").waitForExistence(timeout: 15), "Search found nothing")
+        checkChipOpensSheet(app, chip: "Category")
+        checkChipOpensSheet(app, chip: "Ingredient")
+    }
+
+    @MainActor
+    private func checkChipOpensSheet(_ app: XCUIApplication, chip: String, file: StaticString = #filePath, line: UInt = #line) {
+        let button = app.buttons[chip].firstMatch
+        XCTAssertTrue(button.waitForExistence(timeout: 10), "No \(chip) chip", file: file, line: line)
+        button.tap()
+        let sheet = app.navigationBars[chip]
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5), "The \(chip) sheet didn't open", file: file, line: line)
+        XCTAssertFalse(app.staticTexts["recipe.title"].exists, "Tapping \(chip) opened a recipe", file: file, line: line)
+        sheet.buttons["Done"].tap()
+        XCTAssertTrue(sheet.wait(until: "exists == false", timeout: 5), "The \(chip) sheet didn't close", file: file, line: line)
+        XCTAssertFalse(app.staticTexts["recipe.title"].exists, "Closing the \(chip) sheet opened a recipe", file: file, line: line)
+
+        // Again, closed by tapping the dimmed screen above the sheet (where the recipe cards are).
+        button.tap()
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5), "The \(chip) sheet didn't open again", file: file, line: line)
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap()
+        XCTAssertTrue(sheet.wait(until: "exists == false", timeout: 5), "Tapping outside didn't close the \(chip) sheet", file: file, line: line)
+        XCTAssertFalse(app.staticTexts["recipe.title"].waitForExistence(timeout: 2), "Tapping outside the \(chip) sheet opened a recipe", file: file, line: line)
+    }
+
+    @MainActor
     func testRecipeShowsTitleAndIngredients() {
         let app = XCUIApplication.spoonmate([Launch.reset])
         app.signIn()

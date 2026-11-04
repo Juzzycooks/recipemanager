@@ -1,42 +1,61 @@
 import SwiftUI
 
-/// "See All" from Home: every recipe, or only favorites.
+/// All recipes, searchable and filtered with the same chips as the Search tab. With nothing set it is every recipe,
+/// newest first; `.favorites` is this page with the Favorites chip already on.
 struct RecipeListView: View {
     @Environment(Session.self) private var session
-    let kind: RecipeListKind
+    @State private var filters: RecipeFilters
     @State private var feed = RecipeFeed()
-    @State private var sort = "newest"
 
-    private var params: [String: String] {
-        var p = ["sort": sort]
-        if kind == .favorites { p["favorites"] = "1" }
-        return p
+    init(kind: RecipeListKind) {
+        _filters = State(initialValue: RecipeFilters(kind: kind))
     }
 
     var body: some View {
         VerticalScroll {
-            if feed.recipes.isEmpty && feed.hasLoaded && !feed.isLoading {
-                EmptyStateView(title: kind == .favorites ? "No favorites yet" : "No recipes yet", systemImage: kind == .favorites ? "heart" : "book.closed",
-                               message: kind == .favorites ? "Tap the heart on a recipe to keep it here." : "Tap + to add your first recipe.")
-                    .padding(.top, Spacing.xxl)
-            } else {
-                RecipeGrid(feed: feed, params: params, removeWhenUnfavorited: kind == .favorites).padding(.bottom, Spacing.xl)
+            VStack(alignment: .leading, spacing: Spacing.m) {
+                RecipeFilterBar(filters: filters)
+                content
             }
+            .padding(.bottom, Spacing.xl)
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(AppColors.background)
-        .navigationTitle(kind.title)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Picker("Sort", selection: $sort) {
-                        Text("Newest").tag("newest"); Text("Oldest").tag("oldest")
-                        Text("Title A–Z").tag("title_az"); Text("Title Z–A").tag("title_za")
-                    }
-                } label: { Label("Sort", systemImage: "arrow.up.arrow.down") }
-            }
+        .navigationTitle(filters.favoritesOnly ? RecipeListKind.favorites.title : RecipeListKind.all.title)
+        // Always showing: the automatic placement hides it in the bar until the list is pulled down.
+        .searchable(text: $filters.query, placement: .navigationBarDrawer(displayMode: .always), prompt: filters.favoritesOnly ? "Search favorites" : "Search recipes")
+        .textInputAutocapitalization(.never).autocorrectionDisabled()
+        .task { await filters.loadCategories(session) }
+        .task(id: "\(filters.filterKey)#\(session.dataVersion)") {
+            if !filters.query.isEmpty { try? await Task.sleep(for: .milliseconds(300)) }
+            guard !Task.isCancelled else { return }
+            await feed.reload(session, params: filters.params)
         }
-        .task(id: "\(sort)#\(session.dataVersion)") { await feed.reload(session, params: params) }
-        .refreshable { await feed.reload(session, params: params) }
+        .refreshable { await feed.reload(session, params: filters.params) }
         .errorAlert(Binding(get: { feed.error }, set: { feed.error = $0 }))
+    }
+
+    @ViewBuilder private var content: some View {
+        if feed.recipes.isEmpty && feed.hasLoaded && !feed.isLoading {
+            emptyState.padding(.top, Spacing.xl)
+        } else {
+            if feed.hasLoaded {
+                Text(filters.resultLine(total: feed.total)).font(.subheadline)
+                    .foregroundStyle(AppColors.textSecondary).screenPadding()
+            }
+            RecipeGrid(feed: feed, params: filters.params, removeWhenUnfavorited: filters.favoritesOnly)
+        }
+    }
+
+    @ViewBuilder private var emptyState: some View {
+        if !filters.isActive {
+            EmptyStateView(title: "No recipes yet", systemImage: "book.closed", message: "Tap + to add your first recipe.")
+        } else if !filters.isSearching {   // only the Favorites chip is on
+            EmptyStateView(title: "No favorites yet", systemImage: "heart", message: "Tap the heart on a recipe to keep it here.",
+                           actionTitle: "Show all recipes") { withAnimation { filters.favoritesOnly = false } }
+        } else {
+            EmptyStateView(title: "No recipes match", systemImage: "magnifyingglass", message: "Try a different word, or clear the filters.",
+                           actionTitle: "Clear filters") { withAnimation { filters.query = ""; filters.clearFilters() } }
+        }
     }
 }

@@ -45,6 +45,29 @@ struct SectionHeader: View {
     }
 }
 
+/// A full-width ruled card row that leads somewhere: an accent symbol, a label, an optional count, a chevron.
+/// Search's "All recipes" / "Favorites" and Home's "All recipes" button.
+struct LibraryRow: View {
+    let title: String
+    let systemImage: String
+    var detail: String?
+
+    var body: some View {
+        HStack(spacing: Spacing.s) {
+            Image(systemName: systemImage).foregroundStyle(AppColors.primary).frame(width: 24).accessibilityHidden(true)
+            Text(title).font(AppTypography.label).foregroundStyle(AppColors.textPrimary)
+            Spacer()
+            if let detail { Text(detail).font(.subheadline).foregroundStyle(AppColors.textSecondary).monospacedDigit() }
+            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(AppColors.textSecondary)
+                .accessibilityHidden(true)
+        }
+        .padding(.horizontal, Spacing.m).frame(minHeight: 52)
+        .background(AppColors.card, in: RoundedRectangle(cornerRadius: Radius.card))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card).stroke(AppColors.separator, lineWidth: 1))
+        .contentShape(RoundedRectangle(cornerRadius: Radius.card))
+    }
+}
+
 struct RatingView: View {
     let rating: Double?
     var count: Int = 0

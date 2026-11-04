@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 
 /// The seeded server the UI tests sign in to. `scripts/run-ui-tests.sh` starts it and passes these through
@@ -51,6 +52,39 @@ enum ServerAPI {
             try await Task.sleep(for: .milliseconds(500))   // a poll interval, not a fixed wait: it returns as soon as it's true
         }
         return false
+    }
+
+    /// Adds a recipe with a tall (portrait) photo, so it's the newest and comes first in All recipes. Returns its id.
+    static func addTallPhotoRecipe(_ title: String, _ server: TestServer = .current) async throws -> Int {
+        let photo = UIGraphicsImageRenderer(size: CGSize(width: 300, height: 1500)).pngData { context in
+            UIColor.systemOrange.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 300, height: 1500))
+        }
+        let boundary = "spoonmate-\(UUID().uuidString)"
+        var body = Data()
+        func field(_ name: String, _ value: String) {
+            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
+        }
+        field("title", title); field("ingredients", "1 egg"); field("instructions", "Bake.")
+        body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"image_file\"; filename=\"tall.png\"\r\nContent-Type: image/png\r\n\r\n".utf8))
+        body.append(photo)
+        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+
+        var request = URLRequest(url: URL(string: server.url + "/api/v1/recipes")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(try await token(server))", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        let (data, _) = try await URLSession.shared.data(for: request)
+        struct Created: Decodable { let id: Int }
+        return try JSONDecoder().decode(Created.self, from: data).id
+    }
+
+    static func deleteRecipe(_ id: Int, _ server: TestServer = .current) async throws {
+        var request = URLRequest(url: URL(string: server.url + "/api/v1/recipes/\(id)")!)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(try await token(server))", forHTTPHeaderField: "Authorization")
+        _ = try await URLSession.shared.data(for: request)
     }
 }
 

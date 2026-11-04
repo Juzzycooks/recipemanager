@@ -28,8 +28,11 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Banana Bread"].waitForExistence(timeout: 15))
         shot(app, docs: "home", appStore: "02-home")
 
-        // All recipes ("See all" on the newest shelf)
-        app.buttons["See all"].firstMatch.tap()
+        // All recipes (the button under the newest shelf)
+        let allRecipes = app.buttons["home.allRecipes"]
+        XCTAssertTrue(allRecipes.waitForExistence(timeout: 10))
+        if !allRecipes.isHittable { app.swipeUp() }
+        allRecipes.tap()
         XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10))
         XCTAssertTrue(app.element(labelStartingWith: "Shakshuka").waitForExistence(timeout: 15))
         shot(app, appStore: "07-all-recipes")

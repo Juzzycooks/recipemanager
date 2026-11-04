@@ -13,9 +13,13 @@ struct RecipeImage: View {
     var body: some View {
         // Color.clear takes whatever size the parent offers; the picture is only painted into it and clipped.
         // (A scaledToFill photo sizing itself made very wide or tall pictures blow the card layout apart.)
+        // Clipping only hides the overflow: a filled tall photo would still catch taps above and below the frame
+        // (on All recipes the first card's picture covered the filter chips and opened the recipe). So the picture
+        // takes no taps, and the frame is the tappable shape.
         Color.clear
-            .overlay { content }
+            .overlay { content.allowsHitTesting(false) }
             .clipped()
+            .contentShape(Rectangle())
     }
 
     @ViewBuilder private var content: some View {

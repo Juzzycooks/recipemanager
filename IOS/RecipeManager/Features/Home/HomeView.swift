@@ -9,6 +9,8 @@ final class HomeModel {
 
     var filter = Filter.all
     var picks: [RecipeSummary] = []
+    /// How many recipes (or favorites) there are in all: the shelf's page carries it, so it costs no extra request.
+    var total: Int?
     var collections: [CollectionSummary] = []
     var hasLoaded = false
     var error: String?
@@ -20,6 +22,7 @@ final class HomeModel {
             if favorites { query["favorites"] = "1" }
             let page: Page<RecipeSummary> = try await session.run { [query] in try await $0.get("/recipes", query: query) }
             picks = page.items
+            total = page.total
             let colls: ItemList<CollectionSummary> = try await session.run { try await $0.get("/collections") }
             collections = colls.items
             error = nil
@@ -41,7 +44,10 @@ final class HomeModel {
         picks[i].isFavorite = wanted
         do {
             _ = try await session.runOrQueue(.favorite(recipeID: recipe.id, wanted: wanted)) { try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(recipe.id)/favorite") }
-            if filter == .favorites && !wanted { picks.removeAll { $0.id == recipe.id } }
+            if filter == .favorites && !wanted {
+                picks.removeAll { $0.id == recipe.id }
+                if let t = total { total = max(0, t - 1) }
+            }
         } catch {
             if let j = picks.firstIndex(where: { $0.id == recipe.id }) { picks[j].isFavorite = !wanted }
             self.error = error.localizedDescription
@@ -64,6 +70,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: Spacing.s) {
                     chips
                     shelf
+                    allRecipesButton
                 }
                 collections
             }
@@ -104,14 +111,27 @@ struct HomeView: View {
     /// The shelf: the newest recipes, or your favorites.
     private var shelf: some View {
         VStack(alignment: .leading, spacing: Spacing.s) {
-            SectionHeader(title: model.filter == .favorites ? "Favorites" : "Newest") {
-                app.push(.recipeList(model.filter == .favorites ? .favorites : .all), on: .recipes)
-            }
+            SectionHeader(title: model.filter == .favorites ? "Favorites" : "Newest")
             if model.picks.isEmpty && model.hasLoaded {
                 Text(emptyMessage).font(.subheadline).foregroundStyle(AppColors.textSecondary).screenPadding().padding(.vertical, Spacing.m)
             } else {
                 RecipeCarousel(recipes: model.picks) { recipe in Task { await model.toggleFavorite(recipe, session) } }
             }
+        }
+    }
+
+    /// Under the shelf: every recipe (or every favorite), searchable and filterable.
+    @ViewBuilder private var allRecipesButton: some View {
+        if !(model.picks.isEmpty && model.hasLoaded) {
+            let favorites = model.filter == .favorites
+            let title = favorites ? "All favorites" : "All recipes"
+            NavigationLink(value: AppRoute.recipeList(favorites ? .favorites : .all)) {
+                LibraryRow(title: title, systemImage: favorites ? "heart" : "book.closed", detail: model.total.map { "\($0)" })
+            }
+            .buttonStyle(.plain)
+            .screenPadding()
+            .accessibilityLabel(model.total.map { "\(title), \($0) \(favorites ? "favorite" : "recipe")\($0 == 1 ? "" : "s")" } ?? title)
+            .accessibilityIdentifier("home.allRecipes")
         }
     }
 
