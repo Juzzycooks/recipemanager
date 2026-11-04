@@ -53,6 +53,10 @@ class Recipe(db.Model):
     image_url = db.Column(db.String(500), default="")
     notes = db.Column(db.Text, default="")  # Personal notes
     share_token = db.Column(db.String(32), unique=True, nullable=True)  # Public sharing
+    # Nutrition the recipe site published (JSON from nutrition.parse_source_nutrition) and the
+    # calories per serving the cook typed in. Both optional; see nutrition.nutrition_facts.
+    source_nutrition = db.Column(db.Text, nullable=True)
+    calories_per_serving = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                            onupdate=lambda: datetime.now(timezone.utc))

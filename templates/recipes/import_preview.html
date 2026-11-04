@@ -23,6 +23,7 @@
 <input type="hidden" name="image_name" value="{{ image_name }}">
 <input type="hidden" name="kind" value="{{ kind }}">
 <input type="hidden" name="raw_text" value="{{ raw_text }}">
+<input type="hidden" name="source_nutrition" value="{{ source_nutrition_json }}">
 
 {% if image_name %}
 <div class="card import-image">
@@ -55,6 +56,9 @@
             <input type="text" id="servings" name="servings" value="{{ f.servings }}" placeholder="e.g. 4">
         </div>
     </div>
+    {% if source_nutrition %}
+    <p class="form-hint">The recipe lists nutrition{% if source_nutrition.kcal is not none %}: {{ source_nutrition.kcal }} kcal{% endif %}{% if source_nutrition.serving_size %} per {{ source_nutrition.serving_size }}{% else %} per serving{% endif %}. We'll keep it with the recipe.</p>
+    {% endif %}
 </div>
 
 <div class="card">

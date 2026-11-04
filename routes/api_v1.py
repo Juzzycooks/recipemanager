@@ -241,7 +241,7 @@ def _comment(c):
 
 
 def _recipe_detail(r):
-    from nutrition import estimate_recipe
+    from nutrition import estimate_recipe, facts_for
     out = _recipe_summary(r)
     rating = Rating.query.filter_by(user_id=me().id, recipe_id=r.id).first()
     logs = CookLog.query.filter_by(user_id=me().id, recipe_id=r.id).order_by(CookLog.cooked_at.desc()).all()
@@ -256,6 +256,8 @@ def _recipe_detail(r):
         my_rating=rating.score if rating else None,
         made_count=len(logs), last_made=_iso(logs[0].cooked_at) if logs else None,
         nutrition=estimate_recipe(r.ingredients, r.servings),
+        calories_per_serving=r.calories_per_serving,
+        nutrition_facts=facts_for(r),
         collections=[{"id": c.id, "name": c.name} for c in mine if r in c.recipes],
         comments=[_comment(c) for c in comments],
         can_edit=r.user_id == me().id or bool(me().is_admin))
@@ -607,6 +609,28 @@ def _apply_recipe_fields(recipe, b):
         if url and not (url.lower().startswith(("http://", "https://")) or _IMAGE_NAME_RE.match(url)):
             raise ApiError("validation", "image_url must be an http(s) link or empty.", 422)
         recipe.image_url = url[:500]
+    if b.has("calories_per_serving"):
+        recipe.calories_per_serving = _calories_field(b)
+
+
+def _calories_field(b):
+    """calories_per_serving from a body: a whole number 0-20000, or null / "" to clear."""
+    from nutrition import CALORIES_MAX, parse_calories
+    ok, value = parse_calories(b.get("calories_per_serving"))
+    if not ok:
+        raise ApiError("validation", f"calories_per_serving must be a number from 0 to {CALORIES_MAX}, or null.", 422)
+    return value
+
+
+def _source_nutrition_field(b):
+    """source_nutrition from an import save: an object (or JSON text) -> column JSON or None."""
+    from nutrition import source_nutrition_json
+    value = b.get("source_nutrition")
+    if value in (None, ""):
+        return None
+    if not isinstance(value, (dict, str)):
+        raise ApiError("validation", "source_nutrition must be an object or null.", 422)
+    return source_nutrition_json(value)
 
 
 @api_v1_bp.route("/recipes", methods=["POST"])
@@ -662,7 +686,9 @@ def duplicate_recipe(recipe_id):
     o = Recipe.query.get_or_404(recipe_id)
     clone = Recipe(title=f"{o.title} (Copy)"[:200], description=o.description, ingredients=o.ingredients,
                    instructions=o.instructions, prep_time=o.prep_time, cook_time=o.cook_time,
-                   servings=o.servings, source_url=o.source_url, image_url=o.image_url, user_id=me().id)
+                   servings=o.servings, source_url=o.source_url, image_url=o.image_url,
+                   source_nutrition=o.source_nutrition, calories_per_serving=o.calories_per_serving,
+                   user_id=me().id)
     clone.categories = list(o.categories)
     db.session.add(clone)
     db.session.commit()
@@ -859,9 +885,11 @@ _DRAFT_FIELDS = ("title", "description", "ingredients", "instructions", "notes",
 
 def _import_preview(data, kind, source_url="", image_name="", raw_text=""):
     from routes.recipes import import_warning
+    from nutrition import parse_source_nutrition
     draft = {k: (data.get(k) or "") for k in _DRAFT_FIELDS}
     return jsonify(kind=kind, draft=draft, source_url=source_url, image_name=image_name,
                    image_url=_image(image_name), raw_text=raw_text,
+                   source_nutrition=parse_source_nutrition(data.get("source_nutrition")),
                    warning=import_warning(draft, raw_text))
 
 
@@ -904,6 +932,7 @@ def import_url():
 @api_auth()
 def import_urls():
     """Import several links straight into the shelf."""
+    from nutrition import source_nutrition_json
     urls = [str(u).strip() for u in Body().list("urls") if str(u).strip()]
     if not urls:
         raise ApiError("validation", "Send at least one link in `urls`.", 422)
@@ -923,7 +952,8 @@ def import_urls():
                         description=data.get("description", ""), ingredients=data.get("ingredients", ""),
                         instructions=data.get("instructions", ""), prep_time=(data.get("prep_time") or "")[:50],
                         cook_time=(data.get("cook_time") or "")[:50], servings=(data.get("servings") or "")[:50],
-                        source_url=url[:500], image_url=image, notes=data.get("notes", ""), user_id=me().id)
+                        source_url=url[:500], image_url=image, notes=data.get("notes", ""),
+                        source_nutrition=source_nutrition_json(data.get("source_nutrition")), user_id=me().id)
         db.session.add(recipe)
         db.session.commit()
         imported.append(_recipe_summary(recipe))
@@ -1030,7 +1060,10 @@ def import_save():
                     instructions=data["instructions"], notes=data["notes"], servings=data["servings"][:50],
                     prep_time=data["prep_time"][:50], cook_time=data["cook_time"][:50],
                     source_url=b.text("source_url")[:500],
-                    image_url=image_name if b.flag("use_image", True) else "", user_id=me().id)
+                    image_url=image_name if b.flag("use_image", True) else "",
+                    source_nutrition=_source_nutrition_field(b),
+                    calories_per_serving=_calories_field(b) if b.has("calories_per_serving") else None,
+                    user_id=me().id)
     db.session.add(recipe)
     db.session.commit()
     return jsonify(_recipe_detail(recipe)), 201

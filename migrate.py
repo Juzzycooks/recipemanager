@@ -46,6 +46,15 @@ def migrate(db_path):
             except sqlite3.OperationalError:
                 pass
 
+        # Calories: the figure the recipe site published (JSON) and the cook's own per serving.
+        for col, decl in (("source_nutrition", "TEXT"), ("calories_per_serving", "INTEGER")):
+            if col not in recipe_cols:
+                try:
+                    cursor.execute(f"ALTER TABLE recipe ADD COLUMN {col} {decl}")
+                    print(f"Migration: Added '{col}' column to recipe table")
+                except sqlite3.OperationalError:
+                    pass
+
         try:
             cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_recipe_share_token ON recipe(share_token)")
         except sqlite3.OperationalError:

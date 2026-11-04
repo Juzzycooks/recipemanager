@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 
 from security import safe_get
 from recipe_text import parse_recipe_text
+from nutrition import parse_source_nutrition
 
 
 def _clean(value):
@@ -397,7 +398,21 @@ def _extract_microdata_recipe(soup):
         "cook_time": _parse_iso_duration(_prop("cookTime")),
         "servings": _prop("recipeYield"),
         "image_url": _prop("image"),
+        "source_nutrition": _microdata_nutrition(node),
     }
+
+
+def _microdata_nutrition(node):
+    """itemprop="nutrition" (NutritionInformation) inside a microdata recipe, parsed."""
+    box = node.find(attrs={"itemprop": "nutrition"})
+    if not box:
+        return None
+    fields = {}
+    for key in ("calories", "proteinContent", "fatContent", "carbohydrateContent", "servingSize"):
+        el = box.find(attrs={"itemprop": key})
+        if el:
+            fields[key] = el.get("content", "") or el.get_text(" ", strip=True)
+    return parse_source_nutrition(fields)
 
 
 def _extract_wprm_notes(soup):
@@ -494,6 +509,7 @@ def scrape_recipe(url: str) -> dict:
             "servings": _clean(servings),
             "image_url": image,
             "notes": notes,
+            "source_nutrition": parse_source_nutrition(ld.get("nutrition")),
         }
 
     # Fallback: try microdata

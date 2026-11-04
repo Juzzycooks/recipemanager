@@ -57,7 +57,8 @@ final class ShareModel {
     func save(_ preview: ImportPreview) async {
         guard let client else { return }
         phase = .saving
-        var body = SaveBody(draft: preview.draft, sourceUrl: preview.sourceUrl, imageName: preview.imageName)
+        var body = SaveBody(draft: preview.draft, sourceUrl: preview.sourceUrl, imageName: preview.imageName,
+                            sourceNutrition: preview.sourceNutrition)
         body.title = title.trimmingCharacters(in: .whitespaces).isEmpty ? preview.draft.title : title
         do {
             let saved: SavedRecipe = try await client.send("POST", "/import/save", body: body)
@@ -101,11 +102,14 @@ struct SaveBody: Encodable, Sendable {
     let description: String, ingredients: String, instructions: String, notes: String
     let servings: String, prepTime: String, cookTime: String
     let sourceUrl: String, imageName: String, useImage: Bool
+    /// Nutrition the page printed, passed back untouched (omitted when there was none).
+    var sourceNutrition: SourceNutrition?
 
-    init(draft: ImportDraft, sourceUrl: String, imageName: String) {
+    init(draft: ImportDraft, sourceUrl: String, imageName: String, sourceNutrition: SourceNutrition? = nil) {
         title = draft.title; description = draft.description; ingredients = draft.ingredients
         instructions = draft.instructions; notes = draft.notes; servings = draft.servings
         prepTime = draft.prepTime; cookTime = draft.cookTime
         self.sourceUrl = sourceUrl; self.imageName = imageName; useImage = !imageName.isEmpty
+        self.sourceNutrition = sourceNutrition
     }
 }

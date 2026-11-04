@@ -58,7 +58,7 @@ Missing or thin: no iPad or Watch, no UI tests, no PDF import. Build 11 is on Te
 - [ ] **Recipe diff:** see what changed since you imported it, and keep your tweaks separate from the original.
 - [ ] **iPad layout** (recipe on the left, cook steps on the right, landscape on a stand).
 - [ ] **Dietary, difficulty and cuisine** fields on the server so the search filters from the original design can come back with real data.
-- [ ] **Nutrition** per serve shown in the app (the server already has `nutrition.py`).
+- [x] **Nutrition** per serve shown in the app (the server already has `nutrition.py`). Done 4 November 2026: a much better estimate (352 foods, real cup weights), the recipe site's own figures on import, calories per serving you can type in, per serving and whole recipe on web and iPhone.
 - [ ] **Woolworths in the app:** send the shopping list straight to a Woolworths cart, as the web does.
 
 ## 3. Big swings (serious work, clearly worth it)

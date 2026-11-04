@@ -59,3 +59,18 @@ dl.detail-meta.compact { margin: 0.5rem 0; padding: 0.6rem 0; gap: 1.75rem; }
   .recipe-actions .btn-lg, .recipe-actions .menu > summary.btn { flex: 1 1 auto; }
 }
 @media (max-width: 640px) { .detail-hero-mono { height: 130px; min-height: 130px; } .detail-hero-mono::before { font-size: 4.5rem; } }
+
+/* ── Nutrition: per serving beside the whole recipe, with the workings in a disclosure ── */
+.nut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0 2.25rem; }
+.nut-col { min-width: 0; }
+.nut-col-h { font-family: var(--font-ui); font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); margin: 0.75rem 0 0; }
+.nut-scale-note { font-weight: 500; color: var(--accent); margin-left: 0.3rem; }
+.nut-how { margin-top: 0.75rem; max-width: 68ch; }
+.nut-how > summary { cursor: pointer; font-size: var(--fs-sm); font-weight: 600; color: var(--accent); padding: 0.35rem 0; }
+.nut-how > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius); }
+.nut-lines { list-style: none; padding: 0; margin: 0.35rem 0 0; font-size: var(--fs-sm); }
+.nut-lines li { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+        padding: 0.4rem 0; border-bottom: 1px solid var(--rule); }
+.nut-line-text { min-width: 0; overflow-wrap: anywhere; }
+.nut-line-food { display: block; font-size: var(--fs-xs); color: var(--text-tertiary); }
+.nut-line-kcal { flex: none; font-variant-numeric: tabular-nums; color: var(--text-secondary); }

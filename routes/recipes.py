@@ -13,7 +13,7 @@ from recipe_text import parse_recipe_text
 from ocr import images_to_text, ocr_available, OcrError
 from security import FetchError, safe_get
 from images import save_uploaded_image, delete_image
-from nutrition import estimate_recipe
+from nutrition import facts_for, parse_calories, source_nutrition_json, yield_singular
 
 recipes_bp = Blueprint("recipes", __name__)
 
@@ -214,10 +214,19 @@ def view(recipe_id):
     user_rating = Rating.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
     comments = Comment.query.filter_by(recipe_id=recipe_id).order_by(Comment.created_at.desc()).all()
     made_count = CookLog.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).count()
-    nutrition = estimate_recipe(recipe.ingredients, recipe.servings)
+    facts = facts_for(recipe)
     return render_template("recipes/view.html", recipe=recipe, is_favorite=is_favorite,
                            user_rating=user_rating, comments=comments, made_count=made_count,
-                           nutrition=nutrition)
+                           facts=facts, yield_word=yield_singular(facts["yield_unit"]) if facts else "serving")
+
+
+def _form_calories(current=None):
+    """calories_per_serving from the recipe form; a bad value keeps `current` and says so."""
+    ok, value = parse_calories(request.form.get("calories_per_serving", ""))
+    if not ok:
+        flash("Calories per serving must be a whole number from 0 to 20000, so it wasn't changed.", "error")
+        return current
+    return value
 
 
 def _save_recipe_categories(recipe, form):
@@ -253,6 +262,7 @@ def add():
             source_url=request.form.get("source_url", "").strip(),
             image_url=image_url,
             notes=request.form.get("notes", "").strip(),
+            calories_per_serving=_form_calories(),
             user_id=current_user.id,
         )
         db.session.add(recipe)
@@ -282,6 +292,7 @@ def edit(recipe_id):
         recipe.servings = request.form.get("servings", "").strip()
         recipe.source_url = request.form.get("source_url", "").strip()
         recipe.notes = request.form.get("notes", "").strip()
+        recipe.calories_per_serving = _form_calories(recipe.calories_per_serving)
 
         # Handle image: upload takes priority over URL. An empty URL field keeps the current
         # picture (uploaded pictures never show in that field); only "Remove picture" clears it.
@@ -319,6 +330,8 @@ def trash_recipe(recipe, deleted_by):
             "prep_time": recipe.prep_time, "cook_time": recipe.cook_time,
             "source_url": recipe.source_url, "image_url": recipe.image_url,
             "user_id": recipe.user_id,
+            "source_nutrition": recipe.source_nutrition,
+            "calories_per_serving": recipe.calories_per_serving,
             "categories": [c.name for c in recipe.categories],
             "created_at": recipe.created_at.isoformat() if recipe.created_at else None,
         },
@@ -359,6 +372,8 @@ def restore_trash(token, user):
         notes=data.get("notes") or "", servings=data.get("servings") or "",
         prep_time=data.get("prep_time") or "", cook_time=data.get("cook_time") or "",
         source_url=data.get("source_url") or "", image_url=data.get("image_url") or "",
+        source_nutrition=source_nutrition_json(data.get("source_nutrition")),
+        calories_per_serving=parse_calories(data.get("calories_per_serving"))[1],
         user_id=owner_id,
     )
     if data.get("created_at"):
@@ -429,6 +444,8 @@ def duplicate(recipe_id):
         servings=original.servings,
         source_url=original.source_url,
         image_url=original.image_url,
+        source_nutrition=original.source_nutrition,
+        calories_per_serving=original.calories_per_serving,
         user_id=current_user.id,
     )
     db.session.add(clone)
@@ -462,8 +479,11 @@ def _render_import_preview(data, source_url="", image_name="", kind="url", raw_t
     fields = {k: (data.get(k) or "") for k in
               ("title", "description", "ingredients", "instructions", "notes", "servings", "prep_time", "cook_time")}
     warning = import_warning(fields, raw_text)
+    nutrition_json = source_nutrition_json(data.get("source_nutrition"))
+    source_nutrition = json.loads(nutrition_json) if nutrition_json else None
     return render_template("recipes/import_preview.html", f=fields, source_url=source_url,
                            image_name=image_name or "", kind=kind, raw_text=raw_text,
+                           source_nutrition=source_nutrition, source_nutrition_json=nutrition_json or "",
                            warning=warning, error=error), status
 
 
@@ -578,6 +598,7 @@ def import_url():
                     source_url=url,
                     image_url=image_url,
                     notes=data.get("notes", ""),
+                    source_nutrition=source_nutrition_json(data.get("source_nutrition")),
                     user_id=current_user.id,
                 )
                 db.session.add(recipe)
@@ -749,6 +770,7 @@ def import_save():
     image_name = form.get("image_name", "").strip()
     kind = form.get("kind", "url")
     raw_text = form.get("raw_text", "")
+    data["source_nutrition"] = form.get("source_nutrition", "")
     # Only accept an image we could have produced: an uploads filename or an http(s) link
     if image_name and not (image_name.startswith(("http://", "https://")) or re.fullmatch(r"[\w.\-]+", image_name)):
         image_name = ""
@@ -770,6 +792,7 @@ def import_save():
         cook_time=data["cook_time"][:50],
         source_url=source_url[:500],
         image_url=image_name if use_image else "",
+        source_nutrition=source_nutrition_json(data["source_nutrition"]),
         user_id=current_user.id,
     )
     db.session.add(recipe)

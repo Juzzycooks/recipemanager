@@ -9,6 +9,7 @@ from mealie_import import (
     mealie_auth, mealie_get_recipes, mealie_get_recipe_detail, parse_mealie_recipe,
     download_mealie_image,
 )
+from nutrition import parse_calories, parse_source_nutrition, source_nutrition_json
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -444,6 +445,8 @@ def _export_payload():
             "source_url": r.source_url or "",
             "image_url": r.image_url or "",
             "notes": r.notes or "",
+            "source_nutrition": parse_source_nutrition(r.source_nutrition) if r.source_nutrition else None,
+            "calories_per_serving": r.calories_per_serving,
             "categories": [c.name for c in r.categories],
             "author": r.author.username if r.author else "",
             "created_at": r.created_at.isoformat() if r.created_at else "",
@@ -583,6 +586,8 @@ def import_backup():
             source_url=str(entry.get("source_url", ""))[:500],
             image_url=str(entry.get("image_url", ""))[:500],
             notes=str(entry.get("notes", "")),
+            source_nutrition=source_nutrition_json(entry.get("source_nutrition")),
+            calories_per_serving=parse_calories(entry.get("calories_per_serving"))[1],
             user_id=current_user.id,
         )
         for cat_name in entry.get("categories", []) or []:

@@ -317,6 +317,104 @@ class TestImport(Api):
         self.assertEqual(self.post("/import/pdf").status_code, 422)
 
 
+class TestNutrition(Api):
+    ING = "500g beef mince\n1 onion, chopped\n1 tsp ground cumin\nSalt, to taste\n400g spaghetti"
+
+    def test_detail_keeps_legacy_nutrition_and_adds_facts(self):
+        r = self.new_recipe("Bolognese", ingredients=self.ING, servings="Serves 4")
+        legacy = r["nutrition"]
+        self.assertEqual(set(legacy), {"kcal", "protein", "fat", "carbs", "matched", "total_lines", "servings", "per_serving"})
+        self.assertEqual(legacy["servings"], 4)
+        self.assertEqual(legacy["total_lines"], 5)
+        self.assertEqual(set(legacy["per_serving"]), {"kcal", "protein", "fat", "carbs"})
+        self.assertIsInstance(legacy["kcal"], int)
+        self.assertIsNone(r["calories_per_serving"])
+        facts = r["nutrition_facts"]
+        self.assertEqual(facts["source"], "estimate")
+        self.assertEqual((facts["servings"], facts["yield_unit"]), (4, "serving"))
+        self.assertEqual(facts["total"]["kcal"], legacy["kcal"])
+        est = facts["estimate"]
+        self.assertEqual(est["confidence"], "high")
+        self.assertEqual((est["matched"], est["counted_lines"], est["total_lines"]), (3, 3, 5))
+        self.assertEqual([l["status"] for l in est["lines"]], ["matched", "matched", "negligible", "negligible", "matched"])
+        self.assertEqual(set(est["lines"][0]), {"text", "food", "grams", "kcal", "status"})
+
+    def test_one_serving_gets_per_serving(self):
+        r = self.new_recipe("Omelette", ingredients="3 eggs\n1 tbsp butter", servings="1")
+        self.assertEqual(r["nutrition"]["per_serving"]["kcal"], r["nutrition"]["kcal"])
+        self.assertEqual(r["nutrition_facts"]["per_serving"]["kcal"], r["nutrition"]["kcal"])
+
+    def test_manual_calories_create_update_clear(self):
+        r = self.new_recipe("Cookies", ingredients="2 cups flour\n1 cup butter\n1 cup sugar",
+                            servings="Makes 24 cookies", calories_per_serving=180)
+        self.assertEqual(r["calories_per_serving"], 180)
+        facts = r["nutrition_facts"]
+        self.assertEqual((facts["source"], facts["yield_unit"]), ("manual", "cookies"))
+        self.assertEqual(facts["per_serving"]["kcal"], 180)
+        self.assertEqual(facts["total"]["kcal"], 180 * 24)
+        self.assertIsNotNone(facts["per_serving"]["fat"])  # from the estimate
+        self.assertIsNotNone(facts["estimate"])
+        rid = r["id"]
+        self.assertEqual(self.patch(f"/recipes/{rid}", json={"calories_per_serving": "200"}).get_json()["calories_per_serving"], 200)
+        r = self.patch(f"/recipes/{rid}", data={"calories_per_serving": "210"})  # multipart / form
+        self.assertEqual(r.get_json()["calories_per_serving"], 210)
+        r = self.patch(f"/recipes/{rid}", json={"title": "Cookies 2"})  # untouched when absent
+        self.assertEqual(r.get_json()["calories_per_serving"], 210)
+        r = self.patch(f"/recipes/{rid}", json={"calories_per_serving": None})
+        self.assertIsNone(r.get_json()["calories_per_serving"])
+        self.assertEqual(r.get_json()["nutrition_facts"]["source"], "estimate")
+        for bad in (-1, 20001, "lots", True):
+            r = self.patch(f"/recipes/{rid}", json={"calories_per_serving": bad})
+            self.assertEqual(r.status_code, 422, bad)
+            self.assertEqual(r.get_json()["error"]["code"], "validation")
+
+    def test_duplicate_and_restore_keep_calories(self):
+        r = self.new_recipe("Stew", ingredients=self.ING, servings="4", calories_per_serving=650)
+        with app.app_context():
+            rec = db.session.get(Recipe, r["id"])
+            rec.source_nutrition = '{"kcal":700,"protein":40.0,"fat":null,"carbs":null,"serving_size":null}'
+            db.session.commit()
+        dup = self.post(f"/recipes/{r['id']}/duplicate").get_json()
+        self.assertEqual(dup["calories_per_serving"], 650)
+        self.assertEqual(dup["nutrition_facts"]["per_serving"]["protein"], 40.0)  # macros from the source
+        token = self.delete(f"/recipes/{dup['id']}").get_json()["restore_token"]
+        back = self.post(f"/recipes/restore/{token}").get_json()
+        self.assertEqual(back["calories_per_serving"], 650)
+        with app.app_context():
+            self.assertIn('"kcal":700', db.session.get(Recipe, back["id"]).source_nutrition)
+        self.patch(f"/recipes/{back['id']}", json={"calories_per_serving": None})
+        facts = self.get(f"/recipes/{back['id']}").get_json()["nutrition_facts"]
+        self.assertEqual(facts["source"], "recipe")
+        self.assertEqual(facts["per_serving"], {"kcal": 700, "protein": 40.0, "fat": None, "carbs": None})
+        self.assertEqual(facts["total"]["kcal"], 2800)
+
+    def test_no_figure_at_all(self):
+        r = self.new_recipe("Mystery", ingredients="3 widgets\n2 gizmos", servings="2")
+        self.assertIsNone(r["nutrition"])
+        self.assertIsNone(r["nutrition_facts"])
+
+    def test_import_preview_and_save_carry_source_nutrition(self):
+        from unittest import mock
+        import routes.api_v1 as api
+        data = {"title": "Soup", "ingredients": "1 onion", "instructions": "Cook.", "servings": "4",
+                "source_nutrition": {"kcal": 350, "protein": 12.0, "fat": None, "carbs": None, "serving_size": "1 bowl"}}
+        with mock.patch.object(api, "_scrape", return_value=(data, "")):
+            r = self.post("/import/url", json={"url": "https://example.com/soup"})
+        body = r.get_json()
+        self.assertEqual(body["source_nutrition"]["kcal"], 350)
+        self.assertEqual(body["source_nutrition"]["serving_size"], "1 bowl")
+        saved = self.post("/import/save", json={**body["draft"], "source_nutrition": body["source_nutrition"]})
+        self.assertEqual(saved.status_code, 201)
+        facts = saved.get_json()["nutrition_facts"]
+        self.assertEqual((facts["source"], facts["per_serving"]["kcal"], facts["total"]["kcal"]), ("recipe", 350, 1400))
+        # Caption previews have none; a bad value is refused.
+        cap = self.post("/import/caption", json={"caption": "Toast\nIngredients\n1 slice bread\nMethod\nToast it."}).get_json()
+        self.assertIsNone(cap["source_nutrition"])
+        self.assertEqual(self.post("/import/save", json={"title": "X", "source_nutrition": 5}).status_code, 422)
+        plain = self.post("/import/save", json={"title": "Y", "ingredients": "1 onion", "source_nutrition": None})
+        self.assertEqual(plain.status_code, 201)
+
+
 class TestCollections(Api):
     def test_lifecycle(self):
         a, b = self.new_recipe("A")["id"], self.new_recipe("B")["id"]

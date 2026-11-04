@@ -24,6 +24,7 @@ struct RecipeDetailView: View {
     @State private var showingPlan = false
     @State private var confirmDelete = false
     @State private var newComment = ""
+    @State private var showingEstimate = false
     @ScaledMetric(relativeTo: .title2) private var stepNumeralWidth: CGFloat = 24
 
     init(id: Int) { _model = State(initialValue: RecipeDetailModel(id: id)) }
@@ -63,6 +64,11 @@ struct RecipeDetailView: View {
         }
         .sheet(isPresented: $showingEditor) {
             NavigationStack { RecipeEditorView(mode: .edit(model.recipe!), onClose: { showingEditor = false }) { model.recipe = $0 } }
+        }
+        .sheet(isPresented: $showingEstimate) {
+            if let recipe = model.recipe, let estimate = recipe.nutritionFacts?.estimate {
+                EstimateSheet(estimate: estimate, servings: recipe.nutritionFacts?.servings, yieldUnit: recipe.nutritionFacts?.yieldUnit)
+            }
         }
         .sheet(isPresented: $showingPlan) {
             if let recipe = model.recipe { AddToPlanSheet(recipeId: recipe.id, title: recipe.title) { app.say("Added to your meal plan.") } }
@@ -195,7 +201,7 @@ struct RecipeDetailView: View {
             }
             .disabled(!picked.isEmpty && toBuy == 0)
         }
-        if let n = r.nutrition { nutrition(n) }
+        if let summary = NutritionSummary(recipe: r, scale: scale) { nutrition(summary, r) }
     }
 
     private var scalePicker: some View {
@@ -279,25 +285,60 @@ struct RecipeDetailView: View {
         }
     }
 
-    private func nutrition(_ n: Nutrition) -> some View {
-        let a = n.perServing
-        return VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text("Nutrition (estimate)").font(AppTypography.title3).padding(.top, Spacing.xs)
-            HStack {
-                stat("\(Int((a?.kcal ?? n.kcal).rounded()))", "kcal")
-                stat(String(format: "%.0f", a?.protein ?? n.protein), "protein g")
-                stat(String(format: "%.0f", a?.carbs ?? n.carbs), "carbs g")
-                stat(String(format: "%.0f", a?.fat ?? n.fat), "fat g")
+    /// Calories per serving up top, the whole recipe (scaled) beneath, then the macros, then where the figures came from.
+    private func nutrition(_ n: NutritionSummary, _ r: RecipeDetail) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text("Nutrition").font(AppTypography.title3).foregroundStyle(AppColors.textPrimary).padding(.top, Spacing.xs)
+                .accessibilityAddTraits(.isHeader)
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    HStack(alignment: .firstTextBaseline, spacing: Spacing.xs) {
+                        Text(n.headline).font(AppTypography.title.monospacedDigit()).foregroundStyle(AppColors.textPrimary)
+                        Text(n.headlineUnit).font(.subheadline).foregroundStyle(AppColors.textSecondary)
+                    }
+                    .accessibilityElement(children: .ignore).accessibilityLabel(n.headlineSpoken)
+                    if let total = n.totalLine {
+                        Text(total).font(.footnote.monospacedDigit()).foregroundStyle(AppColors.textSecondary)
+                            .accessibilityLabel(total.replacingOccurrences(of: "kcal", with: "calories"))
+                    }
+                }
+                if !n.macros.isEmpty {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: Spacing.s) { macroStats(n.macros) }
+                        VStack(alignment: .leading, spacing: Spacing.xxs) { macroStats(n.macros) }
+                    }
+                    .padding(.top, Spacing.xs)
+                    .overlay(alignment: .top) { RuledLine() }
+                    if let basis = n.macrosBasis {
+                        Text(basis).font(.caption).foregroundStyle(AppColors.textSecondary)
+                    }
+                }
             }
-            .padding(Spacing.s).background(AppColors.surface, in: RoundedRectangle(cornerRadius: Radius.field))
-            Text("Rough figures \(a != nil ? "per serving" : "for the whole recipe"), from the ingredients we recognised.")
-                .font(.caption).foregroundStyle(AppColors.textSecondary)
+            .padding(Spacing.s)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppColors.surface, in: RoundedRectangle(cornerRadius: Radius.field))
+            HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
+                if let label = n.sourceLabel {
+                    Text(label).font(.footnote).foregroundStyle(AppColors.textSecondary)
+                }
+                Spacer(minLength: 0)
+                if n.canExplain {
+                    Button(n.explainTitle) { showingEstimate = true }
+                        .font(.footnote.weight(.semibold)).foregroundStyle(AppColors.primary)
+                        .frame(minHeight: Size.tap)
+                }
+            }
         }
     }
 
-    private func stat(_ value: String, _ label: String) -> some View {
-        VStack { Text(value).font(.headline); Text(label).font(.caption2).foregroundStyle(AppColors.textSecondary) }
-            .frame(maxWidth: .infinity).accessibilityElement(children: .combine)
+    @ViewBuilder private func macroStats(_ macros: [NutritionSummary.Macro]) -> some View {
+        ForEach(macros, id: \.name) { m in
+            HStack(alignment: .firstTextBaseline, spacing: Spacing.xxs) {
+                Text(m.grams).font(.headline.monospacedDigit()).foregroundStyle(AppColors.textPrimary)
+                Text(m.name.lowercased()).font(.subheadline).foregroundStyle(AppColors.textSecondary)
+            }
+            .accessibilityElement(children: .ignore).accessibilityLabel(m.spoken)
+        }
     }
 
     // MARK: Chrome

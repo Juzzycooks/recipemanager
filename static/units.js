@@ -4,7 +4,8 @@
        items: '#ingredient-list li',   // elements whose text is one ingredient line
        scaleBtns: '.scale-btn',        // optional: buttons with data-scale
      });
-   Scales the leading quantity of each ingredient line by the chosen factor. */
+   Scales the leading quantity of each ingredient line by the chosen factor, and fires
+   'recipescalechange' on document (detail.factor) when a scale button is pressed. */
 (function () {
   const FRACTIONS = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125 };
   const FRAC_OUT = [[0.25, '¼'], [1 / 3, '⅓'], [0.5, '½'], [2 / 3, '⅔'], [0.75, '¾']];
@@ -64,7 +65,12 @@
     }
 
     if (opts.scaleBtns) document.querySelectorAll(opts.scaleBtns).forEach(function (btn) {
-      btn.addEventListener('click', function () { factor = parseFloat(btn.dataset.scale); render(); });
+      btn.addEventListener('click', function () {
+        factor = parseFloat(btn.dataset.scale);
+        render();
+        // Other parts of the page (the whole-recipe calories) follow the scale through this event.
+        document.dispatchEvent(new CustomEvent('recipescalechange', { detail: { factor: factor } }));
+      });
     });
     document.addEventListener('unitsystemchange', render);
     render();

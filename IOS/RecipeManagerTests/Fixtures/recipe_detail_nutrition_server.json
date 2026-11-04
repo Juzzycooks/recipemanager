@@ -1,0 +1,176 @@
+{
+  "author": {
+    "id": 1,
+    "username": "admin"
+  },
+  "avg_rating": null,
+  "calories_per_serving": null,
+  "can_edit": true,
+  "categories": [],
+  "collections": [],
+  "comments": [],
+  "cook_time": "",
+  "created_at": "2026-11-03T23:45:32.728377+00:00",
+  "description": "",
+  "id": 1,
+  "image_url": "",
+  "ingredient_sections": [
+    {
+      "heading": "Sauce",
+      "lines": [
+        "1 tbsp olive oil",
+        "1 brown onion, finely diced",
+        "2 garlic cloves, crushed",
+        "500g beef mince",
+        "2 x 400g tins crushed tomatoes",
+        "2 tbsp tomato paste",
+        "Salt and pepper, to taste"
+      ]
+    },
+    {
+      "heading": "To serve",
+      "lines": [
+        "400g spaghetti",
+        "1/2 cup grated parmesan",
+        "Fresh basil, to garnish"
+      ]
+    }
+  ],
+  "ingredients": "# Sauce\n1 tbsp olive oil\n1 brown onion, finely diced\n2 garlic cloves, crushed\n500g beef mince\n2 x 400g tins crushed tomatoes\n2 tbsp tomato paste\nSalt and pepper, to taste\n\n# To serve\n400g spaghetti\n1/2 cup grated parmesan\nFresh basil, to garnish",
+  "instruction_sections": [
+    {
+      "heading": null,
+      "lines": [
+        "Boil."
+      ]
+    }
+  ],
+  "instructions": "Boil.",
+  "is_favorite": false,
+  "last_made": null,
+  "made_count": 0,
+  "my_rating": null,
+  "notes": "",
+  "nutrition": {
+    "carbs": 360.2,
+    "fat": 111.4,
+    "kcal": 3180,
+    "matched": 10,
+    "per_serving": {
+      "carbs": 90.0,
+      "fat": 27.8,
+      "kcal": 795,
+      "protein": 44.0
+    },
+    "protein": 176.2,
+    "servings": 4,
+    "total_lines": 10
+  },
+  "nutrition_facts": {
+    "estimate": {
+      "carbs": 360.2,
+      "confidence": "high",
+      "counted_lines": 8,
+      "fat": 111.4,
+      "kcal": 3180,
+      "lines": [
+        {
+          "food": "oil",
+          "grams": 14,
+          "kcal": 120,
+          "status": "matched",
+          "text": "1 tbsp olive oil"
+        },
+        {
+          "food": "onion",
+          "grams": 150,
+          "kcal": 60,
+          "status": "matched",
+          "text": "1 brown onion, finely diced"
+        },
+        {
+          "food": "garlic",
+          "grams": 8.0,
+          "kcal": 12,
+          "status": "matched",
+          "text": "2 garlic cloves, crushed"
+        },
+        {
+          "food": "beef mince",
+          "grams": 500,
+          "kcal": 1075,
+          "status": "matched",
+          "text": "500g beef mince"
+        },
+        {
+          "food": "canned tomatoes",
+          "grams": 800,
+          "kcal": 192,
+          "status": "matched",
+          "text": "2 x 400g tins crushed tomatoes"
+        },
+        {
+          "food": "tomato paste",
+          "grams": 33,
+          "kcal": 27,
+          "status": "matched",
+          "text": "2 tbsp tomato paste"
+        },
+        {
+          "food": "salt",
+          "grams": null,
+          "kcal": null,
+          "status": "negligible",
+          "text": "Salt and pepper, to taste"
+        },
+        {
+          "food": "pasta",
+          "grams": 400,
+          "kcal": 1484,
+          "status": "matched",
+          "text": "400g spaghetti"
+        },
+        {
+          "food": "parmesan",
+          "grams": 50,
+          "kcal": 210,
+          "status": "matched",
+          "text": "1/2 cup grated parmesan"
+        },
+        {
+          "food": "fresh herbs",
+          "grams": null,
+          "kcal": null,
+          "status": "negligible",
+          "text": "Fresh basil, to garnish"
+        }
+      ],
+      "matched": 8,
+      "protein": 176.2,
+      "total_lines": 10
+    },
+    "per_serving": {
+      "carbs": 90.0,
+      "fat": 27.9,
+      "kcal": 795,
+      "protein": 44.0
+    },
+    "servings": 4,
+    "source": "estimate",
+    "total": {
+      "carbs": 360.2,
+      "fat": 111.4,
+      "kcal": 3180,
+      "protein": 176.2
+    },
+    "yield_unit": "serving"
+  },
+  "prep_time": "",
+  "rating_count": 0,
+  "servings": "Serves 4",
+  "share_url": null,
+  "source_url": "",
+  "thumb_url": "",
+  "title": "Spaghetti bolognese",
+  "updated_at": "2026-11-03T23:45:32.728378+00:00"
+}

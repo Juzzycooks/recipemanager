@@ -147,20 +147,67 @@
             </section>
             {% endif %}
 
-            {% if nutrition %}
-            <section class="detail-section" aria-labelledby="nut-h">
-                <h2 id="nut-h">Nutrition <span class="h-note">rough estimate</span></h2>
-                {% set n = nutrition.per_serving or nutrition %}
-                <dl class="detail-meta compact">
-                    <div><dt class="meta-label">Calories</dt><dd class="meta-value">{{ n.kcal }} kcal</dd></div>
-                    <div><dt class="meta-label">Protein</dt><dd class="meta-value">{{ n.protein }} g</dd></div>
-                    <div><dt class="meta-label">Fat</dt><dd class="meta-value">{{ n.fat }} g</dd></div>
-                    <div><dt class="meta-label">Carbs</dt><dd class="meta-value">{{ n.carbs }} g</dd></div>
-                </dl>
-                <p class="form-hint">
-                    {% if nutrition.per_serving %}Per serving ({{ nutrition.servings }} servings).{% else %}Whole recipe.{% endif %}
-                    Estimated from {{ nutrition.matched }} of {{ nutrition.total_lines }} ingredients — a ballpark guide only, not dietary advice.
-                </p>
+            {% if facts %}
+            {% set est = facts.estimate %}
+            {% macro nut_rows(n, scaled=false) %}
+                {% for key, label, unit, dec in [('kcal', 'Calories', 'kcal', 0), ('protein', 'Protein', 'g', 1), ('fat', 'Fat', 'g', 1), ('carbs', 'Carbs', 'g', 1)] %}
+                {% if n[key] is not none %}
+                <div><dt class="meta-label">{{ label }}</dt><dd class="meta-value"><span{% if scaled %} data-scale-base="{{ n[key] }}" data-scale-decimals="{{ dec }}"{% endif %}>{{ n[key] }}</span> {{ unit }}</dd></div>
+                {% endif %}
+                {% endfor %}
+            {% endmacro %}
+            <section class="detail-section nutrition" aria-labelledby="nut-h">
+                <h2 id="nut-h">Nutrition <span class="h-note">{% if facts.source == 'manual' %}You entered{% elif facts.source == 'recipe' %}From the recipe{% else %}Estimate &middot; {{ est.confidence }} confidence{% endif %}</span></h2>
+                <div class="nut-grid">
+                    <div class="nut-col">
+                        <h3 class="nut-col-h">Per {{ yield_word }}</h3>
+                        {% if facts.per_serving %}
+                        <dl class="detail-meta compact">{{ nut_rows(facts.per_serving) }}</dl>
+                        {% else %}
+                        <p class="form-hint">Add how many it serves to see this.</p>
+                        {% endif %}
+                    </div>
+                    <div class="nut-col">
+                        <h3 class="nut-col-h">Whole recipe <span class="nut-scale-note" data-scale-note hidden></span></h3>
+                        {% if facts.total %}
+                        <dl class="detail-meta compact">{{ nut_rows(facts.total, true) }}</dl>
+                        {% else %}
+                        <p class="form-hint">Add how many it serves to see this.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if facts.source == 'manual' and facts.per_serving and facts.per_serving.protein is not none %}
+                <p class="form-hint">Protein, fat and carbs are {{ 'from the recipe' if recipe.source_nutrition else 'our estimate' }}.</p>
+                {% endif %}
+                {% if facts.source != 'estimate' and est %}
+                <p class="form-hint">Our estimate from the ingredients: about {% if facts.servings %}{{ (est.kcal / facts.servings)|round|int }} kcal per {{ yield_word }}{% else %}{{ est.kcal }} kcal for the whole recipe{% endif %} ({{ est.confidence }} confidence).</p>
+                {% endif %}
+                <p class="form-hint">A ballpark guide only, not dietary advice.{% if facts.source == 'estimate' %} Estimated from {{ est.matched }} of {{ est.counted_lines }} ingredients; salt, spices and garnishes are left out of the count.{% endif %}</p>
+                {% if est %}
+                <details class="nut-how">
+                    <summary>How this was estimated</summary>
+                    <ul class="nut-lines">
+                        {% for line in est.lines if line.status == 'matched' %}
+                        <li><span class="nut-line-text">{{ line.text }}<span class="nut-line-food">{{ line.food }}{% if line.grams is not none %}, {{ line.grams }} g{% endif %}</span></span><span class="nut-line-kcal">{{ line.kcal }} kcal</span></li>
+                        {% endfor %}
+                    </ul>
+                    {% set small = est.lines|selectattr('status', 'equalto', 'negligible')|list %}
+                    {% if small %}
+                    <h3 class="nut-col-h">Too small to count</h3>
+                    <ul class="nut-lines">
+                        {% for line in small %}<li><span class="nut-line-text">{{ line.text }}</span><span class="nut-line-kcal">{% if line.kcal %}{{ line.kcal }} kcal{% endif %}</span></li>{% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% set missed = est.lines|selectattr('status', 'equalto', 'unmatched')|list %}
+                    {% if missed %}
+                    <h3 class="nut-col-h">Not recognised, so not counted</h3>
+                    <ul class="nut-lines">
+                        {% for line in missed %}<li><span class="nut-line-text">{{ line.text }}</span></li>{% endfor %}
+                    </ul>
+                    {% endif %}
+                    <p class="form-hint">Per 100 g figures are from USDA FoodData Central. Cups use the same weights as the unit converter.</p>
+                </details>
+                {% endif %}
             </section>
             {% endif %}
         </div>
@@ -204,6 +251,20 @@ function copyShareLink() {
 <script src="{{ url_for('static', filename='units.js', v=asset_v) }}"></script>
 <script>
 RecipeUnits.attach({ items: '#ingredient-list li:not(.list-section)', scaleBtns: '.scale-btn' });
+// Whole-recipe nutrition follows the scale buttons; per-serving figures do not change.
+document.addEventListener('recipescalechange', function (e) {
+    var factor = e.detail && e.detail.factor || 1;
+    document.querySelectorAll('[data-scale-base]').forEach(function (el) {
+        var dec = parseInt(el.dataset.scaleDecimals, 10) || 0;
+        var v = parseFloat(el.dataset.scaleBase) * factor;
+        el.textContent = dec ? (Math.round(v * 10) / 10).toFixed(1) : String(Math.round(v));
+    });
+    var note = document.querySelector('[data-scale-note]');
+    if (note) {
+        note.hidden = factor === 1;
+        note.textContent = factor === 0.5 ? 'at half' : 'at ' + factor + '\u00d7';
+    }
+});
 </script>
 <script src="{{ url_for('static', filename='js/shopping.js', v=asset_v) }}"></script>
 

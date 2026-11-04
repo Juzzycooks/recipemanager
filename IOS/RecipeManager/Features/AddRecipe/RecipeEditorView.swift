@@ -34,6 +34,8 @@ struct RecipeEditorView: View {
     @State private var title = ""
     @State private var summary = ""
     @State private var servings = ""
+    /// Calories per serving as typed; empty means not set.
+    @State private var calories = ""
     @State private var prepTime = ""
     @State private var cookTime = ""
     @State private var ingredients: [LineRow] = []
@@ -67,7 +69,7 @@ struct RecipeEditorView: View {
     }
 
     private var snapshot: Snapshot {
-        Snapshot(fields: [title, summary, servings, prepTime, cookTime, LineRow.text(from: ingredients), LineRow.text(from: steps), notes, sourceUrl],
+        Snapshot(fields: [title, summary, servings, calories, prepTime, cookTime, LineRow.text(from: ingredients), LineRow.text(from: steps), notes, sourceUrl],
                  categoryIds: categoryIds, hasNewPhoto: photoData != nil)
     }
 
@@ -155,14 +157,35 @@ struct RecipeEditorView: View {
     }
 
     private var detailsSection: some View {
-        Section("Details") {
+        Section {
             TextField("Title", text: $title)
             TextField("Description", text: $summary, axis: .vertical).lineLimit(1...4)
             LabeledContent("Servings") { TextField("4", text: $servings).multilineTextAlignment(.trailing) }
+            LabeledContent("Calories per serving") {
+                HStack(spacing: Spacing.xxs) {
+                    TextField("Optional", text: $calories).keyboardType(.numberPad).multilineTextAlignment(.trailing)
+                        .accessibilityLabel("Calories per serving").accessibilityHint("In kilocalories. Leave empty to use the estimate.")
+                    Text("kcal").foregroundStyle(AppColors.textSecondary).accessibilityHidden(true)
+                }
+            }
+            .onChange(of: calories) { _, new in
+                // The number pad has no other keys, but a paste can bring some.
+                let digits = String(new.filter(\.isWholeNumber).prefix(5))
+                if digits != new { calories = digits }
+            }
             LabeledContent("Prep time") { TextField("15 min", text: $prepTime).multilineTextAlignment(.trailing) }
             LabeledContent("Cook time") { TextField("30 min", text: $cookTime).multilineTextAlignment(.trailing) }
-        }
+        } header: { Text("Details") } footer: { if let caloriesHint { Text(caloriesHint) } }
         .listRowBackground(AppColors.card)
+    }
+
+    /// What the recipe itself (or our estimate) says, beside the empty field.
+    private var caloriesHint: String? {
+        switch mode {
+        case .create: nil
+        case .imported(let p): RecipeEditorHints.calories(source: p.sourceNutrition, facts: nil)
+        case .edit(let r): RecipeEditorHints.calories(source: nil, facts: r.nutritionFacts)
+        }
     }
 
     private func linesSection(_ title: String, prompt: String, rows: Binding<[LineRow]>, footer: String?) -> some View {
@@ -196,6 +219,7 @@ struct RecipeEditorView: View {
         case .create: break
         case .edit(let r):
             title = r.title; summary = r.description; servings = r.servings; prepTime = r.prepTime; cookTime = r.cookTime
+            calories = r.caloriesPerServing.map(String.init) ?? ""
             ingredients = LineRow.rows(from: r.ingredients); steps = LineRow.rows(from: r.instructions)
             categoryIds = Set(r.categories.map(\.id)); notes = r.notes; sourceUrl = r.sourceUrl; existingImage = r.imageUrl
         case .imported(let p):
@@ -219,19 +243,24 @@ struct RecipeEditorView: View {
         defer { isSaving = false }
         let draft = RecipeDraft(title: title.trimmingCharacters(in: .whitespaces), description: summary, ingredients: LineRow.text(from: ingredients),
                                 instructions: LineRow.text(from: steps), prepTime: prepTime, cookTime: cookTime, servings: servings,
-                                sourceUrl: sourceUrl, notes: notes, categoryIds: Array(categoryIds).sorted())
+                                sourceUrl: sourceUrl, notes: notes, categoryIds: Array(categoryIds).sorted(),
+                                caloriesPerServing: RecipeDraft.calories(from: calories))
         let imageName = importImageName, photo = photoData, mode = mode
         do {
             var saved: RecipeDetail = try await session.run { client in
                 switch mode {
                 case .edit(let r): return try await client.send("PATCH", "/recipes/\(r.id)", body: draft)
                 case .create: return try await client.send("POST", "/recipes", body: draft)
-                case .imported:
-                    let body = ImportSaveBody(draft: draft, imageName: imageName, useImage: photo == nil)
+                case .imported(let preview):
+                    let body = ImportSaveBody(draft: draft, imageName: imageName, useImage: photo == nil, sourceNutrition: preview.sourceNutrition)
                     var created: RecipeDetail = try await client.send("POST", "/import/save", body: body)
-                    if !draft.categoryIds.isEmpty {
-                        struct Cats: Encodable, Sendable { let categoryIds: [Int] }
-                        created = try await client.send("PATCH", "/recipes/\(created.id)", body: Cats(categoryIds: draft.categoryIds))
+                    // /import/save takes neither tags nor calories, so they follow in one PATCH.
+                    if !draft.categoryIds.isEmpty || draft.caloriesPerServing != nil {
+                        struct Extras: Encodable, Sendable {
+                            let categoryIds: [Int]?, caloriesPerServing: Int?
+                        }
+                        created = try await client.send("PATCH", "/recipes/\(created.id)", body: Extras(
+                            categoryIds: draft.categoryIds.isEmpty ? nil : draft.categoryIds, caloriesPerServing: draft.caloriesPerServing))
                     }
                     return created
                 }
@@ -259,24 +288,41 @@ struct RecipeEditorView: View {
     }
 }
 
-private struct ImportSaveBody: Encodable, Sendable {
+struct ImportSaveBody: Encodable, Sendable {
     let title: String, description: String, ingredients: String, instructions: String, notes: String
     let servings: String, prepTime: String, cookTime: String, sourceUrl: String, imageName: String, useImage: Bool
+    /// What the import found on the page, passed back as it came (omitted when there was none).
+    let sourceNutrition: SourceNutrition?
 
-    init(draft: RecipeDraft, imageName: String, useImage: Bool) {
+    init(draft: RecipeDraft, imageName: String, useImage: Bool, sourceNutrition: SourceNutrition? = nil) {
         title = draft.title; description = draft.description; ingredients = draft.ingredients; instructions = draft.instructions
         notes = draft.notes; servings = draft.servings; prepTime = draft.prepTime; cookTime = draft.cookTime
         sourceUrl = draft.sourceUrl; self.imageName = imageName; self.useImage = useImage && !imageName.isEmpty
+        self.sourceNutrition = sourceNutrition
+    }
+}
+
+/// Footer wording under the editor's Details section.
+enum RecipeEditorHints {
+    static func calories(source: SourceNutrition?, facts: NutritionFacts?) -> String? {
+        if let kcal = source?.kcal, kcal > 0 {
+            return "The recipe lists \(Int(kcal.rounded())) kcal per serving. Leave Calories per serving empty to use that."
+        }
+        guard let facts, facts.source != .manual, let kcal = facts.perServing?.kcal else { return nil }
+        let unit = NutritionSummary.singular(facts.yieldUnit)
+        return facts.source == .recipe
+            ? "The recipe lists \(Int(kcal.rounded())) kcal per \(unit)."
+            : "Estimated at about \(Int(kcal.rounded())) kcal per \(unit) from the ingredients."
     }
 }
 
 extension RecipeDraft {
     init(title: String, description: String, ingredients: String, instructions: String, prepTime: String, cookTime: String,
-         servings: String, sourceUrl: String, notes: String, categoryIds: [Int]) {
+         servings: String, sourceUrl: String, notes: String, categoryIds: [Int], caloriesPerServing: Int? = nil) {
         self.init()
         self.title = title; self.description = description; self.ingredients = ingredients; self.instructions = instructions
         self.prepTime = prepTime; self.cookTime = cookTime; self.servings = servings; self.sourceUrl = sourceUrl
-        self.notes = notes; self.categoryIds = categoryIds
+        self.notes = notes; self.categoryIds = categoryIds; self.caloriesPerServing = caloriesPerServing
     }
 }
 

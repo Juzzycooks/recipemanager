@@ -51,6 +51,12 @@
             <input type="text" id="servings" name="servings" value="{{ recipe.servings if recipe else '' }}" placeholder="e.g. 4">
         </div>
     </div>
+    <div class="form-group">
+        <label for="calories_per_serving">Calories per serving <span class="opt">(optional)</span></label>
+        <input type="number" id="calories_per_serving" name="calories_per_serving" class="input-short" inputmode="numeric" min="0" max="20000" step="1"
+            value="{{ recipe.calories_per_serving if recipe and recipe.calories_per_serving is not none else '' }}" placeholder="e.g. 450">
+        <div class="form-hint">In kcal. Leave blank and we'll use the recipe's own figure, or estimate it from the ingredients.</div>
+    </div>
     {% if categories %}
     <div class="form-group">
         <span class="field-label" id="cat-label">Categories</span>
@@ -164,7 +170,7 @@ function previewUpload(input) {
         return Array.prototype.filter.call(form.elements, function (el) {
             if (!el.name || el.name === 'csrf_token') return false;
             var t = (el.type || '').toLowerCase();
-            return el.tagName === 'TEXTAREA' || t === 'text' || t === 'url';
+            return el.tagName === 'TEXTAREA' || t === 'text' || t === 'url' || t === 'number';
         });
     }
     function snapshot() { var o = {}; fields().forEach(function (el) { o[el.name] = el.value; }); return o; }
