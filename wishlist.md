@@ -25,20 +25,20 @@ Missing or thin: no iPad or Watch, no UI tests, no PDF import. Build 11 is on Te
   Done 4 November 2026 (unreleased, after build 11): `UndoCenter` and `UndoPill` in `StatusStack`, used by meal-plan remove, Clear completed and recipe delete.
 - [x] **Swipe-down on the editor** is blocked when there are edits but doesn't open the discard dialog. It should ask.
   Done 4 November 2026 (unreleased, after build 11): it now opens the discard dialog (`SheetDismissAttempt`).
-- [ ] **Undo for deleting a collection**, like recipes have.
+- [x] **Undo for deleting a collection**, like recipes have. Done 4 November 2026: web flash and iPhone pill, restorable for 30 days.
 - [x] **Refetch `/units` on reconnect**, not only at launch and sign-in, so a phone that first met an older server picks up the cup table.
   Done 4 November 2026 (unreleased, after build 11).
-- [ ] **"Overnight", "until doubled", "2–3 hours"** should become timers (ranges pick the low end and offer to extend).
-- [ ] **Better step-ingredient matching.** "Add the mixture" and "the dough" match nothing today; track what each step produces so later steps can refer back to it.
+- [x] **"Overnight", "until doubled", "2–3 hours"** should become timers (ranges pick the low end and offer to extend). Done 4 November 2026 (web and iPhone, same test cases; also fractions, "an hour" and seconds on the iPhone).
+- [x] **Better step-ingredient matching.** "Add the mixture" and "the dough" match nothing today; track what each step produces so later steps can refer back to it. Done 4 November 2026: "the dough" and "the filling" pull in a section with that heading, and a group word no heading claims ("the mixture") lists what the earlier steps of that section used, under "From earlier" (web and iPhone).
 - [x] **Retake screenshots.** `docs/screenshots/ios` and the App Store slides are retaken from the seeded demo server by `IOS/scripts/run-ui-tests.sh --screenshots`. (`docs/screenshots/hero.png` is still the old composite.)
-- [ ] **UI tests.** At least sign in, open a recipe, cook it to the end, add to the shopping list, go offline and come back.
-- [ ] **Silent library reset.** `OfflineStore.loadLibrary` resets quietly on a decode failure after a model change, which looks like "everything re-downloads". Migrate or log it instead.
+- [x] **UI tests.** At least sign in, open a recipe, cook it to the end, add to the shopping list, go offline and come back. Done 4 November 2026: `IOS/scripts/run-ui-tests.sh` against a seeded Docker server.
+- [x] **Silent library reset.** `OfflineStore.loadLibrary` resets quietly on a decode failure after a model change, which looks like "everything re-downloads". Migrate or log it instead. Done 4 November 2026: recipes decode one by one, failures are logged, an unreadable file is kept aside.
 
 ## 2. Near-term features (the app is ready for these)
 
 - [x] **Servings scaling** in the recipe and cook mode (the web has it; the app doesn't). Scale, then convert units, like the web.
   Done 4 November 2026 (unreleased, after build 11): ½× to 3× on the Ingredients tab, carried into cook mode and "Add to shopping list".
-- [ ] **PDF import** in the app, matching the web.
+- [x] **PDF import** in the app, matching the web. Done 4 November 2026 (Add screen; the share sheet doesn't take PDFs yet).
 - [x] **Siri and Shortcuts (App Intents):** "Add milk to my shopping list", "What's for dinner tonight?", "Start a 10 minute pasta timer", "Plan lasagne for Thursday".
   Done 4 November 2026 (unreleased, after build 11): all four, plus open or cook a recipe. Siri asks for the item and the day (a phrase can carry only one value). Not yet tried on a device.
 - [x] **Spotlight:** index recipes so searching "nata" on the home screen opens the recipe.
@@ -50,11 +50,11 @@ Missing or thin: no iPad or Watch, no UI tests, no PDF import. Build 11 is on Te
   Done 4 November 2026 (unreleased, after build 11): on-device recognition only, also "ingredients", "start the timer" and "stop listening"; timers understand "half an hour" and "an hour and a half". Needs the device checklist in `HANDOFF.md`.
 - [x] **Read steps aloud** with the system voice, paced so you can follow.
   Done 4 November 2026 (unreleased, after build 11): a "Read steps aloud" switch for hands-free mode (cook mode strip, help sheet, Settings); it uses the system voice at its normal pace, or VoiceOver's voice and rate when VoiceOver is on.
-- [ ] **Shopping list shared live** between household members, with who added what and pushes when someone ticks the last item.
-- [ ] **Reminders and Calendar export:** push the week's plan into Calendar and the list into Reminders.
+- [x] **Shopping list shared live** between household members, with who added what and pushes when someone ticks the last item. Done 4 November 2026: households with invite codes, "Added by", 15-second refresh. No push notifications (self-hosted, no APNs).
+- [x] **Reminders and Calendar export:** push the week's plan into Calendar and the list into Reminders. Done 4 November 2026 (iPhone EventKit, re-export updates; web .ics download).
 - [ ] **Pantry tracking:** mark what's at home; the list skips it and the meal plan prefers recipes that use it up.
 - [ ] **Leftovers:** "made 8 serves, ate 4" puts the rest on tomorrow's lunch in the plan.
-- [ ] **Cook history with photos:** "I made this" takes a picture and a note, and the recipe shows a timeline of every time you cooked it.
+- [x] **Cook history with photos:** "I made this" takes a picture and a note, and the recipe shows a timeline of every time you cooked it. Done 4 November 2026 (web and iPhone, offline photo queueing).
 - [ ] **Recipe diff:** see what changed since you imported it, and keep your tweaks separate from the original.
 - [ ] **iPad layout** (recipe on the left, cook steps on the right, landscape on a stand).
 - [ ] **Dietary, difficulty and cuisine** fields on the server so the search filters from the original design can come back with real data.
@@ -98,6 +98,6 @@ Missing or thin: no iPad or Watch, no UI tests, no PDF import. Build 11 is on Te
 
 ## Suggested next three
 
-1. Upload build 12 to TestFlight (the build is bumped; add the App Group in Signing first) and work through the device checklist in `HANDOFF.md` (widgets with the App Group, Siri, Spotlight, hands-free with music, calls and AirPods).
-2. Upload the retaken App Store slides (`IOS/AppStore/Screenshots/iphone-6.9`) and keep `IOS/scripts/run-ui-tests.sh` green as screens change (done: UI tests and screenshots, 4 November 2026).
-3. Timers from "overnight" and ranges, and better step-ingredient matching: both make cook mode (and now hands-free) smarter at the stove.
+1. Upload build 13 to TestFlight (add the App Group in Signing first) and work through the device checks: widgets, Calendar and Reminders, the timer "+N min", the camera, households with two accounts.
+2. Control Center and Action button controls: a kitchen timer and "add to shopping list". Small, and builds on the App Intents already there.
+3. Pantry tracking, then leftovers: both make the meal plan and shopping list smarter with data the app already has.

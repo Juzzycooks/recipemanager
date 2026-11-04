@@ -111,8 +111,9 @@
     'custard base crust pastry streusel').split(' ').map(stem);
 
   /* Which ingredients does this step mention? Prefers ingredients from the same "# Section".
-     A group word ("the dough") that names another section brings in that whole section. */
-  function matchIngredients(stepText, ingredients, section) {
+     A group word ("the dough") that names another section brings in that whole section.
+     `loose` is true when the step names a group word that no other section's heading claims ("the mixture"). */
+  function matchStep(stepText, ingredients, section) {
     var stepStems = {};
     tokens(stepText).forEach(function (w) { stepStems[stem(w)] = true; });
     function run(list) {
@@ -130,21 +131,47 @@
     if (!out.length) out = run(ingredients);
 
     var groups = GROUP.filter(function (g) { return stepStems[g]; });
-    if (!groups.length) return out;
-    var picked = out.slice();
+    if (!groups.length) return { direct: out, loose: false };
+    var picked = out.slice(), claimed = {};
     ingredients.forEach(function (ing) {
-      if (!ing.section || picked.indexOf(ing) !== -1) return;
+      if (!ing.section) return;
       var heading = ing.section.toLowerCase();
       if (heading === own) return;
       var words = tokens(heading).map(stem);
-      if (groups.some(function (g) { return words.indexOf(g) !== -1; })) picked.push(ing);
+      var hit = groups.filter(function (g) { return words.indexOf(g) !== -1; });
+      hit.forEach(function (g) { claimed[g] = true; });
+      if (hit.length && picked.indexOf(ing) === -1) picked.push(ing);
     });
-    if (picked.length === out.length) return out;
-    return ingredients.filter(function (ing) { return picked.indexOf(ing) !== -1; });
+    var loose = groups.some(function (g) { return !claimed[g]; });
+    if (picked.length === out.length) return { direct: out, loose: loose };
+    return { direct: ingredients.filter(function (ing) { return picked.indexOf(ing) !== -1; }), loose: loose };
+  }
+
+  function matchIngredients(stepText, ingredients, section) {
+    return matchStep(stepText, ingredients, section).direct;
+  }
+
+  /* Every step at once. steps: [{ text, section }]. For each step, { direct, earlier }:
+     `direct` is matchIngredients; `earlier` is filled only when the step names a group word no heading claims
+     ("pour the batter into the tin"), and is what the previous steps of the same section used, minus `direct`,
+     in ingredient order. Steps with no section share one. */
+  function matchSteps(steps, ingredients) {
+    var used = {};   // section (lowercased) -> ingredients used so far
+    return steps.map(function (step) {
+      var m = matchStep(step.text, ingredients, step.section);
+      var key = (step.section || '').toLowerCase();
+      var before = used[key] || [];
+      var earlier = m.loose ? ingredients.filter(function (ing) {
+        return before.indexOf(ing) !== -1 && m.direct.indexOf(ing) === -1;
+      }) : [];
+      used[key] = before.concat(m.direct, earlier);
+      return { direct: m.direct, earlier: earlier };
+    });
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { findDurations: findDurations, fmtMinutes: fmtMinutes, ingredientKeys: ingredientKeys, matchIngredients: matchIngredients };
+    module.exports = { findDurations: findDurations, fmtMinutes: fmtMinutes, ingredientKeys: ingredientKeys,
+      matchIngredients: matchIngredients, matchSteps: matchSteps };
   }
   if (typeof document === 'undefined' || !document.getElementById('instructions-tab')) return;
 
@@ -209,12 +236,17 @@
       chips.hidden = !chips.children.length;
     }
     if (needs) {
-      var matches = matchIngredients(text, collectIngredients(), stepEl.dataset.section || '');
+      var ings = collectIngredients();
+      var all = matchSteps(steps.map(function (s) {
+        return { text: s.querySelector('.step-text').textContent, section: s.dataset.section || '' };
+      }), ings);
+      var match = all[steps.indexOf(stepEl)] || { direct: matchIngredients(text, ings, stepEl.dataset.section || ''), earlier: [] };
       needs.textContent = '';
-      if (matches.length) {
-        var h = document.createElement('p'); h.className = 'needs-heading'; h.textContent = 'You’ll need';
+      function addList(heading, list) {
+        if (!list.length) return;
+        var h = document.createElement('p'); h.className = 'needs-heading'; h.textContent = heading;
         var ul = document.createElement('ul'); ul.className = 'needs-list';
-        matches.forEach(function (m) {
+        list.forEach(function (m) {
           var li = document.createElement('li');
           li.textContent = m.text;
           if (m.el.classList.contains('checked')) li.className = 'is-checked';
@@ -222,7 +254,9 @@
         });
         needs.appendChild(h); needs.appendChild(ul);
       }
-      needs.hidden = !matches.length;
+      addList('You\u2019ll need', match.direct);
+      addList('From earlier', match.earlier);
+      needs.hidden = !match.direct.length && !match.earlier.length;
     }
   }
 

@@ -1,6 +1,6 @@
 // Run with: node tests/test_cook.js   (no dependencies)
 const assert = require('assert');
-const { findDurations, fmtMinutes, ingredientKeys, matchIngredients } = require('../static/js/cook.js');
+const { findDurations, fmtMinutes, ingredientKeys, matchIngredients, matchSteps } = require('../static/js/cook.js');
 
 const mins = (t) => findDurations(t).map((d) => d.minutes);
 assert.deepStrictEqual(mins('Simmer for 10 minutes until thick.'), [10]);
@@ -100,3 +100,50 @@ assert.deepStrictEqual(mins('Bake 2 hours, then 30 minutes more'), [120, 30]);
 assert.deepStrictEqual(mins('Cure for 72 hours'), [4320]);
 assert.deepStrictEqual(mins('Age for 100 hours'), []);
 console.log('cook.js: decimals, fractions, words, seconds, joining and the cap passed');
+
+// "From earlier": a group word no heading claims ("the mixture") brings back what the section's earlier steps used.
+// Parity with StepIngredients.matchSteps (IOS/RecipeManagerTests/CookAndExportTests.swift has the same cases).
+const both = (r) => r.map((m) => ({ direct: names(m.direct), earlier: names(m.earlier) }));
+const sponge = [{ text: '3 eggs' }, { text: '150 g sugar' }, { text: '200 g flour' }, { text: '1 tsp baking powder' }, { text: '50 g butter' }];
+assert.deepStrictEqual(both(matchSteps([
+  { text: 'Whisk the eggs and sugar until pale.' },
+  { text: 'Fold the flour and baking powder into the mixture.' },
+  { text: 'Grease a tin with the butter.', section: '' },
+  { text: 'Pour the batter into the tin and bake for 25 minutes.' },
+], sponge)), [
+  { direct: ['3 eggs', '150 g sugar'], earlier: [] },
+  { direct: ['200 g flour', '1 tsp baking powder'], earlier: ['3 eggs', '150 g sugar'] },
+  { direct: ['50 g butter'], earlier: [] },
+  { direct: [], earlier: ['3 eggs', '150 g sugar', '200 g flour', '1 tsp baking powder', '50 g butter'] },
+]);
+// Earlier never crosses a section
+const iced = [
+  { text: '2 eggs', section: 'Cake' }, { text: '100 g sugar', section: 'Cake' },
+  { text: '200 g icing sugar', section: 'Icing' }, { text: '2 tbsp lemon juice', section: 'Icing' },
+];
+assert.deepStrictEqual(both(matchSteps([
+  { text: 'Beat the eggs and sugar.', section: 'Cake' },
+  { text: 'Pour the mixture into a tin.', section: 'Cake' },
+  { text: 'Mix the icing sugar and lemon juice.', section: 'Icing' },
+  { text: 'Spread the mixture over the cake.', section: 'Icing' },
+], iced)), [
+  { direct: ['2 eggs', '100 g sugar'], earlier: [] },
+  { direct: [], earlier: ['2 eggs', '100 g sugar'] },
+  { direct: ['200 g icing sugar', '2 tbsp lemon juice'], earlier: [] },
+  { direct: [], earlier: ['200 g icing sugar', '2 tbsp lemon juice'] },
+]);
+// The existing rule: "the icing" inside the Icing section is the step's own section, so nothing is expanded...
+assert.deepStrictEqual(names(matchIngredients('Spread the icing over the cake.', iced, 'Icing')), []);
+// ...and as no other heading claims "icing", it counts as a reference back, so the section's earlier steps come in
+assert.deepStrictEqual(both(matchSteps([
+  { text: 'Mix the icing sugar and lemon juice.', section: 'Icing' },
+  { text: 'Spread the icing over the cake.', section: 'Icing' },
+], iced))[1], { direct: [], earlier: ['200 g icing sugar', '2 tbsp lemon juice'] });
+// A heading takes precedence: the sections come in through direct, and nothing comes from earlier
+assert.deepStrictEqual(both(matchSteps([
+  { text: 'Knead the flour, yeast and water.', section: '' },
+  { text: 'Roll out the dough and spread the filling over it' },
+], pizza))[1], { direct: ['500 g flour', '7 g yeast', '300 ml water', '200 g ricotta', '1 lemon, zested'], earlier: [] });
+// No group word, no earlier; one step on its own has nothing before it
+assert.deepStrictEqual(both(matchSteps([{ text: 'Add the mixture to the pan' }], pizza)), [{ direct: [], earlier: [] }]);
+console.log('cook.js: from earlier passed');

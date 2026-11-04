@@ -236,16 +236,17 @@ struct CookingView: View {
                 }
             }
 
-            let needed = recipe.ingredients(for: step)
-            if !needed.isEmpty {
+            let needed = recipe.ingredientMatch(for: step)
+            if !needed.direct.isEmpty || !needed.earlier.isEmpty {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text("For this step").font(.subheadline.weight(.semibold)).foregroundStyle(CookColors.muted)
-                    ForEach(Array(needed.enumerated()), id: \.offset) { _, line in
-                        HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
-                            Rectangle().fill(CookColors.ember).frame(width: 12, height: 2)
-                                .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + lift }
-                            Text(shown(line)).font(CookFonts.ingredient).foregroundStyle(CookColors.text)
-                        }
+                    if !needed.direct.isEmpty {
+                        Text("For this step").font(.subheadline.weight(.semibold)).foregroundStyle(CookColors.muted)
+                        ingredientLines(needed.direct, lift: lift)
+                    }
+                    if !needed.earlier.isEmpty {
+                        Text("From earlier").font(.subheadline.weight(.semibold)).foregroundStyle(CookColors.muted)
+                            .padding(.top, needed.direct.isEmpty ? 0 : Spacing.s)
+                        ingredientLines(needed.earlier, lift: lift)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(Spacing.m)
@@ -272,6 +273,17 @@ struct CookingView: View {
         }
         .padding(.horizontal, Spacing.screen).padding(.vertical, Spacing.l)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Ingredient lines with the ember dash, as "For this step" and "From earlier" show them.
+    private func ingredientLines(_ lines: [String], lift: CGFloat) -> some View {
+        ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+            HStack(alignment: .firstTextBaseline, spacing: Spacing.s) {
+                Rectangle().fill(CookColors.ember).frame(width: 12, height: 2)
+                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + lift }
+                Text(shown(line)).font(CookFonts.ingredient).foregroundStyle(CookColors.text)
+            }
+        }
     }
 
     /// "Step 3" for a step's first time, "Step 3 · 10 min" for the others, so each gets its own timer.
@@ -507,9 +519,11 @@ struct CookingView: View {
         case .repeatStep:
             handsFree.say(steps.isEmpty ? "This recipe has no method yet." : spokenStep)
         case .ingredients:
-            let forStep = page == .steps ? current.map { recipe.ingredients(for: $0).map(shown) } ?? [] : []
-            if !forStep.isEmpty {
-                handsFree.say("For this step: " + spokenList(forStep))
+            let forStep = page == .steps ? current.map { recipe.ingredientMatch(for: $0) } : nil
+            let direct = forStep?.direct.map(shown) ?? [], earlier = forStep?.earlier.map(shown) ?? []
+            if !direct.isEmpty || !earlier.isEmpty {
+                handsFree.say([direct.isEmpty ? nil : "For this step: " + spokenList(direct),
+                               earlier.isEmpty ? nil : "From earlier: " + spokenList(earlier)].compactMap { $0 }.joined(separator: ". "))
             } else {
                 let all = allIngredientLines
                 handsFree.say(all.isEmpty ? "This recipe has no ingredients listed." : "You'll need: " + spokenList(all))

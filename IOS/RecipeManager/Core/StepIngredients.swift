@@ -41,8 +41,48 @@ enum StepIngredients {
     /// (preferring the step's own section), plus every line of a section the step refers to as a whole: "spread the
     /// filling" brings in the whole "Filling" section when a heading names it (not when the step is in that section).
     static func match(step: String, section: String?, in sections: [RecipeSection]) -> [String] {
+        let lines = flatten(sections)
+        return text(of: matchIndices(step: step, section: section, sections: sections, lines: lines).direct, lines: lines)
+    }
+
+    /// One step's ingredients: `direct` as `match` gives them, and `earlier`, what the previous steps of the same
+    /// section used, when the step names a group word ("the mixture") that no other section's heading claims.
+    struct StepMatch: Equatable, Sendable {
+        var direct: [String]
+        var earlier: [String]
+    }
+
+    /// Every step at once, so a later step can refer back: "pour the batter into the tin" lists everything the
+    /// section's earlier steps used, under "From earlier". Steps with no section share one. A port of `matchSteps`.
+    static func matchSteps(_ steps: [(text: String, section: String?)], in sections: [RecipeSection]) -> [StepMatch] {
+        let lines = flatten(sections)
+        var used: [String: Set<Int>] = [:]
+        return steps.map { step in
+            let m = matchIndices(step: step.text, section: step.section, sections: sections, lines: lines)
+            let key = step.section?.lowercased() ?? ""
+            let before = used[key] ?? []
+            let direct = text(of: m.direct, lines: lines)
+            let earlier = m.loose ? text(of: before.subtracting(m.direct), lines: lines).filter { !direct.contains($0) } : []
+            used[key] = before.union(m.direct)   // `earlier` is already in `before`
+            return StepMatch(direct: direct, earlier: earlier)
+        }
+    }
+
+    private typealias Line = (section: Int, line: String)
+
+    private static func flatten(_ sections: [RecipeSection]) -> [Line] {
+        sections.enumerated().flatMap { s, sec in sec.lines.map { (section: s, line: $0) } }
+    }
+
+    /// Indices in recipe order, each line's text once.
+    private static func text(of picked: Set<Int>, lines: [Line]) -> [String] {
+        var seen = Set<String>()
+        return picked.sorted().map { lines[$0].line }.filter { seen.insert($0).inserted }
+    }
+
+    /// `loose` is true when the step names a group word that no other section's heading claims.
+    private static func matchIndices(step: String, section: String?, sections: [RecipeSection], lines: [Line]) -> (direct: Set<Int>, loose: Bool) {
         let stepStems = Set(tokens(step).map(stem))
-        let lines = sections.enumerated().flatMap { s, sec in sec.lines.map { (section: s, line: $0) } }
         func run(_ picked: [Int]) -> [Int] { picked.filter { head(of: lines[$0].line).map(stepStems.contains) ?? false } }
 
         var hits: [Int] = []
@@ -53,14 +93,16 @@ enum StepIngredients {
         if hits.isEmpty { hits = run(Array(lines.indices)) }
 
         let named = stepStems.intersection(groupStems)
+        var claimed = Set<String>()
         if !named.isEmpty {
             for (s, sec) in sections.enumerated() {
-                guard let heading = sec.heading, heading.lowercased() != own,
-                      !named.isDisjoint(with: tokens(heading).map(stem)) else { continue }
+                guard let heading = sec.heading, heading.lowercased() != own else { continue }
+                let hit = named.intersection(tokens(heading).map(stem))
+                guard !hit.isEmpty else { continue }
+                claimed.formUnion(hit)
                 hits += lines.indices.filter { lines[$0].section == s }
             }
         }
-        var seen = Set<String>()
-        return Set(hits).sorted().map { lines[$0].line }.filter { seen.insert($0).inserted }
+        return (Set(hits), !named.subtracting(claimed).isEmpty)
     }
 }

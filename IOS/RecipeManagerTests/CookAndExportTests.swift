@@ -91,6 +91,67 @@ struct StepGroupTests {
     }
 }
 
+// MARK: Step ingredients: "From earlier" (the same cases as tests/test_cook.js)
+
+struct StepEarlierTests {
+    private typealias M = StepIngredients.StepMatch
+
+    @Test func aLaterStepReferringBackListsWhatEarlierStepsUsed() {
+        let sponge = [RecipeSection(heading: nil, lines: ["3 eggs", "150 g sugar", "200 g flour", "1 tsp baking powder", "50 g butter"])]
+        let steps: [(text: String, section: String?)] = [
+            ("Whisk the eggs and sugar until pale.", nil),
+            ("Fold the flour and baking powder into the mixture.", nil),
+            ("Grease a tin with the butter.", ""),
+            ("Pour the batter into the tin and bake for 25 minutes.", nil),
+        ]
+        #expect(StepIngredients.matchSteps(steps, in: sponge) == [
+            M(direct: ["3 eggs", "150 g sugar"], earlier: []),
+            M(direct: ["200 g flour", "1 tsp baking powder"], earlier: ["3 eggs", "150 g sugar"]),
+            M(direct: ["50 g butter"], earlier: []),
+            M(direct: [], earlier: ["3 eggs", "150 g sugar", "200 g flour", "1 tsp baking powder", "50 g butter"]),
+        ])
+    }
+
+    private let iced = [
+        RecipeSection(heading: "Cake", lines: ["2 eggs", "100 g sugar"]),
+        RecipeSection(heading: "Icing", lines: ["200 g icing sugar", "2 tbsp lemon juice"]),
+    ]
+
+    @Test func earlierNeverCrossesASection() {
+        let steps: [(text: String, section: String?)] = [
+            ("Beat the eggs and sugar.", "Cake"),
+            ("Pour the mixture into a tin.", "Cake"),
+            ("Mix the icing sugar and lemon juice.", "Icing"),
+            ("Spread the mixture over the cake.", "Icing"),
+        ]
+        #expect(StepIngredients.matchSteps(steps, in: iced) == [
+            M(direct: ["2 eggs", "100 g sugar"], earlier: []),
+            M(direct: [], earlier: ["2 eggs", "100 g sugar"]),
+            M(direct: ["200 g icing sugar", "2 tbsp lemon juice"], earlier: []),
+            M(direct: [], earlier: ["200 g icing sugar", "2 tbsp lemon juice"]),
+        ])
+    }
+
+    /// The existing rule: "the icing" inside the Icing section is the step's own section, so nothing is expanded.
+    /// As no other heading claims "icing", it counts as a reference back, so the section's earlier steps come in.
+    @Test func ownSectionGroupWordIsNotExpandedButReachesBack() {
+        #expect(StepIngredients.match(step: "Spread the icing over the cake.", section: "Icing", in: iced).isEmpty)
+        let steps: [(text: String, section: String?)] = [("Mix the icing sugar and lemon juice.", "Icing"), ("Spread the icing over the cake.", "Icing")]
+        #expect(StepIngredients.matchSteps(steps, in: iced)[1] == M(direct: [], earlier: ["200 g icing sugar", "2 tbsp lemon juice"]))
+    }
+
+    @Test func aHeadingTakesPrecedence() {
+        let pizza = [
+            RecipeSection(heading: "Dough", lines: ["500 g flour", "7 g yeast", "300 ml water"]),
+            RecipeSection(heading: "Filling", lines: ["200 g ricotta", "1 lemon, zested"]),
+        ]
+        let steps: [(text: String, section: String?)] = [("Knead the flour, yeast and water.", ""), ("Roll out the dough and spread the filling over it", nil)]
+        #expect(StepIngredients.matchSteps(steps, in: pizza)[1] ==
+            M(direct: ["500 g flour", "7 g yeast", "300 ml water", "200 g ricotta", "1 lemon, zested"], earlier: []))
+        #expect(StepIngredients.matchSteps([("Add the mixture to the pan", nil)], in: pizza) == [M(direct: [], earlier: [])])
+    }
+}
+
 // MARK: Calendar and Reminders
 
 struct CalendarExportTests {

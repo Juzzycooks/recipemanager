@@ -19,6 +19,13 @@ extension RecipeDetail {
     func ingredients(for step: NumberedStep) -> [String] {
         StepIngredients.match(step: step.text, section: step.section, in: ingredientSections)
     }
+
+    /// A step's ingredients plus, when it refers back to "the mixture", what the earlier steps of its section used.
+    func ingredientMatch(for step: NumberedStep) -> StepIngredients.StepMatch {
+        let steps = numberedSteps
+        let all = StepIngredients.matchSteps(steps.map { (text: $0.text, section: $0.section) }, in: ingredientSections)
+        return all.indices.contains(step.number - 1) ? all[step.number - 1] : .init(direct: ingredients(for: step), earlier: [])
+    }
 }
 
 /// Loads one recipe and performs everything you can do to it. The view only holds presentation state.
