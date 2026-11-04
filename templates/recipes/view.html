@@ -77,7 +77,7 @@
                 <summary class="btn btn-secondary btn-lg" aria-label="More actions">More</summary>
                 <div class="menu-panel right">
                     <form method="POST" action="{{ url_for('shopping.add_recipe_to_list', recipe_id=recipe.id) }}" data-pick-trigger><button type="submit" class="menu-item">Add to shopping list</button></form>
-                    <form method="POST" action="{{ url_for('recipes.made_it', recipe_id=recipe.id) }}"><button type="submit" class="menu-item">I made this{% if made_count %} ({{ made_count }}×){% endif %}</button></form>
+                    <form method="POST" action="{{ url_for('recipes.made_it', recipe_id=recipe.id) }}" data-made-trigger><button type="submit" class="menu-item">I made this{% if made_count %} ({{ made_count }}×){% endif %}</button></form>
                     <hr>
                     <a href="{{ url_for('recipes.print_view', recipe_id=recipe.id) }}" target="_blank" rel="noopener">Print</a>
                     <a href="{{ url_for('recipes.export', recipe_id=recipe.id) }}">Export</a>
@@ -143,6 +143,22 @@
                 <h2 id="notes-h">Notes</h2>
                 <ul class="ingredient-list">
                     {% for line in recipe.notes.split('\n') %}{% if line.strip() %}<li>{{ line.strip() }}</li>{% endif %}{% endfor %}
+                </ul>
+            </section>
+            {% endif %}
+
+            {% if cook_photos %}
+            <section class="detail-section cook-photos" aria-labelledby="cooks-h">
+                <h2 id="cooks-h">Your cooks <a class="h-note" href="{{ url_for('recipes.cook_history', recipe_id=recipe.id) }}">See all</a></h2>
+                <ul class="cook-photo-grid">
+                    {% for log in cook_photos %}
+                    <li>
+                        <a href="{{ log.photo|recipe_image }}" target="_blank" rel="noopener">
+                            <img src="{{ log.photo|recipe_thumb }}" alt="Your cook on {{ log.cooked_at.strftime('%d %b %Y') }}" loading="lazy">
+                        </a>
+                        <span class="cook-photo-date">{{ log.cooked_at.strftime('%d %b %Y') }}</span>
+                    </li>
+                    {% endfor %}
                 </ul>
             </section>
             {% endif %}
@@ -231,9 +247,50 @@
         </div>
     </form>
 </dialog>
+<dialog id="made-dialog" class="pick-dialog" aria-labelledby="made-title">
+    <form method="POST" action="{{ url_for('recipes.made_it', recipe_id=recipe.id) }}" enctype="multipart/form-data" class="pick-form">
+        <div class="pick-head">
+            <h2 id="made-title">I made this</h2>
+            <p class="pick-note">Both are optional. They go in your cook history.</p>
+        </div>
+        <div class="made-fields">
+            <div class="form-group">
+                <label for="made-note">Note</label>
+                <textarea id="made-note" name="note" rows="3" maxlength="5000" placeholder="How did it go? Anything to change next time?"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="made-photo">Photo</label>
+                <input type="file" id="made-photo" name="photo" accept="image/*">
+            </div>
+        </div>
+        <div class="pick-actions">
+            <button type="button" class="btn btn-secondary" data-made-cancel>Cancel</button>
+            <button type="submit" class="btn btn-primary">Log it</button>
+        </div>
+    </form>
+</dialog>
 </article>
 
 <script>
+// "I made this": ask for an optional note and photo. Without JS the menu form logs the cook straight away.
+(function () {
+    const trigger = document.querySelector('[data-made-trigger]');
+    const dialog = document.getElementById('made-dialog');
+    if (!trigger || !dialog || typeof dialog.showModal !== 'function') return;
+    let returnFocus = null;
+    trigger.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const menu = trigger.closest('details');
+        returnFocus = menu ? menu.querySelector('summary') : null;
+        if (menu) menu.open = false;
+        dialog.showModal();
+        document.getElementById('made-note').focus();
+    });
+    dialog.querySelector('[data-made-cancel]').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+    dialog.addEventListener('close', () => { if (returnFocus && document.contains(returnFocus)) returnFocus.focus(); });
+})();
+
 function copyShareLink() {
     const input = document.getElementById('share-url');
     input.select();

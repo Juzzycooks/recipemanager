@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User, LoginAttempt, PasswordResetToken
+import households
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -192,7 +193,40 @@ def profile():
             flash("Password changed.", "success")
             return redirect(url_for("auth.profile"))
 
-    return render_template("auth/profile.html")
+        if action.startswith("household_"):
+            return _household_action(action)
+
+    return render_template("auth/profile.html", household=households.summary(current_user))
+
+
+_HOUSEHOLD_DONE = {
+    "household_create": "Household created. Share the invite code so others can join.",
+    "household_join": "You've joined the household. Your shopping list is now shared.",
+    "household_leave": "You've left the household. Your own items came with you.",
+    "household_code": "New invite code made. The old one no longer works.",
+}
+
+
+def _household_action(action):
+    """Create, join, leave or re-code a household from the profile page."""
+    try:
+        if action == "household_create":
+            households.create(current_user, request.form.get("name", ""))
+        elif action == "household_join":
+            households.join(current_user, request.form.get("code", ""))
+        elif action == "household_leave":
+            households.leave(current_user)
+        elif action == "household_code":
+            households.regenerate_code(current_user)
+        else:
+            return redirect(url_for("auth.profile"))
+    except households.HouseholdError as e:
+        db.session.rollback()
+        flash(e.message, "error")
+        return redirect(url_for("auth.profile"))
+    db.session.commit()
+    flash(_HOUSEHOLD_DONE[action], "success")
+    return redirect(url_for("auth.profile"))
 
 
 # ── Password reset via email ──

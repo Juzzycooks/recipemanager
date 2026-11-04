@@ -7,6 +7,8 @@ struct RecipeImage: View {
     let path: String
     let title: String
     let id: Int
+    /// Show the whole picture (a full-size photo) instead of filling and cropping to the frame.
+    var fit = false
 
     var body: some View {
         // Color.clear takes whatever size the parent offers; the picture is only painted into it and clipped.
@@ -18,7 +20,7 @@ struct RecipeImage: View {
 
     @ViewBuilder private var content: some View {
         if let url = session.imageURL(path) {
-            StoredImage(url: url) { tile }
+            StoredImage(url: url, fit: fit) { tile }
         } else {
             tile
         }
@@ -41,6 +43,7 @@ struct RecipeImage: View {
 /// Shows a picture from the on-disk store, downloading it once if it isn't there yet.
 private struct StoredImage<Fallback: View>: View {
     let url: URL
+    var fit = false
     @ViewBuilder let fallback: Fallback
     @State private var image: UIImage?
     @State private var failed = false
@@ -48,7 +51,7 @@ private struct StoredImage<Fallback: View>: View {
     var body: some View {
         Group {
             if let image = image ?? ImageStore.shared.cachedImage(url) {
-                Image(uiImage: image).resizable().scaledToFill()
+                Image(uiImage: image).resizable().aspectRatio(contentMode: fit ? .fit : .fill)
             } else if failed {
                 fallback
             } else {

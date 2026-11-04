@@ -144,10 +144,16 @@ def aisle_for(name):
 def add_lines_merged(user_id, lines, recipe_id=None):
     """Add ingredient lines to a user's list, merging with existing unchecked
     items when the normalised name matches and units are compatible.
+    In a household the whole shared list is searched for duplicates; new items
+    are recorded as added by `user_id`.
 
     Returns (added, merged) counts.
     """
-    existing = ShoppingListItem.query.filter_by(user_id=user_id, checked=False).all()
+    from households import member_ids_for
+    existing = (ShoppingListItem.query
+                .filter(ShoppingListItem.user_id.in_(member_ids_for(user_id)),
+                        ShoppingListItem.checked.is_(False))
+                .order_by(ShoppingListItem.id).all())
     # normalised name -> item
     index = {}
     for item in existing:

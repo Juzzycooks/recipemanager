@@ -152,6 +152,8 @@ def delete_user(user_id):
     username = user.username
     # Shopping items have no ORM relationship — clean up explicitly
     ShoppingListItem.query.filter_by(user_id=user.id).delete()
+    from households import leave
+    leave(user)  # hand the household on (or remove it) before the account goes
     # ORM delete so cascades fire: the user's recipes (and those recipes'
     # ratings/comments/favorites/meal plans from ALL users), plus the user's
     # own ratings/comments/favorites/meal plans/cook logs/collections.

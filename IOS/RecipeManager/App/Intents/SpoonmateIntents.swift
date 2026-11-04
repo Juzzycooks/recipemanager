@@ -194,6 +194,31 @@ struct StartTimerIntent: AppIntent {
     }
 }
 
+/// The "+N min" button on a range timer's alarm ("Simmer 2–3 hours" starts at 2 hours and offers +60 min when it
+/// rings). AlarmKit runs it in the app's process; it is not offered in Shortcuts.
+struct ExtendKitchenTimerIntent: LiveActivityIntent {
+    static let title: LocalizedStringResource = "Extend a Kitchen Timer"
+    static let isDiscoverable = false
+    static let openAppWhenRun = false
+
+    @Parameter(title: "Alarm") var alarmID: String
+    @Parameter(title: "Minutes") var minutes: Int
+    @Parameter(title: "Name") var name: String
+    @Parameter(title: "Recipe") var recipeTitle: String
+
+    init() {}
+    init(alarmID: String, minutes: Int, name: String, recipeTitle: String) {
+        self.alarmID = alarmID; self.minutes = minutes; self.name = name; self.recipeTitle = recipeTitle
+    }
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        guard let id = UUID(uuidString: alarmID) else { return .result() }
+        await AppServices.timer.extend(alarmID: id, minutes: minutes, name: name, recipeTitle: recipeTitle)
+        return .result()
+    }
+}
+
 /// Common lengths, so the length can be said in the same breath: "Start a 10 minute timer in Spoonmate".
 /// (An App Shortcut phrase can only carry an entity or an enum, not a free number.)
 enum TimerLength: Int, AppEnum {

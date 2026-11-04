@@ -20,6 +20,8 @@
     <div class="row-tools">
         <button type="button" data-open="share-modal" class="btn btn-secondary btn-sm">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Share this plan</button>
+        <a href="{{ url_for('mealplan.export_ics', week=offset) }}" class="btn btn-secondary btn-sm" download>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Download for Calendar</a>
         <button type="button" data-open="auto-modal" class="btn btn-secondary btn-sm">Auto-generate</button>
         <form method="POST" action="{{ url_for('mealplan.generate_shopping_list') }}">
             <input type="hidden" name="week" value="{{ offset }}">

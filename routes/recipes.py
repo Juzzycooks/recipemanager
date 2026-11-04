@@ -26,6 +26,20 @@ def _save_uploaded_image(file):
     return save_uploaded_image(file, uploads_dir, prefix="recipe")
 
 
+def save_cook_photo(file):
+    """A cook-log photo through the same pipeline as recipe pictures (verified, resized, EXIF
+    stripped, thumbnail), stored in uploads with a "cook" prefix. '' if missing or not an image."""
+    return save_uploaded_image(file, os.path.join(_data_dir(), "uploads"), prefix="cook")
+
+
+def delete_cook_photo(filename):
+    if filename:
+        delete_image(os.path.join(_data_dir(), "uploads"), filename)
+
+
+COOK_NOTE_MAX = 5000
+
+
 def _first_ingredient_match(ingredients, term):
     """First ingredient line containing term (case-insensitive), skipping '# ' section headings."""
     needle = (term or "").strip().lower()
@@ -146,8 +160,8 @@ def index():
     for cid in active_cats:
         query = query.filter(Recipe.categories.any(Category.id == cid))
     if coll_id:
-        coll = Collection.query.get(coll_id)
-        if coll:
+        coll = db.session.get(Collection, coll_id)
+        if coll and coll.deleted_at is None:
             coll_recipe_ids = [r.id for r in coll.get_all_recipes()]
             query = query.filter(Recipe.id.in_(coll_recipe_ids))
     if favorites_only:
@@ -169,7 +183,7 @@ def index():
     recipes = pagination.items
     
     categories = Category.query.order_by(Category.name).all()
-    collections = Collection.query.filter_by(user_id=current_user.id).order_by(Collection.name).all()
+    collections = Collection.live().filter_by(user_id=current_user.id).order_by(Collection.name).all()
     
     # Get user's favorites for star display
     user_favs = set(f.recipe_id for f in Favorite.query.filter_by(user_id=current_user.id).all())
@@ -214,9 +228,13 @@ def view(recipe_id):
     user_rating = Rating.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).first()
     comments = Comment.query.filter_by(recipe_id=recipe_id).order_by(Comment.created_at.desc()).all()
     made_count = CookLog.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).count()
+    cook_photos = (CookLog.query.filter(CookLog.user_id == current_user.id, CookLog.recipe_id == recipe_id,
+                                        CookLog.photo.isnot(None), CookLog.photo != "")
+                   .order_by(CookLog.cooked_at.desc(), CookLog.id.desc()).limit(12).all())
     facts = facts_for(recipe)
     return render_template("recipes/view.html", recipe=recipe, is_favorite=is_favorite,
                            user_rating=user_rating, comments=comments, made_count=made_count,
+                           cook_photos=cook_photos,
                            facts=facts, yield_word=yield_singular(facts["yield_unit"]) if facts else "serving")
 
 
@@ -989,12 +1007,27 @@ Exported from Spoonmate
 @recipes_bp.route("/recipe/<int:recipe_id>/made-it", methods=["POST"])
 @login_required
 def made_it(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
-    log = CookLog(user_id=current_user.id, recipe_id=recipe_id)
+    """Log a cook, with an optional `note` and `photo` (multipart). Cook mode posts with fetch
+    (X-Requested-With: fetch) and gets JSON back."""
+    Recipe.query.get_or_404(recipe_id)
+    wants_json = request.headers.get("X-Requested-With") == "fetch"
+    photo, bad_photo = "", False
+    upload = request.files.get("photo")
+    if upload and upload.filename:
+        photo = save_cook_photo(upload)
+        bad_photo = not photo
+    if bad_photo and wants_json:
+        return jsonify(error="That file isn't a picture we can use. Try a JPEG or PNG."), 422
+    log = CookLog(user_id=current_user.id, recipe_id=recipe_id, photo=photo,
+                  note=request.form.get("note", "").strip()[:COOK_NOTE_MAX])
     db.session.add(log)
     db.session.commit()
     count = CookLog.query.filter_by(user_id=current_user.id, recipe_id=recipe_id).count()
+    if wants_json:
+        return jsonify(ok=True, id=log.id, made_count=count)
     flash(f"Logged. You've made this {count} time{'' if count == 1 else 's'}.", "success")
+    if bad_photo:
+        flash("That file isn't a picture we can use, so the cook was logged without it.", "error")
     return redirect(url_for("recipes.view", recipe_id=recipe_id))
 
 
@@ -1003,8 +1036,79 @@ def made_it(recipe_id):
 def cook_history(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     logs = CookLog.query.filter_by(user_id=current_user.id, recipe_id=recipe_id)\
-        .order_by(CookLog.cooked_at.desc()).all()
+        .order_by(CookLog.cooked_at.desc(), CookLog.id.desc()).all()
     return render_template("recipes/cook_history.html", recipe=recipe, logs=logs)
+
+
+# ── Cook history timeline (every recipe) ──
+
+COOK_LOG_PAGE = 30
+
+
+def cook_log_page(user_id, limit=COOK_LOG_PAGE, before=None):
+    """(entries, next_before): the user's cooks newest first, `limit` at a time, older than entry `before`."""
+    query = CookLog.query.filter(CookLog.user_id == user_id)
+    if before:
+        anchor = db.session.get(CookLog, before)
+        if anchor is not None and anchor.user_id == user_id:
+            query = query.filter(db.or_(CookLog.cooked_at < anchor.cooked_at,
+                                        db.and_(CookLog.cooked_at == anchor.cooked_at, CookLog.id < anchor.id)))
+        else:
+            query = query.filter(CookLog.id < before)
+    rows = query.order_by(CookLog.cooked_at.desc(), CookLog.id.desc()).limit(limit + 1).all()
+    more = len(rows) > limit
+    rows = rows[:limit]
+    return rows, (rows[-1].id if more and rows else None)
+
+
+def _own_log_or_404(log_id):
+    log = db.session.get(CookLog, log_id)
+    if log is None or log.user_id != current_user.id:
+        from flask import abort
+        abort(404)
+    return log
+
+
+@recipes_bp.route("/cook-history")
+@login_required
+def cook_log():
+    entries, next_before = cook_log_page(current_user.id, before=request.args.get("before", type=int))
+    return render_template("recipes/cook_log.html", entries=entries, next_before=next_before,
+                           paged=bool(request.args.get("before")))
+
+
+@recipes_bp.route("/cook-history/<int:log_id>/edit", methods=["POST"])
+@login_required
+def cook_log_edit(log_id):
+    log = _own_log_or_404(log_id)
+    log.note = request.form.get("note", "").strip()[:COOK_NOTE_MAX]
+    old_photo = None
+    upload = request.files.get("photo")
+    if upload and upload.filename:
+        photo = save_cook_photo(upload)
+        if photo:
+            old_photo, log.photo = log.photo, photo
+        else:
+            flash("That file isn't a picture we can use, so the photo wasn't changed.", "error")
+    elif request.form.get("remove_photo"):
+        old_photo, log.photo = log.photo, ""
+    db.session.commit()
+    delete_cook_photo(old_photo)
+    flash("Saved.", "success")
+    return redirect(request.form.get("next") if _is_local(request.form.get("next")) else url_for("recipes.cook_log"))
+
+
+@recipes_bp.route("/cook-history/<int:log_id>/delete", methods=["POST"])
+@login_required
+def cook_log_delete(log_id):
+    db.session.delete(_own_log_or_404(log_id))  # the photo file goes after the commit (models.py)
+    db.session.commit()
+    flash("Removed from your cook history.", "success")
+    return redirect(request.form.get("next") if _is_local(request.form.get("next")) else url_for("recipes.cook_log"))
+
+
+def _is_local(target):
+    return bool(target) and target.startswith("/") and not target.startswith("//") and "\\" not in target
 
 
 # ── Email Recipe ──

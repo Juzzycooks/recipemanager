@@ -30,16 +30,19 @@ struct SignInView: View {
                           hint: serverProblem == nil ? "The address you open Spoonmate at in a browser." : nil) {
                         TextField("Server address", text: $server, prompt: Text("recipes.example.com"))
                             .textContentType(.URL).keyboardType(.URL).focused($focus, equals: .server)
+                            .accessibilityIdentifier("signIn.server")
                             .submitLabel(.next).onSubmit { checkServer(); focus = .username }
                     }
                     field("Username", problem: nil, hint: nil) {
                         TextField("Username", text: $username)
                             .textContentType(.username).focused($focus, equals: .username)
+                            .accessibilityIdentifier("signIn.username")
                             .submitLabel(.next).onSubmit { focus = .password }
                     }
                     field("Password", problem: credentialsProblem, hint: nil) {
                         SecureField("Password", text: $password)
                             .textContentType(.password).focused($focus, equals: .password)
+                            .accessibilityIdentifier("signIn.password")
                             .submitLabel(.go).onSubmit(signIn)
                     }
                 }
@@ -47,6 +50,7 @@ struct SignInView: View {
                     Text(error).font(.subheadline).foregroundStyle(AppColors.danger).fixedSize(horizontal: false, vertical: true)
                 }
                 PrimaryButton(title: "Sign in", isLoading: isWorking, action: signIn)
+                    .accessibilityIdentifier("signIn.submit")
                     .disabled(server.isEmpty || username.isEmpty || password.isEmpty)
                     .opacity(server.isEmpty || username.isEmpty || password.isEmpty ? 0.5 : 1)
             }

@@ -41,7 +41,7 @@ Nothing leaves your machine except what you choose to share: public links for a 
 
 <table>
 <tr>
-<td align="center" width="25%"><img src="docs/screenshots/ios/home.png" alt="Home"><br><sub><b>Home</b><br>Quick picks and collections</sub></td>
+<td align="center" width="25%"><img src="docs/screenshots/ios/home.png" alt="Home"><br><sub><b>Home</b><br>Newest recipes and collections</sub></td>
 <td align="center" width="25%"><img src="docs/screenshots/ios/recipe.png" alt="Recipe"><br><sub><b>Recipe</b><br>Ingredients, rating, plan, share</sub></td>
 <td align="center" width="25%"><img src="docs/screenshots/ios/steps.png" alt="Steps"><br><sub><b>Steps</b><br>Numbered method</sub></td>
 <td align="center" width="25%"><img src="docs/screenshots/ios/cooking.png" alt="Cooking mode"><br><sub><b>Cooking mode</b><br>One step at a time, timers from the text</sub></td>
@@ -53,10 +53,16 @@ Nothing leaves your machine except what you choose to share: public links for a 
 <td align="center"><img src="docs/screenshots/ios/shopping.png" alt="Shopping list"><br><sub><b>Shopping list</b><br>By aisle or by recipe</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/screenshots/ios/add-recipe.png" alt="Add a recipe"><br><sub><b>Add a recipe</b><br>Link, photo scan or by hand</sub></td>
+<td align="center"><img src="docs/screenshots/ios/add-recipe.png" alt="Add a recipe"><br><sub><b>Add a recipe</b><br>Link, photo scan, PDF or by hand</sub></td>
 <td align="center"><img src="docs/screenshots/ios/settings.png" alt="Settings"><br><sub><b>Settings</b><br>Light/dark, five colour themes, offline</sub></td>
 <td align="center"><img src="docs/screenshots/ios/dark-terracotta.png" alt="Dark mode with the Terracotta theme"><br><sub><b>Dark + Terracotta</b><br>Every screen follows the theme</sub></td>
 <td align="center"><img src="docs/screenshots/ios/offline.png" alt="Offline banner"><br><sub><b>Offline</b><br>Everything still opens</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/screenshots/ios/cook-history.png" alt="Cook history"><br><sub><b>Cook history</b><br>Every cook, with notes and photos</sub></td>
+<td align="center"><img src="docs/screenshots/ios/household.png" alt="Household"><br><sub><b>Household</b><br>Share the shopping list</sub></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 

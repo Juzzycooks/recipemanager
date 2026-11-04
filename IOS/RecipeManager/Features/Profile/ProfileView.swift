@@ -35,6 +35,8 @@ struct ProfileView: View {
                 .listRowBackground(Color.clear).listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: Spacing.xs, leading: 0, bottom: Spacing.xs, trailing: 0))
                 Section("Kitchen") {
+                    NavigationLink(value: AppRoute.cookLog) { Label("Cook history", systemImage: "fork.knife") }
+                    NavigationLink(value: AppRoute.household) { Label("Household", systemImage: "person.2") }
                     NavigationLink(value: AppRoute.settings) { Label("Settings", systemImage: "gearshape") }
                 }
                 Section {

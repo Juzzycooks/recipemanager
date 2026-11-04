@@ -12,8 +12,8 @@ Code: `routes/api_v1.py`. Tests: `tests/test_api_v1.py`.
 - **Dates:** ISO 8601 UTC (`2026-10-01T09:30:00+00:00`); plan days are `YYYY-MM-DD`.
 - **Images:** `image_url` / `thumb_url` are a path on this server (`/admin/uploads/...`, no token needed) or an absolute `https://` link. Empty string means no picture (show a letter tile).
 - **Ingredients / instructions** are plain text with `# Heading` lines as section markers. Every recipe also carries `ingredient_sections` / `instruction_sections`: `[{heading|null, lines[]}]`.
-- **Deletes and unshares** return `204` with no body.
-- One shared recipe library; ratings are per user, favourites, cook history, collections, shopping list and meal plan are per user. Only a recipe's owner or an admin can edit or delete it.
+- **Deletes and unshares** return `204` with no body, except `DELETE /collections/{id}` (`200` with `{ok, restorable_until}`, see [Collections](#collections-your-own)) and `DELETE /recipes/{id}` (a restore token).
+- One shared recipe library; ratings are per user, favourites, cook history, collections and meal plan are per user. The shopping list is per user, or shared by a [household](#households). Only a recipe's owner or an admin can edit or delete it.
 
 ## Endpoints
 
@@ -56,7 +56,8 @@ Code: `routes/api_v1.py`. Tests: `tests/test_api_v1.py`.
 | `GET` / `POST /recipes/{id}/comments` `{text}`, `DELETE /comments/{id}` | |
 | `PUT /recipes/{id}/notes` | `{notes}` |
 | `POST` / `DELETE /recipes/{id}/share` | returns `{share_url}` |
-| `POST /recipes/{id}/made`, `GET .../cook-history` | cook log |
+| `POST /recipes/{id}/made` | log a cook. No body, JSON `{note?}`, or multipart `note` + `photo`. `201` with a [cook-log entry](#cook-history) plus `made_count`; `422` if `photo` isn't an image |
+| `GET /recipes/{id}/cook-history` | `{items: [entry]}`, your cooks of this recipe, newest first |
 | `POST /recipes/{id}/email` | `{email}` |
 | `GET /categories`, `POST` (admin) `{name}`, `DELETE /categories/{id}` (admin) | |
 
@@ -105,11 +106,56 @@ Recipe detail carries three related keys:
 ### Collections (your own)
 `GET/POST /collections` (`name`, `description`, `slug`, `category_id`, `cover_image`), `GET/PATCH/DELETE /collections/{id}` (`remove_cover`), `POST/DELETE /collections/{id}/share`, `POST /collections/{id}/recipes` `{recipe_id}`, `DELETE /collections/{id}/recipes/{rid}`, `PUT /collections/{id}/order` `{order: [recipe ids]}`. Detail has `recipes` (manual first, then category-linked) and `manual_recipe_ids` (the removable ones).
 
+Deleting is a soft delete: `DELETE /collections/{id}` returns `200` `{"ok": true, "restorable_until": "<ISO time>"}` and the collection disappears everywhere at once (lists, detail, a recipe's `collections`, the shelf, public links by token or slug). `POST /collections/{id}/restore` (owner) brings it back within 30 days and returns the detail; `404` if it isn't deleted or the 30 days are up. After that it is purged for good (on the next list call).
+
 ### Meal plan
 `GET /mealplan?from&to` (or `?week=offset`; default this Monday to Sunday; max 92 days), `POST /mealplan` `{recipe_id, date, meal_type}`, `PATCH /mealplan/{id}` `{date?, meal_type?, recipe_id?}`, `DELETE /mealplan/{id}`, `POST /mealplan/shopping` `{from, to}` or `{week}`, `POST /mealplan/auto-generate` `{week?, meal_types?}`, `POST/DELETE /mealplan/share`. `meal_type` is `breakfast|lunch|dinner|snack`.
 
+`GET /mealplan/export.ics?week=offset` or `?from&to` returns the plan as an RFC 5545 calendar (`text/calendar`, an attachment): one all-day event per entry, `SUMMARY` `Dinner: <title>`, a link to the recipe in `DESCRIPTION` and `URL`, and `UID` `mealplan-<id>@spoonmate`, so importing again updates rather than duplicates. The web app has the same at `/mealplan/export.ics?week=offset` (the "Download for Calendar" button).
+
+### Cook history
+Every entry (from `/made`, `/cook-history` and `/cook-log`) has this shape:
+
+```json
+{"id": 7, "cooked_at": "2026-11-04T08:15:00+00:00", "note": "More garlic next time",
+ "photo_url": "/admin/uploads/cook_ab12cd34.jpg",
+ "recipe": {"id": 3, "title": "Risotto", "image_url": "/admin/uploads/recipe_x.jpg"}}
+```
+
+`photo_url` is `null` when there's no photo. All of these are yours only; anyone else's entry is `404`.
+
+| | |
+|---|---|
+| `GET /cook-log?limit=30&before={id}` | `{entries, next_before}`, newest first across every recipe. `limit` max 100. Pass `next_before` back as `before` for the next page; `null` means no more |
+| `PATCH /cook-log/{id}` | `{note}`; returns the entry |
+| `POST /cook-log/{id}/photo` | multipart `photo`; adds or replaces it (the old file is deleted); returns the entry |
+| `DELETE /cook-log/{id}/photo` | returns the entry with `photo_url: null` |
+| `DELETE /cook-log/{id}` | `204`. Deleting a recipe deletes its cook history and photos too |
+
 ### Shopping list
-`GET /shopping` returns `{store, aisle_order, items[]}` (each item has `aisle`, `store_url` and `recipe_title` when it came from a recipe; group by `aisle` in `aisle_order`). `POST /shopping/items` `{name}` or `{names: []}` (same item + compatible unit combines quantities; returns `{added, merged}`). `POST /shopping/recipe/{id}` optional `{items: [lines]}`. `PATCH /shopping/items/{id}` `{checked?, name?}`. `DELETE /shopping/items/{id}`. `DELETE /shopping/items` clears all, or only ticked with `?checked=1`.
+`GET /shopping` returns `{store, aisle_order, version, items[]}` (each item has `aisle`, `store_url` and `recipe_title` when it came from a recipe; group by `aisle` in `aisle_order`). Every item also has `added_by` `{id, username}` and `mine` (you added it). `version` is an opaque string that changes on any add, edit, tick or delete by anyone sharing the list; poll `GET /shopping/version` (`{version}`) and refetch when it changes. `POST /shopping/items` `{name}` or `{names: []}` (same item + compatible unit combines quantities; returns `{added, merged}`). `POST /shopping/recipe/{id}` optional `{items: [lines]}`. `PATCH /shopping/items/{id}` `{checked?, name?}`. `DELETE /shopping/items/{id}`. `DELETE /shopping/items` clears all, or only ticked with `?checked=1`.
+
+In a [household](#households) all of this acts on the shared list: you see every member's items, can tick, rename or delete any of them, clear-all and clear-ticked clear for everyone, and adding an item combines with a matching one whoever added it. An item outside your list is `403`.
+
+### Households
+People who share one shopping list. Every call returns the same shape:
+
+```json
+{"household": {"id": 1, "name": "Home", "invite_code": "K7QM-W3XD", "is_owner": true,
+               "members": [{"id": 1, "username": "sam"}, {"id": 4, "username": "alex"}]}}
+```
+
+or `{"household": null}` when you're not in one.
+
+| | |
+|---|---|
+| `GET /household` | yours |
+| `POST /household` | `{name}`; `201`. `409` if you're already in one |
+| `POST /household/join` | `{code}`, any case, with or without the dash or spaces. `404` for an unknown code, `409` if you're already in one. Items already on your list join the shared one |
+| `POST /household/leave` | your own items leave with you; if you were the owner, the member who joined first takes over; the last one out deletes the household |
+| `POST /household/code` | owner only (`403` otherwise): a new invite code; the old one stops working |
+
+Invite codes are 8 characters without 0, O, 1, I or L, shown as `ABCD-EFGH`.
 
 ### Guides and calculators
 `GET /extras`, `POST/DELETE /extras/{slug}/share`. `GET /calculators`, `GET /calculators/{id}`; admin: `POST`, `PATCH`, `DELETE`.

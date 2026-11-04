@@ -30,7 +30,7 @@ Missing or thin: no iPad or Watch, no UI tests, no PDF import. Build 11 is on Te
   Done 4 November 2026 (unreleased, after build 11).
 - [ ] **"Overnight", "until doubled", "2–3 hours"** should become timers (ranges pick the low end and offer to extend).
 - [ ] **Better step-ingredient matching.** "Add the mixture" and "the dough" match nothing today; track what each step produces so later steps can refer back to it.
-- [ ] **Retake screenshots.** `docs/screenshots/ios` and the App Store slides still show the old design.
+- [x] **Retake screenshots.** `docs/screenshots/ios` and the App Store slides are retaken from the seeded demo server by `IOS/scripts/run-ui-tests.sh --screenshots`. (`docs/screenshots/hero.png` is still the old composite.)
 - [ ] **UI tests.** At least sign in, open a recipe, cook it to the end, add to the shopping list, go offline and come back.
 - [ ] **Silent library reset.** `OfflineStore.loadLibrary` resets quietly on a decode failure after a model change, which looks like "everything re-downloads". Migrate or log it instead.
 
@@ -99,5 +99,5 @@ Missing or thin: no iPad or Watch, no UI tests, no PDF import. Build 11 is on Te
 ## Suggested next three
 
 1. Upload build 12 to TestFlight (the build is bumped; add the App Group in Signing first) and work through the device checklist in `HANDOFF.md` (widgets with the App Group, Siri, Spotlight, hands-free with music, calls and AirPods).
-2. Retake the screenshots and add the UI tests (sign in, cook a recipe to the end, add to the shopping list, go offline and back), so the store and regressions catch up with the new design.
+2. Upload the retaken App Store slides (`IOS/AppStore/Screenshots/iphone-6.9`) and keep `IOS/scripts/run-ui-tests.sh` green as screens change (done: UI tests and screenshots, 4 November 2026).
 3. Timers from "overnight" and ranges, and better step-ingredient matching: both make cook mode (and now hands-free) smarter at the stove.

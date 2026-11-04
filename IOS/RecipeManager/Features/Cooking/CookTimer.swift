@@ -15,6 +15,9 @@ final class CookTimer {
         var finished = false
         /// True when a real alarm (not the notification fallback) is backing this timer.
         var isAlarm = false
+        /// For a range ("2–3 hours", started at 2): the minutes a finished timer offers to add ("+60 min"). 0 otherwise.
+        var extraMinutes = 0
+        var recipeTitle = ""
     }
 
     /// The most a cook can sensibly watch at once (and it keeps the notification fallback under iOS's pending limit).
@@ -37,17 +40,19 @@ final class CookTimer {
     var nextDefaultName: String { "Timer \(timers.count + 1)" }
 
     @discardableResult
-    func start(seconds: Int, name: String, recipeTitle: String) async -> UUID? {
+    func start(seconds: Int, name: String, recipeTitle: String, extraMinutes: Int = 0) async -> UUID? {
         guard seconds > 0, canAddMore else { return nil }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let label = trimmed.isEmpty ? nextDefaultName : trimmed
         let newID = UUID()
         let now = Date.now
-        timers.append(Running(id: newID, name: label, startDate: now, fireDate: now.addingTimeInterval(TimeInterval(seconds))))
+        timers.append(Running(id: newID, name: label, startDate: now, fireDate: now.addingTimeInterval(TimeInterval(seconds)),
+                              extraMinutes: max(0, extraMinutes), recipeTitle: recipeTitle))
         permissionDenied = false
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
 
-        let outcome = await SystemTimer.schedule(id: newID, seconds: seconds, name: label, recipeTitle: recipeTitle)
+        let outcome = await SystemTimer.schedule(id: newID, seconds: seconds, name: label, recipeTitle: recipeTitle,
+                                                 extraMinutes: max(0, extraMinutes))
         guard let i = timers.firstIndex(where: { $0.id == newID }) else {
             SystemTimer.cancel(id: newID)   // cancelled while we were asking for permission: don't leave it ringing
             return nil
@@ -68,6 +73,28 @@ final class CookTimer {
     }
 
     func start(minutes: Int, name: String, recipeTitle: String) async {
+        await start(seconds: minutes * 60, name: name, recipeTitle: recipeTitle)
+    }
+
+    /// Starts a step's own time: the low end of a range, with the rest offered when it rings.
+    @discardableResult
+    func start(_ duration: StepDuration, name: String, recipeTitle: String) async -> UUID? {
+        await start(seconds: duration.seconds, name: name, recipeTitle: recipeTitle, extraMinutes: duration.extraMinutes)
+    }
+
+    /// "+N min" on a finished range timer: stops its ringing and runs the rest of the range under the same name.
+    @discardableResult
+    func extend(_ id: UUID) async -> UUID? {
+        guard let old = timers.first(where: { $0.id == id }), old.extraMinutes > 0 else { return nil }
+        cancel(id)
+        return await start(seconds: old.extraMinutes * 60, name: old.name, recipeTitle: old.recipeTitle)
+    }
+
+    /// The same from the alarm's "+N min" button (`ExtendKitchenTimerIntent`), which may run after a relaunch when
+    /// this process never knew the timer.
+    func extend(alarmID: UUID, minutes: Int, name: String, recipeTitle: String) async {
+        if timers.contains(where: { $0.id == alarmID }) { cancel(alarmID) } else { SystemTimer.cancel(id: alarmID) }
+        guard minutes > 0 else { return }
         await start(seconds: minutes * 60, name: name, recipeTitle: recipeTitle)
     }
 
@@ -96,16 +123,9 @@ final class CookTimer {
         if timers.isEmpty { permissionDenied = false }
     }
 
-    /// "cook for 1–2 minutes" → 2; "simmer 20 min" → 20; "bake for 1 hour" → 60. Nil when the step names no time.
+    /// The first time a step mentions, in minutes (the low end of a range): "cook for 1–2 minutes" → 1; "simmer 20 min"
+    /// → 20; "bake for 1 hour" → 60. Nil when the step names no time. See `StepDurations` for the whole list.
     nonisolated static func detectMinutes(in text: String) -> Int? {
-        let pattern = #"(\d+)(?:\s*(?:–|-|to)\s*(\d+))?\s*(minutes?|mins?|hours?|hrs?)\b"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else { return nil }
-        func group(_ i: Int) -> String? { Range(match.range(at: i), in: text).map { String(text[$0]) } }
-        guard let first = group(1).flatMap(Int.init) else { return nil }
-        let value = group(2).flatMap(Int.init) ?? first
-        let unit = group(3)?.lowercased() ?? "min"
-        let minutes = unit.hasPrefix("h") ? value * 60 : value
-        return minutes > 0 && minutes <= 600 ? minutes : nil
+        StepDurations.find(in: text).first?.minutes
     }
 }

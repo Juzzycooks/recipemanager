@@ -1,8 +1,9 @@
 from urllib.parse import quote_plus
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from models import db, ShoppingListItem, Recipe, SiteSetting
 from shopping_utils import add_lines_merged, group_by_aisle
+import households
 
 shopping_bp = Blueprint("shopping", __name__, url_prefix="/shopping")
 
@@ -31,8 +32,7 @@ def store_link(template, item_name):
 @shopping_bp.route("/")
 @login_required
 def index():
-    items = (ShoppingListItem.query
-             .filter_by(user_id=current_user.id)
+    items = (households.shopping_query(current_user)
              .order_by(ShoppingListItem.checked, ShoppingListItem.created_at.desc())
              .all())
     unchecked = [i for i in items if not i.checked]
@@ -40,6 +40,8 @@ def index():
     aisle_groups = group_by_aisle(unchecked)
     store_name, store_url = _store_settings()
     return render_template("shopping/index.html", unchecked=unchecked,
+                           household=households.summary(current_user),
+                           version=households.list_version(current_user),
                            checked=checked, quote_plus=quote_plus,
                            aisle_groups=aisle_groups, store_name=store_name,
                            store_url=store_url,
@@ -103,7 +105,7 @@ def add_selected():
 @login_required
 def toggle(item_id):
     item = ShoppingListItem.query.get_or_404(item_id)
-    if item.user_id != current_user.id:
+    if not households.can_edit_item(current_user, item):
         flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("shopping.index"))
     item.checked = not item.checked
@@ -115,7 +117,7 @@ def toggle(item_id):
 @login_required
 def remove(item_id):
     item = ShoppingListItem.query.get_or_404(item_id)
-    if item.user_id != current_user.id:
+    if not households.can_edit_item(current_user, item):
         flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("shopping.index"))
     db.session.delete(item)
@@ -126,7 +128,7 @@ def remove(item_id):
 @shopping_bp.route("/clear", methods=["POST"])
 @login_required
 def clear():
-    ShoppingListItem.query.filter_by(user_id=current_user.id).delete()
+    households.shopping_query(current_user).delete(synchronize_session=False)
     db.session.commit()
     flash("Shopping list cleared.", "success")
     return redirect(url_for("shopping.index"))
@@ -135,6 +137,16 @@ def clear():
 @shopping_bp.route("/clear-checked", methods=["POST"])
 @login_required
 def clear_checked():
-    ShoppingListItem.query.filter_by(user_id=current_user.id, checked=True).delete()
+    households.shopping_query(current_user).filter(ShoppingListItem.checked.is_(True)).delete(
+        synchronize_session=False)
     db.session.commit()
     return redirect(url_for("shopping.index"))
+
+
+@shopping_bp.route("/version")
+@login_required
+def version():
+    """Cheap poll for the shopping page: changes whenever anyone in the household changes the list."""
+    resp = jsonify(version=households.list_version(current_user))
+    resp.headers["Cache-Control"] = "no-store"
+    return resp

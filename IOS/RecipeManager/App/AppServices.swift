@@ -6,7 +6,12 @@ import Foundation
 /// the screens do. There is no second sign-in path.
 @MainActor
 enum AppServices {
-    static let session = Session()
+    static let session: Session = {
+        #if DEBUG
+        UITestHooks.resetIfAsked()
+        #endif
+        return Session()
+    }()
     static let app = AppState()
     static let timer = CookTimer()
     static let offlineSync = OfflineSync()

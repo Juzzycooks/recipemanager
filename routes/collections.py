@@ -2,7 +2,8 @@ import os
 import re
 import uuid
 import secrets
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
+from datetime import datetime, timedelta, timezone
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, abort
 from flask_login import login_required, current_user
 from models import db, Recipe, Collection, Category
 
@@ -36,17 +37,90 @@ def _save_cover_image(file):
 
 
 def _find_collection_by_token_or_slug(token):
-    """Find a collection by slug first, then share_token."""
-    coll = Collection.query.filter_by(slug=token).first()
+    """Find a (not deleted) collection by slug first, then share_token."""
+    coll = Collection.live().filter_by(slug=token).first()
     if not coll:
-        coll = Collection.query.filter_by(share_token=token).first()
+        coll = Collection.live().filter_by(share_token=token).first()
     return coll
+
+
+# ── Soft delete: deleting can be undone for RESTORE_DAYS, then the collection is purged ──
+
+RESTORE_DAYS = 30
+
+
+def _now():
+    return datetime.now(timezone.utc)
+
+
+def _aware(dt):
+    return dt.replace(tzinfo=timezone.utc) if dt is not None and dt.tzinfo is None else dt
+
+
+def restorable_until(coll):
+    return _aware(coll.deleted_at) + timedelta(days=RESTORE_DAYS) if coll.deleted_at else None
+
+
+def get_live_or_404(coll_id):
+    coll = db.session.get(Collection, coll_id)
+    if coll is None or coll.deleted_at is not None:
+        abort(404)
+    return coll
+
+
+def soft_delete(coll):
+    """Hide the collection everywhere; restore_deleted() brings it back within RESTORE_DAYS. Commits."""
+    coll.deleted_at = _now()
+    db.session.commit()
+    return restorable_until(coll)
+
+
+def restorable(coll_id, user):
+    """The deleted collection `user` may restore, or None (not deleted, past the window, not theirs)."""
+    coll = db.session.get(Collection, coll_id)
+    if coll is None or coll.deleted_at is None or restorable_until(coll) <= _now():
+        return None
+    if coll.user_id != user.id and not user.is_admin:
+        return None
+    return coll
+
+
+def purge_deleted():
+    """Hard-delete collections deleted more than RESTORE_DAYS ago. Cheap; called from list views."""
+    cutoff = (_now() - timedelta(days=RESTORE_DAYS)).replace(tzinfo=None)
+    old = Collection.query.filter(Collection.deleted_at.isnot(None), Collection.deleted_at < cutoff).all()
+    if not old:
+        return 0
+    from images import delete_image
+    uploads = os.path.join(current_app.config.get("DATA_DIR", os.environ.get("DATA_DIR", "/app/data")), "uploads")
+    for coll in old:
+        if coll.cover_image and not Collection.query.filter(Collection.id != coll.id,
+                                                            Collection.cover_image == coll.cover_image).first():
+            delete_image(uploads, coll.cover_image)
+        db.session.delete(coll)
+    db.session.commit()
+    return len(old)
+
+
+def slug_clash(slug, coll_id=None):
+    """Another live collection using this slug. A deleted one holding it gives it up."""
+    if not slug:
+        return None
+    holder = Collection.query.filter_by(slug=slug).first()
+    if holder is None or holder.id == coll_id:
+        return None
+    if holder.deleted_at is not None:
+        holder.slug = None
+        db.session.flush()
+        return None
+    return holder
 
 
 @collections_bp.route("/")
 @login_required
 def index():
-    colls = Collection.query.filter_by(user_id=current_user.id)\
+    purge_deleted()
+    colls = Collection.live().filter_by(user_id=current_user.id)\
         .order_by(Collection.name).all()
     return render_template("collections/index.html", collections=colls)
 
@@ -64,7 +138,7 @@ def create():
         slug_input = request.form.get("slug", "").strip()
         slug = _slugify(slug_input) if slug_input else None
         if slug:
-            existing = Collection.query.filter_by(slug=slug).first()
+            existing = slug_clash(slug)
             if existing:
                 flash("That web address is already used by another collection. Try a different one.", "error")
                 return redirect(url_for("collections.create"))
@@ -89,7 +163,7 @@ def create():
 @collections_bp.route("/<int:coll_id>")
 @login_required
 def view(coll_id):
-    coll = Collection.query.get_or_404(coll_id)
+    coll = get_live_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
         flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
@@ -102,7 +176,7 @@ def view(coll_id):
 @collections_bp.route("/<int:coll_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit(coll_id):
-    coll = Collection.query.get_or_404(coll_id)
+    coll = get_live_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
         flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
@@ -114,8 +188,8 @@ def edit(coll_id):
         slug_input = request.form.get("slug", "").strip()
         new_slug = _slugify(slug_input) if slug_input else None
         if new_slug and new_slug != coll.slug:
-            existing = Collection.query.filter_by(slug=new_slug).first()
-            if existing and existing.id != coll.id:
+            existing = slug_clash(new_slug, coll.id)
+            if existing:
                 flash("That web address is already used by another collection. Try a different one.", "error")
                 return redirect(url_for("collections.edit", coll_id=coll.id))
         coll.slug = new_slug
@@ -134,20 +208,32 @@ def edit(coll_id):
 @collections_bp.route("/<int:coll_id>/delete", methods=["POST"])
 @login_required
 def delete(coll_id):
-    coll = Collection.query.get_or_404(coll_id)
+    coll = get_live_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
         flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
-    db.session.delete(coll)
-    db.session.commit()
-    flash("Collection deleted.", "success")
+    soft_delete(coll)
+    flash(f"Collection deleted.|{coll.id}", "undo_collection")
     return redirect(url_for("collections.index"))
+
+
+@collections_bp.route("/<int:coll_id>/restore", methods=["POST"])
+@login_required
+def restore(coll_id):
+    coll = restorable(coll_id, current_user)
+    if coll is None:
+        flash("That collection can't be restored any more.", "error")
+        return redirect(url_for("collections.index"))
+    coll.deleted_at = None
+    db.session.commit()
+    flash(f"Restored \u201c{coll.name}\u201d.", "success")
+    return redirect(url_for("collections.view", coll_id=coll.id))
 
 
 @collections_bp.route("/<int:coll_id>/share", methods=["POST"])
 @login_required
 def share(coll_id):
-    coll = Collection.query.get_or_404(coll_id)
+    coll = get_live_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
         flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
@@ -161,7 +247,7 @@ def share(coll_id):
 @collections_bp.route("/<int:coll_id>/unshare", methods=["POST"])
 @login_required
 def unshare(coll_id):
-    coll = Collection.query.get_or_404(coll_id)
+    coll = get_live_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
         flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
@@ -175,7 +261,7 @@ def unshare(coll_id):
 @login_required
 def reorder(coll_id):
     """Reorder recipes within a collection via drag-and-drop."""
-    coll = Collection.query.get_or_404(coll_id)
+    coll = get_live_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
         return jsonify({"error": "Access denied"}), 403
     data = request.get_json(silent=True) or {}
@@ -240,7 +326,7 @@ def shared_cook_mode(token, recipe_id):
 @collections_bp.route("/<int:coll_id>/add-recipe", methods=["POST"])
 @login_required
 def add_recipe(coll_id):
-    coll = Collection.query.get_or_404(coll_id)
+    coll = get_live_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
         flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))
@@ -258,7 +344,7 @@ def add_recipe(coll_id):
 @collections_bp.route("/<int:coll_id>/remove-recipe/<int:recipe_id>", methods=["POST"])
 @login_required
 def remove_recipe(coll_id, recipe_id):
-    coll = Collection.query.get_or_404(coll_id)
+    coll = get_live_or_404(coll_id)
     if coll.user_id != current_user.id and not current_user.is_admin:
         flash("That belongs to someone else, so you can't change it.", "error")
         return redirect(url_for("collections.index"))

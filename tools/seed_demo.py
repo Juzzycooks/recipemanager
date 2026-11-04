@@ -4,7 +4,10 @@ pictures, collections, a meal plan and a shopping list). Used to take the screen
     DATA_DIR=/tmp/spoonmate-demo python3 -c "from app import create_app; create_app().run(port=5078)"   # a fresh server
     python3 tools/seed_demo.py http://localhost:5078                                                     # then seed it
 
-Creates the admin user `Alex` with password `Spoonmate-demo-1`. Needs Pillow. Run it against a new, empty server only.
+Creates the admin user `Alex` with password `Spoonmate-demo-1`, and `Sam` (`Spoonmate-demo-2`), who shares Alex's household
+(and so the shopping list). Needs Pillow. Run it against a new, empty server only. The Docker image has Pillow but not
+`tools/`, so against a container: `docker cp tools/seed_demo.py <name>:/tmp/ && docker exec <name> python /tmp/seed_demo.py
+http://127.0.0.1:5000` (what `IOS/scripts/run-ui-tests.sh` does).
 """
 import io, json, math, random, sys, urllib.request, uuid
 from datetime import date, timedelta
@@ -12,17 +15,20 @@ from PIL import Image, ImageDraw, ImageFilter
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:5078").rstrip("/") + "/api/v1"
 USER, PASSWORD = "Alex", "Spoonmate-demo-1"
+MEMBER, MEMBER_PASSWORD = "Sam", "Spoonmate-demo-2"   # the second person in Alex's household
 W, H = 1200, 900
 
 
 # ── tiny API client ──
-def call(method, path, body=None, token=None, files=None):   # files: {field: (filename, bytes)}
+def call(method, path, body=None, token=None, files=None, fields=None):   # files: {field: (filename, bytes)}; fields: {name: text}
     headers = {"Accept": "application/json"}
     if token: headers["Authorization"] = f"Bearer {token}"
     data = None
     if files:
         boundary = uuid.uuid4().hex
         data = b""
+        for name, value in (fields or {}).items():
+            data += f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n".encode()
         for name, (filename, blob) in files.items():
             data += (f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"; filename=\"{filename}\"\r\n"
                      f"Content-Type: image/png\r\n\r\n").encode() + blob + b"\r\n"
@@ -219,8 +225,16 @@ if __name__ == "__main__":
         call("PUT", f"/recipes/{rec['id']}/image", token=token, files={"image_file": ("photo.png", buf.getvalue())})
         if r["fav"]: call("PUT", f"/recipes/{rec['id']}/favorite", token=token)
         call("PUT", f"/recipes/{rec['id']}/rating", {"score": r["rating"]}, token)
+    # cook history: a few cooks with notes, two with a photo of the result
+    def cook_photo(title):
+        buf = io.BytesIO(); ART[title]().resize((800, 600)).save(buf, "PNG"); return buf.getvalue()
+    call("POST", f"/recipes/{ids['Banana Bread']}/made", {"note": "Used four bananas. Even better on day two."}, token)
+    call("POST", f"/recipes/{ids['Coconut Chicken Curry']}/made", token=token,
+         files={"photo": ("cook.png", cook_photo("Coconut Chicken Curry"))}, fields={"note": "Added spinach at the end."})
+    call("POST", f"/recipes/{ids['Blueberry Pancakes']}/made", {"note": "Doubled the batch for brunch."}, token)
     call("POST", f"/recipes/{ids['Tomato Basil Soup']}/made", token=token)
-    call("POST", f"/recipes/{ids['Blueberry Pancakes']}/made", token=token)
+    call("POST", f"/recipes/{ids['Tomato Basil Soup']}/made", token=token,
+         files={"photo": ("cook.png", cook_photo("Tomato Basil Soup"))}, fields={"note": "Roasted the tomatoes first."})
     # collections
     for name, desc, titles in [("Weeknight Dinners", "Quick meals for busy evenings.", ["Garlic Butter Pasta", "Coconut Chicken Curry", "Shakshuka", "Tomato Basil Soup"]),
                                ("Weekend Baking", "Slow Sunday projects.", ["Lemon Tart", "Banana Bread", "Blueberry Pancakes"]),
@@ -240,4 +254,11 @@ if __name__ == "__main__":
     call("POST", f"/shopping/recipe/{ids['Coconut Chicken Curry']}", token=token)
     call("POST", f"/shopping/recipe/{ids['Greek Salad']}", token=token)
     call("POST", "/shopping/items", {"names": ["Sourdough loaf", "Dishwasher tablets", "Oat milk"]}, token)
-    print("seeded", len(ids), "recipes; sign in as", USER, "/", PASSWORD)
+    # a household: Sam joins Alex's, so the list is shared and Sam's items say "Added by Sam"
+    sam = call("POST", "/admin/users", {"username": MEMBER}, token)["user"]
+    call("PATCH", f"/admin/users/{sam['id']}", {"new_password": MEMBER_PASSWORD}, token)
+    code = call("POST", "/household", {"name": "Home"}, token)["household"]["invite_code"]
+    sam_token = call("POST", "/auth/login", {"username": MEMBER, "password": MEMBER_PASSWORD, "device_name": "seed"})["token"]
+    call("POST", "/household/join", {"code": code}, sam_token)
+    call("POST", "/shopping/items", {"names": ["Lemons", "Greek yoghurt"]}, sam_token)
+    print("seeded", len(ids), "recipes; sign in as", USER, "/", PASSWORD, "(household member:", MEMBER, "/", MEMBER_PASSWORD + ")")

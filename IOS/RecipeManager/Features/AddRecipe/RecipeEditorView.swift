@@ -330,6 +330,11 @@ enum ImagePrep {
     /// Downscale to 2000px on the long edge and re-encode as JPEG (phone photos are huge; the server resizes anyway).
     static func jpeg(from data: Data) -> Data? {
         guard let image = UIImage(data: data) else { return nil }
+        return jpeg(from: image)
+    }
+
+    /// The same for a picture already decoded (the camera hands one over).
+    static func jpeg(from image: UIImage) -> Data? {
         let longest = max(image.size.width, image.size.height)
         let scale = min(1, 2000 / longest)
         guard scale < 1 else { return image.jpegData(compressionQuality: 0.85) }

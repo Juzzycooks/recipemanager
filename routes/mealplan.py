@@ -1,7 +1,8 @@
 import random
 import secrets
 from datetime import date, timedelta
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort
+from datetime import datetime, timezone
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort, make_response
 from flask_login import login_required, current_user
 from models import db, Recipe, MealPlan, ShoppingListItem, Favorite, SiteSetting
 
@@ -45,6 +46,57 @@ def fill_week(user_id, week_dates, meal_types):
                                     date=d, meal_type=mt))
             added += 1
     return added
+
+
+# ── Calendar export (RFC 5545) ──
+
+def _ics_escape(text):
+    return (str(text or "").replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+            .replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n"))
+
+
+def _ics_fold(line):
+    """Fold a content line at 75 octets (continuation lines start with a space), never inside a UTF-8 character."""
+    out, cur, size = [], "", 0
+    for ch in line:
+        n = len(ch.encode("utf-8"))
+        if size + n > 75:
+            out.append(cur)
+            cur, size = " ", 1
+        cur += ch
+        size += n
+    out.append(cur)
+    return "\r\n".join(out)
+
+
+def build_ics(plans, recipe_url, calendar_name="Meal plan"):
+    """A VCALENDAR with one all-day VEVENT per plan entry. `recipe_url(recipe)` gives the link."""
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Spoonmate//Meal plan//EN", "CALSCALE:GREGORIAN",
+             "METHOD:PUBLISH", f"X-WR-CALNAME:{_ics_escape(calendar_name)}"]
+    for p in plans:
+        if p.recipe is None:
+            continue
+        link = recipe_url(p.recipe)
+        lines += ["BEGIN:VEVENT", f"UID:mealplan-{p.id}@spoonmate", f"DTSTAMP:{stamp}",
+                  f"DTSTART;VALUE=DATE:{p.date.strftime('%Y%m%d')}",
+                  f"DTEND;VALUE=DATE:{(p.date + timedelta(days=1)).strftime('%Y%m%d')}",
+                  f"SUMMARY:{_ics_escape((p.meal_type or 'dinner').capitalize() + ': ' + p.recipe.title)}",
+                  f"DESCRIPTION:{_ics_escape(link)}", f"URL:{link}", "TRANSP:TRANSPARENT", "END:VEVENT"]
+    lines.append("END:VCALENDAR")
+    return "".join(_ics_fold(l) + "\r\n" for l in lines)
+
+
+def ics_response(body, filename):
+    resp = make_response(body)
+    resp.headers["Content-Type"] = "text/calendar; charset=utf-8"
+    resp.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp
+
+
+def plans_between(user_id, first, last):
+    return (MealPlan.query.filter(MealPlan.user_id == user_id, MealPlan.date >= first, MealPlan.date <= last)
+            .order_by(MealPlan.date, MealPlan.sort_order, MealPlan.id).all())
 
 
 def _get_week_dates(start_date):
@@ -91,6 +143,17 @@ def index():
                            recipes=recipes,
                            offset=offset,
                            today=today)
+
+
+@mealplan_bp.route("/export.ics")
+@login_required
+def export_ics():
+    """This week (or ?week=offset) as a calendar file."""
+    offset = max(-520, min(520, request.args.get("week", 0, type=int)))
+    week = _get_week_dates(date.today() + timedelta(weeks=offset))
+    body = build_ics(plans_between(current_user.id, week[0], week[-1]),
+                     lambda r: url_for("recipes.view", recipe_id=r.id, _external=True))
+    return ics_response(body, f"meal-plan-{week[0].isoformat()}.ics")
 
 
 @mealplan_bp.route("/add", methods=["POST"])

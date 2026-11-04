@@ -5,7 +5,9 @@ import Observation
 enum OutboxOp: Codable, Sendable, Equatable {
     case favorite(recipeID: Int, wanted: Bool)
     case rate(recipeID: Int, score: Int)
-    case madeIt(recipeID: Int)
+    /// "I made this", with the cook's note and photo when there are any. `photo` is the name of a JPEG kept in
+    /// `Outbox.photoDirectory` until it's sent (older queues have neither field and still decode).
+    case madeIt(recipeID: Int, note: String? = nil, photo: String? = nil)
     case addShoppingItem(name: String, checked: Bool)
     case setShoppingChecked(itemID: Int, checked: Bool)
     case deleteShoppingItem(itemID: Int)
@@ -80,7 +82,40 @@ final class Outbox {
         return true
     }
 
-    func clear() { ops = []; save() }
+    func clear() {
+        ops = []; save()
+        try? FileManager.default.removeItem(at: Self.photoDirectory)
+    }
+
+    // MARK: Photos waiting to go with a queued "I made this"
+
+    /// Where queued cook photos wait (Application Support, excluded from backups, removed with the queue).
+    nonisolated static var photoDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("OutboxPhotos", isDirectory: true)
+    }
+
+    /// Keeps a photo until its "I made this" is sent; returns the name to queue, or nil if it couldn't be saved.
+    nonisolated static func keepPhoto(_ jpeg: Data) -> String? {
+        var dir = photoDirectory
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        var values = URLResourceValues(); values.isExcludedFromBackup = true
+        try? dir.setResourceValues(values)
+        let name = UUID().uuidString + ".jpg"
+        do {
+            try jpeg.write(to: dir.appendingPathComponent(name), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            return name
+        } catch { return nil }
+    }
+
+    nonisolated static func keptPhoto(_ name: String) -> Data? {
+        try? Data(contentsOf: photoDirectory.appendingPathComponent(name))
+    }
+
+    nonisolated static func discardPhoto(_ name: String?) {
+        guard let name else { return }
+        try? FileManager.default.removeItem(at: photoDirectory.appendingPathComponent(name))
+    }
 
     /// Sends queued changes in order. Stops at the first connectivity failure; drops changes the server rejects
     /// (for example a recipe that was deleted elsewhere).
@@ -92,10 +127,12 @@ final class Outbox {
             do {
                 try await send(op, session)
                 ops.removeFirst(); save()
+                Self.discardPhoto(op.photoName)
             } catch let error as APIError where error.isOffline || error.isUnauthorized {
                 return
             } catch {
                 ops.removeFirst(); save()   // rejected: nothing sensible to retry
+                Self.discardPhoto(op.photoName)
             }
         }
         session.recipesChanged()
@@ -112,8 +149,14 @@ final class Outbox {
             try await session.run { try await $0.send(wanted ? "PUT" : "DELETE", "/recipes/\(id)/favorite") }
         case .rate(let id, let score):
             try await session.run { try await $0.send("PUT", "/recipes/\(id)/rating", body: Score(score: score)) }
-        case .madeIt(let id):
-            try await session.run { try await $0.send("POST", "/recipes/\(id)/made") }
+        case .madeIt(let id, let note, let photo):
+            let jpeg = photo.flatMap(Self.keptPhoto)
+            do {
+                _ = try await session.run { try await CookLog.logMade($0, recipeID: id, note: note, photo: jpeg) }
+            } catch let APIError.server(status, _, _) where jpeg != nil && CookLog.isPhotoRejection(status) {
+                // The server won't take the photo (too big, not a picture): the cook still counts, without it.
+                _ = try await session.run { try await CookLog.logMade($0, recipeID: id, note: note, photo: nil) }
+            }
         case .setShoppingChecked(let id, let checked):
             try await session.run { try await $0.send("PATCH", "/shopping/items/\(id)", body: Checked(checked: checked)) }
         case .deleteShoppingItem(let id):
@@ -140,6 +183,11 @@ final class Outbox {
     private func save() {
         try? JSONEncoder().encode(ops).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
+}
+
+extension OutboxOp {
+    /// The queued photo file this change carries, if any.
+    var photoName: String? { if case .madeIt(_, _, let photo) = self { photo } else { nil } }
 }
 
 extension APIError {

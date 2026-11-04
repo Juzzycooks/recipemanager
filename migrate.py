@@ -204,6 +204,14 @@ def migrate(db_path):
         except sqlite3.OperationalError:
             pass
 
+        # Soft delete (undo for deleting a collection)
+        if "deleted_at" not in coll_cols:
+            try:
+                cursor.execute("ALTER TABLE collection ADD COLUMN deleted_at DATETIME")
+                print("Migration: Added 'deleted_at' column to collection table")
+            except sqlite3.OperationalError:
+                pass
+
         # Imports used to keep the checkbox glyph (and a bullet) at the start of ingredient/method lines.
         if "recipe" in existing_tables:
             import re
@@ -212,6 +220,45 @@ def migrate(db_path):
                 new_ing, new_ins = lead.sub("", ing or ""), lead.sub("", ins or "")
                 if new_ing != (ing or "") or new_ins != (ins or ""):
                     cursor.execute("UPDATE recipe SET ingredients=?, instructions=? WHERE id=?", (new_ing, new_ins, rid))
+
+    # ── Households: a shopping list shared by several people ──
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS household (
+            id INTEGER PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            invite_code VARCHAR(16) NOT NULL UNIQUE,
+            owner_id INTEGER,
+            created_at DATETIME
+        )
+    """)
+    if "user" in existing_tables:
+        user_cols = get_existing_columns(cursor, "user")
+        if "household_id" not in user_cols:
+            try:
+                cursor.execute("ALTER TABLE user ADD COLUMN household_id INTEGER REFERENCES household(id)")
+                print("Migration: Added 'household_id' column to user table")
+            except sqlite3.OperationalError:
+                pass
+
+    if "shopping_list_item" in existing_tables:
+        shop_cols = get_existing_columns(cursor, "shopping_list_item")
+        if "updated_at" not in shop_cols:
+            try:
+                cursor.execute("ALTER TABLE shopping_list_item ADD COLUMN updated_at DATETIME")
+                cursor.execute("UPDATE shopping_list_item SET updated_at = created_at WHERE updated_at IS NULL")
+                print("Migration: Added 'updated_at' column to shopping_list_item table")
+            except sqlite3.OperationalError:
+                pass
+
+    # ── Cook log: a note and a photo per cook ──
+    cook_cols = get_existing_columns(cursor, "cook_log")
+    for col, decl in (("note", "TEXT DEFAULT ''"), ("photo", "VARCHAR(200) DEFAULT ''")):
+        if col not in cook_cols:
+            try:
+                cursor.execute(f"ALTER TABLE cook_log ADD COLUMN {col} {decl}")
+                print(f"Migration: Added '{col}' column to cook_log table")
+            except sqlite3.OperationalError:
+                pass
 
     conn.commit()
     conn.close()

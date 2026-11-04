@@ -1,0 +1,26 @@
+{
+  "items": [
+    {
+      "cooked_at": "2026-11-04T01:02:12.517358+00:00",
+      "id": 2,
+      "note": "Extra zest, less stock. Great.",
+      "photo_url": "/admin/uploads/cook_af09efc98c4c.jpg",
+      "recipe": {
+        "id": 1,
+        "image_url": "",
+        "title": "Lemon risotto"
+      }
+    },
+    {
+      "cooked_at": "2026-11-04T01:02:12.513091+00:00",
+      "id": 1,
+      "note": "",
+      "photo_url": null,
+      "recipe": {
+        "id": 1,
+        "image_url": "",
+        "title": "Lemon risotto"
+      }
+    }
+  ]
+}

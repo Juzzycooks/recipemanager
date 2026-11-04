@@ -24,7 +24,14 @@ enum CookFonts {
     static let finish = Font.custom("Alegreya-BoldItalic", size: 34, relativeTo: .largeTitle)
 }
 
-/// Full-screen, one step at a time, screen kept awake. `onFinished` fires on Done (logs "I made this");
+/// What the cook added on the finish panel: a note and a photo (JPEG), both optional.
+struct CookFinish: Sendable, Equatable {
+    var note = ""
+    var photo: Data?
+}
+
+/// Full-screen, one step at a time, screen kept awake. After the last step the finish panel offers a photo and a note;
+/// `onFinished` fires once, on Save or Skip (or on closing without either), and logs "I made this".
 /// `onRate`, when given, lets the cook rate the recipe on the finish screen.
 struct CookingView: View {
     @Environment(\.dismiss) private var dismiss
@@ -33,7 +40,7 @@ struct CookingView: View {
     var units: UnitSystem = .original
     /// The recipe page's ½× / 1× / 2× / 3× choice; ingredient amounts are scaled, then converted. Method text isn't scaled (as on the web).
     var scale: Double = 1
-    let onFinished: () -> Void
+    let onFinished: (CookFinish) -> Void
     var onRate: ((Int) -> Void)? = nil
 
     enum Page: Hashable { case ingredients, steps }
@@ -44,6 +51,13 @@ struct CookingView: View {
     /// Ticked ingredient lines ("section-line"), kept while cook mode is open.
     @State private var checked: Set<String> = []
     @State private var finished = false
+    /// "I made this" has been sent for this finish (Save or Skip).
+    @State private var logged = false
+    @State private var finishNote = ""
+    @State private var finishPhoto: Data?
+    @State private var showingCamera = false
+    @State private var showingLibrary = false
+    @FocusState private var noteFocused: Bool
     @State private var rating: Int?
     @Environment(CookTimer.self) private var timer
     @AppStorage("keepAwake") private var keepAwake = true
@@ -93,6 +107,8 @@ struct CookingView: View {
         .onDisappear {
             UIApplication.shared.isIdleTimerDisabled = false   // the timers keep running
             handsFree.disappear()
+            // Finished but closed without Save or Skip: it still counts as made (what Done always did).
+            if finished && !logged { logged = true; onFinished(CookFinish()) }
         }
         .onChange(of: scenePhase) { handsFree.setForeground(scenePhase == .active) }
         .alert(item: $handsFree.notice) { notice in voiceAlert(notice) }
@@ -100,7 +116,7 @@ struct CookingView: View {
         .sheet(isPresented: $showingTimer) {
             TimerSheet(recipeTitle: recipe.title,
                        defaultName: page == .steps ? current.map { "Step \($0.number)" } : nil,
-                       suggestion: page == .steps ? current.flatMap { CookTimer.detectMinutes(in: $0.text) } : nil)
+                       suggestion: page == .steps ? current.flatMap { StepDurations.find(in: $0.text).first } : nil)
         }
     }
 
@@ -119,6 +135,8 @@ struct CookingView: View {
                 Button { dismiss() } label: {
                     Label("Close", systemImage: "xmark")
                         .font(.headline)
+                        .lineLimit(1)
+                        .fixedSize()
                         .padding(.horizontal, Spacing.m)
                         .frame(minHeight: 56)
                         .background(CookColors.raised, in: RoundedRectangle(cornerRadius: 4))
@@ -128,6 +146,8 @@ struct CookingView: View {
                 Spacer(minLength: Spacing.xs)
                 Text(steps.isEmpty ? recipe.title : "Step \(index + 1) of \(steps.count)")
                     .font(.headline.monospacedDigit()).foregroundStyle(CookColors.muted).lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .layoutPriority(-1)
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: Spacing.xs)
                 handsFreeToggle
@@ -233,21 +253,39 @@ struct CookingView: View {
                 .accessibilityElement(children: .combine)
             }
 
-            let stepTimerName = "Step \(step.number)"
-            if let minutes = CookTimer.detectMinutes(in: step.text), timer.canAddMore,
-               !timer.timers.contains(where: { $0.name == stepTimerName }) {
-                Button { Task { await timer.start(minutes: minutes, name: stepTimerName, recipeTitle: recipe.title) } } label: {
-                    Label("Start \(TimerSheet.format(minutes)) timer", systemImage: "timer")
-                        .font(.headline).foregroundStyle(CookColors.ember)
-                        .padding(.horizontal, Spacing.l).frame(minHeight: 56)
-                        .background(CookColors.raised, in: RoundedRectangle(cornerRadius: 4))
-                        .contentShape(Rectangle())
+            // One button per time the step mentions ("Simmer 2–3 hours, then rest 10 minutes" gives two).
+            let durations = StepDurations.find(in: step.text)
+            ForEach(Array(durations.enumerated()), id: \.offset) { i, duration in
+                let name = Self.timerName(step: step.number, index: i, duration: duration)
+                if timer.canAddMore, !timer.timers.contains(where: { $0.name == name }) {
+                    Button { Task { await timer.start(duration, name: name, recipeTitle: recipe.title) } } label: {
+                        Label(Self.startTitle(duration), systemImage: "timer")
+                            .font(.headline).foregroundStyle(CookColors.ember).multilineTextAlignment(.leading)
+                            .padding(.horizontal, Spacing.l).padding(.vertical, Spacing.xs).frame(minHeight: 56)
+                            .background(CookColors.raised, in: RoundedRectangle(cornerRadius: 4))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(duration.isRange ? "Starts at \(TimerSheet.format(seconds: duration.seconds)). When it rings you can add \(duration.extraMinutes) minutes." : "")
                 }
-                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, Spacing.screen).padding(.vertical, Spacing.l)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// "Step 3" for a step's first time, "Step 3 · 10 min" for the others, so each gets its own timer.
+    static func timerName(step: Int, index: Int, duration: StepDuration) -> String {
+        index == 0 ? "Step \(step)" : "Step \(step) · \(TimerSheet.format(seconds: duration.seconds))"
+    }
+
+    /// "Start 25 min timer", "Start 2 hr timer (up to 3 hr)", "Start timer: Overnight · about 8 hr".
+    static func startTitle(_ duration: StepDuration) -> String {
+        if duration.approx { return "Start timer: \(duration.label)" }
+        if duration.isRange {
+            return "Start \(TimerSheet.format(seconds: duration.seconds)) timer (up to \(TimerSheet.format(seconds: duration.maxSeconds)))"
+        }
+        return "Start \(TimerSheet.format(seconds: duration.seconds)) timer"
     }
 
     /// "Ragu:" → "Ragu". User headings are shown as written, apart from the trailing colon.
@@ -459,7 +497,7 @@ struct CookingView: View {
         switch command {
         case .next:
             if page != .steps { page = .steps; handsFree.say(spokenStep); return }
-            if finished { handsFree.say("You've finished. Tap Close when you're done."); return }
+            if finished { handsFree.say(logged ? "You've finished. Tap Close when you're done." : "You've finished. Add a photo or note, or tap Skip."); return }
             if isLast { handsFree.say("That's the last step. Tap Done when you've finished."); return }
             advance(1)
         case .back:
@@ -482,19 +520,19 @@ struct CookingView: View {
         case .setTimer(let seconds):
             startVoiceTimer(seconds: seconds, name: nil)
         case .startStepTimer:
-            guard page == .steps, let step = current, let minutes = CookTimer.detectMinutes(in: step.text) else {
+            guard page == .steps, let step = current, let duration = StepDurations.find(in: step.text).first else {
                 handsFree.say("This step doesn't mention a time. Say, set a timer for ten minutes.")
                 return
             }
-            let name = "Step \(step.number)"
+            let name = Self.timerName(step: step.number, index: 0, duration: duration)
             if timer.timers.contains(where: { $0.name == name }) { handsFree.say("The step \(step.number) timer is already running."); return }
-            startVoiceTimer(seconds: minutes * 60, name: name)
+            startVoiceTimer(seconds: duration.seconds, name: name, extraMinutes: duration.extraMinutes)
         case .stopListening:
             break   // handled by the controller
         }
     }
 
-    private func startVoiceTimer(seconds: Int, name: String?) {
+    private func startVoiceTimer(seconds: Int, name: String?, extraMinutes: Int = 0) {
         guard timer.canAddMore else {
             handsFree.say("That's \(CookTimer.maxTimers) timers already. Cancel one to start another.")
             return
@@ -503,7 +541,7 @@ struct CookingView: View {
         let label = name ?? (stepName.flatMap { n in timer.timers.contains(where: { $0.name == n }) ? nil : n } ?? timer.nextDefaultName)
         let spoken = VoiceCommand.spokenDuration(seconds)
         Task {
-            let started = await timer.start(seconds: seconds, name: label, recipeTitle: recipe.title)
+            let started = await timer.start(seconds: seconds, name: label, recipeTitle: recipe.title, extraMinutes: extraMinutes)
             handsFree.say(started == nil ? "Couldn't start the timer." : "\(label) timer, \(spoken).")
         }
     }
@@ -511,39 +549,113 @@ struct CookingView: View {
     // MARK: Finish
 
     private func finish() {
-        onFinished()
         rating = recipe.myRating
+        logged = false; finishNote = ""; finishPhoto = nil
         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) { finished = true }
     }
 
+    /// Save (with the photo and note) or Skip (just "made it"): either way the cook is logged once.
+    private func logFinish(save: Bool) {
+        guard !logged else { return }
+        noteFocused = false
+        logged = true
+        onFinished(save ? CookFinish(note: finishNote.trimmingCharacters(in: .whitespacesAndNewlines), photo: finishPhoto) : CookFinish())
+    }
+
     private var finishPanel: some View {
-        VStack(spacing: Spacing.l) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: Spacing.l) {
+                finishHeading
+                if let onRate { ratingRow(onRate) }
+                if logged { finishedActions } else { finishLog }
+            }
+            .padding(.horizontal, Spacing.screen).padding(.vertical, Spacing.l)
+            .frame(maxWidth: .infinity)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(CookColors.ground.ignoresSafeArea())
+        .accessibilityAddTraits(.isModal)
+        .photoCapture(camera: $showingCamera, library: $showingLibrary) { finishPhoto = $0 }
+    }
+
+    private var finishHeading: some View {
+        VStack(spacing: Spacing.s) {
             Image(systemName: "checkmark.circle").font(.largeTitle).imageScale(.large).foregroundStyle(CookColors.ember)
                 .accessibilityHidden(true)
             VStack(spacing: Spacing.xs) {
-                Text("Nice. Marked as made.").font(CookFonts.finish).multilineTextAlignment(.center)
+                Text(logged ? "Nice. Marked as made." : "Nice. You made it.").font(CookFonts.finish).multilineTextAlignment(.center)
                     .accessibilityAddTraits(.isHeader)
                 Text(recipe.title).font(CookFonts.label).foregroundStyle(CookColors.muted).multilineTextAlignment(.center)
             }
-            if let onRate {
-                VStack(spacing: Spacing.xxs) {
-                    Text("How was it?").font(.headline).foregroundStyle(CookColors.muted)
-                    HStack(spacing: 0) {
-                        ForEach(1...5, id: \.self) { score in
-                            Button { rating = score; onRate(score) } label: {
-                                Image(systemName: score <= (rating ?? 0) ? "star.fill" : "star")
-                                    .font(.title).foregroundStyle(CookColors.ember)
-                                    .frame(width: 56, height: 56).contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("\(score) out of 5")
-                            .accessibilityAddTraits(rating == score ? .isSelected : [])
+        }
+        .padding(.top, Spacing.l)
+    }
+
+    /// A photo and a note for your cook history, then Save or Skip.
+    private var finishLog: some View {
+        VStack(alignment: .leading, spacing: Spacing.m) {
+            Text("Add to your cook history").font(.headline).foregroundStyle(CookColors.muted)
+            if let photo = finishPhoto, let image = UIImage(data: photo) {
+                Image(uiImage: image).resizable().scaledToFill()
+                    .frame(maxWidth: .infinity).frame(height: 200).clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(alignment: .topTrailing) {
+                        Button { finishPhoto = nil } label: {
+                            Image(systemName: "xmark").font(.headline).foregroundStyle(CookColors.text)
+                                .frame(width: 44, height: 44).background(CookColors.raised.opacity(0.9), in: Circle())
+                                .frame(width: 56, height: 56).contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Remove photo")
                     }
+                    .accessibilityLabel("Your photo")
+            }
+            HStack(spacing: Spacing.xs) {
+                if PhotoCapture.hasCamera {
+                    Button { showingCamera = true } label: { Label(finishPhoto == nil ? "Take photo" : "Retake", systemImage: "camera") }
+                        .buttonStyle(CookBarButtonStyle(filled: false))
+                }
+                Button { showingLibrary = true } label: { Label(finishPhoto == nil ? "Choose photo" : "Choose another", systemImage: "photo") }
+                    .buttonStyle(CookBarButtonStyle(filled: false))
+            }
+            TextField("Note (optional)", text: $finishNote, prompt: Text("A note for next time (optional)").foregroundStyle(CookColors.muted),
+                      axis: .vertical)
+                .lineLimit(2...5).font(.title3).focused($noteFocused)
+                .padding(.horizontal, Spacing.m).padding(.vertical, Spacing.s).frame(minHeight: 56)
+                .background(CookColors.surface, in: RoundedRectangle(cornerRadius: 4))
+                .accessibilityLabel("Note")
+            Button { logFinish(save: true) } label: { Text("Save") }
+                .buttonStyle(CookBarButtonStyle(filled: true))
+            Button { logFinish(save: false) } label: {
+                Text("Skip").font(.headline).foregroundStyle(CookColors.ember)
+                    .frame(maxWidth: .infinity, minHeight: 56).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Marks it as made without a photo or note")
+        }
+    }
+
+    private func ratingRow(_ onRate: @escaping (Int) -> Void) -> some View {
+        VStack(spacing: Spacing.xxs) {
+            Text("How was it?").font(.headline).foregroundStyle(CookColors.muted)
+            HStack(spacing: 0) {
+                ForEach(1...5, id: \.self) { score in
+                    Button { rating = score; onRate(score) } label: {
+                        Image(systemName: score <= (rating ?? 0) ? "star.fill" : "star")
+                            .font(.title).foregroundStyle(CookColors.ember)
+                            .frame(width: 56, height: 56).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(score) out of 5")
+                    .accessibilityAddTraits(rating == score ? .isSelected : [])
                 }
             }
-            Spacer()
+        }
+    }
+
+    private var finishedActions: some View {
+        VStack(spacing: Spacing.s) {
             Button { dismiss() } label: { Text("Close") }
                 .buttonStyle(CookBarButtonStyle(filled: true))
             Button {
@@ -555,10 +667,7 @@ struct CookingView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, Spacing.screen).padding(.bottom, Spacing.s)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(CookColors.ground.ignoresSafeArea())
-        .accessibilityAddTraits(.isModal)
+        .padding(.top, Spacing.l)
     }
 }
 
@@ -630,6 +739,14 @@ struct CookTimerPill: View {
             .disabled(onOpen == nil)
             .accessibilityElement(children: .combine)
             .accessibilityHint(onOpen == nil ? "" : "Opens timers.")
+            if running.finished, running.extraMinutes > 0 {
+                // A range ("2–3 hours") started at its low end: run the rest.
+                Button { Task { await timer.extend(running.id) } } label: {
+                    Text("+\(running.extraMinutes) min").font(.headline.monospacedDigit())
+                        .padding(.horizontal, Spacing.s).frame(minHeight: 56).contentShape(Rectangle())
+                }
+                .accessibilityLabel("Add \(running.extraMinutes) minutes to \(running.name)")
+            }
             Button { timer.cancel(running.id) } label: {
                 Image(systemName: "xmark").font(.headline).frame(width: 56, height: 56).contentShape(Rectangle())
             }
@@ -659,6 +776,11 @@ struct TimerPill: View {
                     Text("+\(timer.timers.count - 1)").font(.subheadline.weight(.semibold))
                         .accessibilityLabel("and \(timer.timers.count - 1) more")
                 }
+                if soonest.finished, soonest.extraMinutes > 0 {
+                    Button("+\(soonest.extraMinutes) min") { Task { await timer.extend(soonest.id) } }
+                        .font(.subheadline.weight(.semibold)).frame(minHeight: Size.tap)
+                        .accessibilityLabel("Add \(soonest.extraMinutes) minutes to \(soonest.name)")
+                }
                 Button { timer.cancel(soonest.id) } label: {
                     Image(systemName: "xmark.circle.fill").frame(width: Size.tap, height: Size.tap)
                 }
@@ -678,7 +800,7 @@ struct TimerSheet: View {
     let recipeTitle: String
     /// "Step 3" when opened on a step; otherwise timers are called "Timer 2" and so on.
     let defaultName: String?
-    let suggestion: Int?
+    let suggestion: StepDuration?
     @State private var name = ""
     @State private var customMinutes = 5
     private let presets = [1, 3, 5, 10, 15, 20, 30, 60]
@@ -734,8 +856,13 @@ struct TimerSheet: View {
                 .background(CookColors.surface, in: RoundedRectangle(cornerRadius: 4))
         }
         if let suggestion {
-            Button { start(suggestion) } label: {
-                Label("Start \(Self.format(suggestion)), from this step", systemImage: "timer")
+            Button {
+                let label = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? fallbackName : name
+                name = ""
+                Task { await timer.start(suggestion, name: label, recipeTitle: recipeTitle) }
+            } label: {
+                Label(suggestion.approx ? "Start \(suggestion.label), from this step" : "Start \(Self.format(seconds: suggestion.seconds)), from this step",
+                      systemImage: "timer")
             }
             .buttonStyle(CookBarButtonStyle(filled: true))
         }
@@ -791,10 +918,18 @@ struct TimerSheet: View {
     }
 
     /// 5 → "5 min", 60 → "1 hr", 90 → "1 hr 30 min".
-    static func format(_ minutes: Int) -> String {
+    nonisolated static func format(_ minutes: Int) -> String {
         guard minutes >= 60 else { return "\(minutes) min" }
         let rest = minutes % 60
         return rest == 0 ? "\(minutes / 60) hr" : "\(minutes / 60) hr \(rest) min"
+    }
+
+    /// 45 → "45 sec", 90 → "1 min 30 sec", 600 → "10 min", 5400 → "1 hr 30 min" (whole minutes from an hour up).
+    nonisolated static func format(seconds: Int) -> String {
+        if seconds < 60 { return "\(max(0, seconds)) sec" }
+        if seconds % 60 == 0 { return format(seconds / 60) }
+        if seconds < 3600 { return "\(seconds / 60) min \(seconds % 60) sec" }
+        return format(Int((Double(seconds) / 60).rounded()))
     }
 
     /// Only iOS 26.1+ has alarm timers; older versions get repeating notifications, so don't promise a ringer.

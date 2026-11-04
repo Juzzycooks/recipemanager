@@ -363,6 +363,12 @@ struct RecipeDraft: Codable, Sendable, Hashable {
 
 // MARK: Shopping
 
+/// Someone in your household (or you): who added a shopping item, a household member.
+struct Member: Codable, Sendable, Identifiable, Hashable {
+    let id: Int
+    let username: String
+}
+
 struct ShoppingItem: Codable, Sendable, Identifiable, Hashable {
     let id: Int
     var name: String
@@ -371,6 +377,35 @@ struct ShoppingItem: Codable, Sendable, Identifiable, Hashable {
     let recipeTitle: String?
     let aisle: String
     let storeUrl: String?
+    /// Who put it on the list (newer servers; nil from older ones and for items added offline on this phone).
+    var addedBy: Member?
+    /// True when you added it. Nil from older servers, which have no shared lists, so it's yours.
+    var mine: Bool?
+    var createdAt: Date?
+
+    /// "Added by sam" for an item someone else in the household added; nil for your own.
+    var addedByLine: String? {
+        guard mine == false, let name = addedBy?.username, !name.isEmpty else { return nil }
+        return "Added by \(name)"
+    }
+}
+
+extension ShoppingItem {
+    // In an extension so the memberwise initialiser (used for items added offline) stays.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        checked = try c.decode(Bool.self, forKey: .checked)
+        recipeId = c.lenientInt(.recipeId)
+        recipeTitle = c.lenient(String.self, .recipeTitle)
+        aisle = c.lenient(String.self, .aisle) ?? "Other"
+        storeUrl = c.lenient(String.self, .storeUrl)
+        // Household fields: read leniently, so an older or odd server never fails the list.
+        addedBy = c.lenient(Member.self, .addedBy)
+        mine = c.lenient(Bool.self, .mine)
+        createdAt = c.lenient(Date.self, .createdAt)
+    }
 }
 
 struct ShoppingList: Codable, Sendable {
@@ -378,6 +413,153 @@ struct ShoppingList: Codable, Sendable {
     let store: Store
     let aisleOrder: [String]
     var items: [ShoppingItem]
+    /// Changes whenever anyone sharing the list changes it (newer servers); compare with `GET /shopping/version`.
+    var version: String?
+
+    init(store: Store, aisleOrder: [String], items: [ShoppingItem], version: String? = nil) {
+        self.store = store; self.aisleOrder = aisleOrder; self.items = items; self.version = version
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        store = try c.decode(Store.self, forKey: .store)
+        aisleOrder = try c.decode([String].self, forKey: .aisleOrder)
+        items = try c.decode([ShoppingItem].self, forKey: .items)
+        version = c.lenient(String.self, .version)
+    }
+}
+
+/// `GET /shopping/version`.
+struct ShoppingVersion: Decodable, Sendable {
+    let version: String?
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version = c.lenient(String.self, .version)
+    }
+    private enum CodingKeys: String, CodingKey { case version }
+}
+
+// MARK: Household
+
+/// People who share one shopping list. Every `/household` call answers `{"household": … | null}`.
+struct Household: Codable, Sendable, Identifiable, Hashable {
+    let id: Int
+    var name: String
+    /// "ABCD-EFGH".
+    var inviteCode: String
+    var isOwner: Bool
+    var members: [Member]
+
+    init(id: Int, name: String, inviteCode: String, isOwner: Bool, members: [Member]) {
+        self.id = id; self.name = name; self.inviteCode = inviteCode; self.isOwner = isOwner; self.members = members
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        name = c.lenient(String.self, .name) ?? ""
+        inviteCode = c.lenient(String.self, .inviteCode) ?? ""
+        isOwner = c.lenient(Bool.self, .isOwner) ?? false
+        members = c.lenient([Member].self, .members) ?? []
+    }
+
+    /// Accepts a code typed any way ("abcd efgh", "ABCD-EFGH", " abcdefgh ") and returns it as the server shows it.
+    /// The server accepts all of these too; this only tidies what is sent and shown.
+    static func normaliseCode(_ text: String) -> String {
+        let letters = text.uppercased().filter { $0.isASCII && ($0.isLetter || $0.isNumber) }
+        guard letters.count == 8 else { return String(letters) }
+        return String(letters.prefix(4)) + "-" + String(letters.suffix(4))
+    }
+}
+
+struct HouseholdResponse: Decodable, Sendable {
+    let household: Household?
+}
+
+// MARK: Cook history
+
+/// One time you cooked a recipe (`/made`, `/cook-history`, `/cook-log`).
+struct CookEntry: Codable, Sendable, Identifiable, Hashable {
+    struct RecipeRef: Codable, Sendable, Hashable {
+        let id: Int
+        var title: String
+        var imageUrl: String
+
+        init(id: Int, title: String, imageUrl: String) { self.id = id; self.title = title; self.imageUrl = imageUrl }
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            id = try c.decode(Int.self, forKey: .id)
+            title = c.lenient(String.self, .title) ?? ""
+            imageUrl = c.lenient(String.self, .imageUrl) ?? ""
+        }
+    }
+
+    let id: Int
+    var cookedAt: Date?
+    var note: String
+    /// Nil when there's no photo.
+    var photoUrl: String?
+    var recipe: RecipeRef?
+    /// Only on the `/made` answer: how many times you've made the recipe now.
+    var madeCount: Int?
+
+    init(id: Int, cookedAt: Date?, note: String, photoUrl: String?, recipe: RecipeRef?, madeCount: Int? = nil) {
+        self.id = id; self.cookedAt = cookedAt; self.note = note; self.photoUrl = photoUrl; self.recipe = recipe; self.madeCount = madeCount
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(Int.self, forKey: .id)
+        cookedAt = c.lenient(Date.self, .cookedAt)
+        note = c.lenient(String.self, .note) ?? ""
+        photoUrl = c.lenient(String.self, .photoUrl).flatMap { $0.isEmpty ? nil : $0 }
+        recipe = c.lenient(RecipeRef.self, .recipe)
+        madeCount = c.lenientInt(.madeCount)
+    }
+
+    var hasPhoto: Bool { photoUrl != nil }
+}
+
+/// `GET /cook-log`: newest first; pass `nextBefore` back as `before` (nil when there are no more).
+struct CookLogPage: Decodable, Sendable {
+    var entries: [CookEntry]
+    var nextBefore: Int?
+
+    init(entries: [CookEntry], nextBefore: Int?) { self.entries = entries; self.nextBefore = nextBefore }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        entries = c.lenient(LossyList<CookEntry>.self, .entries)?.items ?? []
+        nextBefore = c.lenientInt(.nextBefore)
+    }
+    private enum CodingKeys: String, CodingKey { case entries, nextBefore }
+}
+
+/// What `POST /recipes/{id}/made` answers. Newer servers send the cook-log entry plus `made_count`; older ones only
+/// `made_count`. Everything is optional so both read.
+struct MadeResult: Decodable, Sendable {
+    var madeCount: Int?
+    var entry: CookEntry?
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        madeCount = c.lenientInt(.madeCount)
+        entry = try? CookEntry(from: decoder)
+    }
+    private enum CodingKeys: String, CodingKey { case madeCount }
+}
+
+/// A list where an item that doesn't decode is skipped instead of failing the whole response.
+struct LossyList<T: Decodable & Sendable>: Decodable, Sendable {
+    var items: [T]
+    init(from decoder: Decoder) throws {
+        var c = try decoder.unkeyedContainer()
+        var out: [T] = []
+        while !c.isAtEnd {
+            if let item = try? c.decode(T.self) { out.append(item) } else { _ = try? c.decode(Skip.self) }
+        }
+        items = out
+    }
+    private struct Skip: Decodable {}
 }
 
 struct AddedCounts: Decodable, Sendable { let added: Int; let merged: Int }
@@ -428,6 +610,28 @@ struct CollectionDetail: Codable, Sendable, Identifiable, Hashable {
     var recipeCount: Int
     var recipes: [RecipeSummary]
     var manualRecipeIds: [Int]
+}
+
+/// `DELETE /collections/{id}` on newer servers: `{ok, restorable_until}`. Older servers answer 204 with no body, so
+/// `read(_:)` turns any body (or none) into this, never failing; `restorableUntil == nil` means "can't be undone".
+struct CollectionDeleted: Decodable, Sendable {
+    var ok: Bool?
+    var restorableUntil: Date?
+
+    init(ok: Bool? = nil, restorableUntil: Date? = nil) { self.ok = ok; self.restorableUntil = restorableUntil }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        ok = c.lenient(Bool.self, .ok)
+        restorableUntil = c.lenient(Date.self, .restorableUntil)
+    }
+    private enum CodingKeys: String, CodingKey { case ok, restorableUntil }
+
+    static func read(_ data: Data) -> CollectionDeleted {
+        guard !data.isEmpty else { return CollectionDeleted() }
+        return (try? APIClient.decoder.decode(CollectionDeleted.self, from: data)) ?? CollectionDeleted()
+    }
+
+    var canRestore: Bool { restorableUntil != nil }
 }
 
 // MARK: Import

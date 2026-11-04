@@ -4,6 +4,10 @@ import SwiftUI
 final class ShoppingModel {
     var list: ShoppingList?
     var error: String?
+    /// Adds, ticks, deletes and clears on their way to the server (the version poll waits for them).
+    private(set) var inFlight = 0
+    /// The server has no `/shopping/version`: no household lists there, so stop asking.
+    private(set) var pollUnsupported = false
 
     var open: [ShoppingItem] { list?.items.filter { !$0.checked } ?? [] }
     var done: [ShoppingItem] { list?.items.filter(\.checked) ?? [] }
@@ -21,11 +25,36 @@ final class ShoppingModel {
         return out
     }
 
-    func load(_ session: Session) async {
+    /// `quiet` for the background check: a failure there says nothing (the next one tries again).
+    func load(_ session: Session, quiet: Bool = false) async {
         do { list = try await session.run { try await $0.get("/shopping") } }
         catch is CancellationError {}
         catch let e as URLError where e.code == .cancelled {}
-        catch { self.error = "Couldn't load your shopping list. \(error.localizedDescription)" }
+        catch { if !quiet { self.error = "Couldn't load your shopping list. \(error.localizedDescription)" } }
+    }
+
+    func pollConditions(_ app: AppState) -> ShoppingPoll.Conditions {
+        ShoppingPoll.Conditions(offline: Connectivity.shared.isOffline, unsupported: pollUnsupported, hasList: list != nil,
+                                pendingChanges: Outbox.shared.isReplaying || Outbox.shared.ops.contains(where: \.isShopping),
+                                busy: inFlight > 0, undoOffered: app.undo.current != nil)
+    }
+
+    /// Asks whether anyone sharing the list changed it, and reloads in place if so. The reload goes through
+    /// `GET /shopping`, so the saved copy and the widget follow too.
+    func checkForChanges(_ session: Session, _ app: AppState) async {
+        guard ShoppingPoll.shouldAsk(pollConditions(app)) else { return }
+        let server: String?
+        do {
+            let data = try await session.run { try await $0.sendRaw("GET", "/shopping/version") }
+            server = (try? APIClient.decoder.decode(ShoppingVersion.self, from: data))?.version
+        } catch let APIError.server(status, _, _) where status == 404 || status == 405 {
+            pollUnsupported = true
+            return
+        } catch { return }   // offline or a blip: try again next time
+        guard server != nil else { pollUnsupported = true; return }
+        // Something may have started while the question was out (a tick): leave the list alone this time.
+        guard ShoppingPoll.needsReload(have: list?.version, server: server), ShoppingPoll.shouldAsk(pollConditions(app)) else { return }
+        await load(session, quiet: true)
     }
 
     /// Saves the list as it is now, so a relaunch without a connection shows your latest edits.
@@ -39,6 +68,8 @@ final class ShoppingModel {
         struct Body: Encodable, Sendable { let name: String }
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
+        inFlight += 1
+        defer { inFlight -= 1 }
         do {
             try await session.run { try await $0.send("POST", "/shopping/items", body: Body(name: trimmed)) }
             await load(session)
@@ -62,11 +93,15 @@ final class ShoppingModel {
             await persist(session)
             return
         }
+        inFlight += 1
+        defer { inFlight -= 1 }
         do {
             let _: ShoppingItem? = try await session.runOrQueue(.setShoppingChecked(itemID: item.id, checked: wanted)) {
                 try await $0.send("PATCH", "/shopping/items/\(item.id)", body: Body(checked: wanted))
             }
             await persist(session)
+            // Bought: tick it off in Reminders too, if the list was sent there.
+            if wanted { await EventKitExporter.shared.completeReminder(named: item.name) }
         } catch { self.error = "Couldn't update “\(item.name)”. \(error.localizedDescription)"; await load(session) }
     }
 
@@ -77,14 +112,31 @@ final class ShoppingModel {
             await persist(session)
             return
         }
+        inFlight += 1
+        defer { inFlight -= 1 }
         do {
             _ = try await session.runOrQueue(.deleteShoppingItem(itemID: item.id)) { try await $0.send("DELETE", "/shopping/items/\(item.id)") }
             await persist(session)
         } catch { self.error = "Couldn't delete “\(item.name)”. \(error.localizedDescription)"; await load(session) }
     }
 
+    /// Sends the unticked items to the "Spoonmate shopping" list in Reminders. False when access was refused.
+    func exportToReminders(_ app: AppState) async -> Bool {
+        let exporter = EventKitExporter.shared
+        guard await exporter.requestRemindersAccess() else { return false }
+        do {
+            let added = try await exporter.exportShopping(open.map(\.name))
+            app.say(ReminderExport.summary(added: added))
+        } catch {
+            self.error = "Couldn't add your list to Reminders. \(error.localizedDescription)"
+        }
+        return true
+    }
+
     func clearEverything(_ session: Session, _ app: AppState) async {
         await app.undo.commitNow()   // a pending "Clear completed" goes first, as it would have on its own
+        inFlight += 1
+        defer { inFlight -= 1 }
         do {
             try await session.run { try await $0.send("DELETE", "/shopping/items") }
             await load(session)
@@ -119,6 +171,8 @@ final class ShoppingModel {
         guard !items.isEmpty else { return }
         for item in items where item.id < 0 { Outbox.shared.cancelAdd(name: item.name) }
         let sent = items.filter { $0.id > 0 }
+        inFlight += 1
+        defer { inFlight -= 1 }
         do {
             if done.isEmpty && Outbox.shared.count == 0 {
                 // Nothing else is ticked here or waiting to be sent, so one request clears exactly these.
@@ -142,11 +196,13 @@ struct ShoppingListView: View {
 
     @Environment(Session.self) private var session
     @Environment(AppState.self) private var app
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("showStoreLinks") private var showStoreLinks = true
     @State private var model = ShoppingModel()
     @State private var grouping = Grouping.all
     @State private var newItem = ""
     @State private var confirmClear = false
+    @State private var settingsPrompt: SettingsPrompt?
     @FocusState private var addFocused: Bool
 
     var body: some View {
@@ -175,6 +231,11 @@ struct ShoppingListView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+                    Button("Add to Reminders", systemImage: "checklist") {
+                        Task { if await !model.exportToReminders(app) { settingsPrompt = .reminders } }
+                    }
+                    .disabled(model.open.isEmpty)
+                    Divider()
                     Button("Clear completed", systemImage: "checkmark.circle") { Task { await model.clearCompleted(session, app) } }.disabled(model.done.isEmpty)
                     Button("Clear everything", systemImage: "trash", role: .destructive) { confirmClear = true }.disabled(model.list?.items.isEmpty ?? true)
                 } label: { Image(systemName: "ellipsis.circle") }.accessibilityLabel("List options")
@@ -188,9 +249,21 @@ struct ShoppingListView: View {
         // not while an Undo is on offer, which could bring back items a held-back "Clear completed" took off.
         .task(id: session.dataVersion) { if model.list == nil || app.undo.current == nil { await model.load(session) } }
         .refreshable { await model.load(session) }
+        // Someone else in the household may change the list: ask every 15 seconds while it's showing and the app is
+        // active, and straight away on coming back to it. Stops when the screen goes or the app leaves the foreground.
+        .task(id: scenePhase == .active) {
+            guard scenePhase == .active else { return }
+            await model.checkForChanges(session, app)
+            while !Task.isCancelled {
+                try? await Task.sleep(for: ShoppingPoll.interval)
+                guard !Task.isCancelled else { return }
+                await model.checkForChanges(session, app)
+            }
+        }
         .confirmationDialog("Clear the whole list?", isPresented: $confirmClear, titleVisibility: .visible) {
             Button("Clear everything", role: .destructive) { Task { await model.clearEverything(session, app) } }
         } message: { Text("This removes every item, ticked or not, and can't be undone.") }
+        .settingsPrompt($settingsPrompt)
         .errorAlert($model.error)
     }
 
@@ -225,8 +298,13 @@ struct ShoppingListView: View {
                 HStack(spacing: Spacing.s) {
                     Image(systemName: item.checked ? "checkmark.square.fill" : "square").font(.title3)
                         .foregroundStyle(item.checked ? AppColors.primary : AppColors.textSecondary)
-                    Text(item.name).strikethrough(item.checked).foregroundStyle(item.checked ? AppColors.textSecondary : AppColors.textPrimary)
-                        .multilineTextAlignment(.leading)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.name).strikethrough(item.checked).foregroundStyle(item.checked ? AppColors.textSecondary : AppColors.textPrimary)
+                            .multilineTextAlignment(.leading)
+                        if let addedBy = item.addedByLine {
+                            Text(addedBy).font(.caption).foregroundStyle(AppColors.textSecondary)
+                        }
+                    }
                     Spacer(minLength: 0)
                 }
                 .frame(minHeight: Size.tap).contentShape(Rectangle())

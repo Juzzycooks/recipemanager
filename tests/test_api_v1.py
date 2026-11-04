@@ -439,7 +439,10 @@ class TestCollections(Api):
         self.assertEqual(self.c.get(f"{V1}/shared/collections/{token}").status_code, 404)
         self.assertEqual(self.delete(f"/collections/{cid}/recipes/{a}").status_code, 204)
         self.assertEqual(self.patch(f"/collections/{cid}", json={"name": "Renamed"}).get_json()["name"], "Renamed")
-        self.assertEqual(self.delete(f"/collections/{cid}").status_code, 204)
+        gone = self.delete(f"/collections/{cid}")
+        self.assertEqual(gone.status_code, 200)  # soft delete: restorable for 30 days
+        self.assertTrue(gone.get_json()["ok"])
+        self.assertIn("restorable_until", gone.get_json())
         self.assertEqual(self.get(f"/collections/{cid}").status_code, 404)
 
     def test_category_linked_recipes_and_ownership(self):

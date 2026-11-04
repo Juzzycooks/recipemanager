@@ -1,0 +1,64 @@
+{
+  "aisle_order": [
+    "Produce",
+    "Meat & Seafood",
+    "Dairy & Eggs",
+    "Bakery",
+    "Frozen",
+    "Pantry",
+    "Beverages",
+    "Other"
+  ],
+  "items": [
+    {
+      "added_by": {
+        "id": 2,
+        "username": "alex"
+      },
+      "aisle": "Dairy & Eggs",
+      "checked": false,
+      "created_at": "2026-11-04T01:02:12.390814+00:00",
+      "id": 3,
+      "mine": false,
+      "name": "1 litre milk",
+      "recipe_id": null,
+      "recipe_title": null,
+      "store_url": "https://www.woolworths.com.au/shop/search/products?searchTerm=milk"
+    },
+    {
+      "added_by": {
+        "id": 1,
+        "username": "sam"
+      },
+      "aisle": "Bakery",
+      "checked": false,
+      "created_at": "2026-11-04T01:02:12.385685+00:00",
+      "id": 2,
+      "mine": true,
+      "name": "Bread",
+      "recipe_id": null,
+      "recipe_title": null,
+      "store_url": "https://www.woolworths.com.au/shop/search/products?searchTerm=Bread"
+    },
+    {
+      "added_by": {
+        "id": 1,
+        "username": "sam"
+      },
+      "aisle": "Produce",
+      "checked": false,
+      "created_at": "2026-11-04T01:02:12.385683+00:00",
+      "id": 1,
+      "mine": true,
+      "name": "3 lemons",
+      "recipe_id": null,
+      "recipe_title": null,
+      "store_url": "https://www.woolworths.com.au/shop/search/products?searchTerm=lemons"
+    }
+  ],
+  "store": {
+    "name": "Woolworths",
+    "search_url": "https://www.woolworths.com.au/shop/search/products?searchTerm={q}"
+  },
+  "version": "29dcdf555980a605"
+}

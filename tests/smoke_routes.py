@@ -4,7 +4,7 @@ import os, re, sys, tempfile, gzip, traceback
 os.environ["DATA_DIR"] = tempfile.mkdtemp()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import create_app
-from models import db, User, Recipe, Category, Collection, Calculator, ExtraShare, ShoppingListItem
+from models import db, User, Recipe, Category, Collection, Calculator, ExtraShare, ShoppingListItem, CookLog, Household
 app = create_app(); app.config["WTF_CSRF_ENABLED"] = False; app.testing = True
 with app.app_context():
     u = User(username="cook", email="c@example.com", is_admin=True); u.set_password("Sup3r-secret-pass!"); db.session.add(u)
@@ -19,6 +19,14 @@ with app.app_context():
     except Exception as e: print("calc", e)
     db.session.commit()
     r1 = Recipe.query.first(); r1.share_token = "rectok"; c.recipes.append(r1); db.session.commit()
+    # A shared shopping list with a second member, and cooks with a note and a photo
+    hh = Household(name="Home", invite_code="ABCDEFGH", owner_id=1); db.session.add(hh); db.session.flush()
+    u2 = User(username="flatmate", email="f@example.com", household_id=hh.id); u2.set_password("Sup3r-secret-pass!"); db.session.add(u2)
+    u.household_id = hh.id; db.session.flush()
+    db.session.add(ShoppingListItem(name="Milk", user_id=u2.id))
+    db.session.add(CookLog(user_id=1, recipe_id=r1.id, note="Doubled the salt.\nGood.", photo="cook_smoke.jpg"))
+    db.session.add(CookLog(user_id=1, recipe_id=2))
+    db.session.commit()
 c = app.test_client()
 r = c.post("/login", data={"username": "cook", "password": "Sup3r-secret-pass!"}, follow_redirects=False); print("login", r.status_code)
 bad = 0; n = 0
@@ -42,7 +50,7 @@ for rule in sorted(app.url_map.iter_rules(), key=lambda r: r.rule):
         print("%3d %-46s %6d bytes%s" % (resp.status_code, path, len(body), flag))
     except Exception as e:
         bad += 1; n += 1; print("EXC", path, type(e).__name__, str(e)[:200])
-for p in ["/extras/pizza-dough-calculator","/extras/sourdough-guide","/calculators/1","/recipe/1","/recipe/2","/recipe/3","/recipe/1/cook","/recipe/1/print","/recipe/1/edit","/recipe/1/cook-history","/collections/1","/collections/1/edit","/collections/shared/tok123/recipe/1","/collections/shared/tok123/recipe/1/cook","/shared/rectok","/static/pages/pasteis-de-nata.html","/static/pages/meal-plan.html","/static/pages/shish-barak.html","/static/pages/sourdough-guide.html","/static/pages/pizza-dough-calculator.html","/recipes/?view=list","/?view=list","/?q=flour","/?ingredient=flour","/shopping/"]:
+for p in ["/extras/pizza-dough-calculator","/extras/sourdough-guide","/calculators/1","/recipe/1","/recipe/2","/recipe/3","/recipe/1/cook","/recipe/1/print","/recipe/1/edit","/recipe/1/cook-history","/collections/1","/collections/1/edit","/collections/shared/tok123/recipe/1","/collections/shared/tok123/recipe/1/cook","/shared/rectok","/static/pages/pasteis-de-nata.html","/static/pages/meal-plan.html","/static/pages/shish-barak.html","/static/pages/sourdough-guide.html","/static/pages/pizza-dough-calculator.html","/recipes/?view=list","/?view=list","/?q=flour","/?ingredient=flour","/shopping/","/shopping/version","/profile","/cook-history","/mealplan/export.ics","/mealplan/export.ics?week=1"]:
     resp = c.get(p, headers={"Accept-Encoding": "gzip"}, follow_redirects=True); n += 1
     body = resp.get_data(); body = gzip.decompress(body) if resp.headers.get("Content-Encoding") == "gzip" else body
     if resp.status_code >= 500: bad += 1

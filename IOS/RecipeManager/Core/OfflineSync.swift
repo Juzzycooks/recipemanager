@@ -86,8 +86,12 @@ final class OfflineSync {
             }
 
             // 5. Spotlight (changed and removed recipes only) and the recipe names Siri suggests in phrases.
-            await SpotlightIndexer.update(library: await OfflineStore.shared.allRecipes(), base: session.baseURL)
+            let library = await OfflineStore.shared.allRecipes()
+            await SpotlightIndexer.update(library: library, base: session.baseURL)
             SpoonmateShortcuts.updateAppShortcutParameters()
+
+            // 6. The Random Recipe widget's pool and thumbnails (from the pictures downloaded above).
+            await WidgetBridge.publishRecipePool(library: library, base: session.baseURL)
 
             recipeCount = await OfflineStore.shared.recipeCount
             lastSync = .now

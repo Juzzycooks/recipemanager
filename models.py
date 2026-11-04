@@ -25,6 +25,8 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    # The household whose shopping list this user shares (see households.py); None = their own list.
+    household_id = db.Column(db.Integer, db.ForeignKey("household.id"), nullable=True)
     recipes = db.relationship("Recipe", backref="author", lazy=True,
                               cascade="all, delete-orphan")
 
@@ -33,6 +35,17 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+
+class Household(db.Model):
+    """People who share one shopping list. Members join with the invite code."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    invite_code = db.Column(db.String(16), unique=True, nullable=False)  # 8 chars, stored without the dash
+    owner_id = db.Column(db.Integer, nullable=True)  # a user id (no FK: user.household_id already points here)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    members = db.relationship("User", backref="household", lazy=True,
+                              foreign_keys="User.household_id", order_by="User.id")
 
 
 class Category(db.Model):
@@ -75,7 +88,8 @@ class ShoppingListItem(db.Model):
     checked = db.Column(db.Boolean, default=False)
     recipe_id = db.Column(db.Integer, db.ForeignKey("recipe.id"), nullable=True)
     recipe = db.relationship("Recipe", backref="shopping_items")
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)  # who added it
+    user = db.relationship("User", foreign_keys=[user_id])
     # Woolworths price cache
     ww_product_name = db.Column(db.String(300), default="")
     ww_price = db.Column(db.Float, nullable=True)
@@ -85,6 +99,9 @@ class ShoppingListItem(db.Model):
     ww_is_on_special = db.Column(db.Boolean, default=False)
     ww_was_price = db.Column(db.Float, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    # Bumped on every change so household members can tell the list moved (see households.list_version).
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc))
 
 
 class Calculator(db.Model):
@@ -163,6 +180,8 @@ class CookLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     recipe_id = db.Column(db.Integer, db.ForeignKey("recipe.id"), nullable=False)
     cooked_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    note = db.Column(db.Text, default="")
+    photo = db.Column(db.String(200), default="")  # uploads filename (images.save_uploaded_image, prefix "cook")
     user = db.relationship("User", backref=db.backref("cook_logs", cascade="all, delete-orphan"))
     recipe = db.relationship("Recipe", backref=db.backref("cook_logs", cascade="all, delete-orphan"))
 
@@ -178,6 +197,8 @@ class Collection(db.Model):
     cover_image = db.Column(db.String(500), default="")
     category_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    # Soft delete: set when deleted, cleared by restore, purged after COLLECTION_RESTORE_DAYS.
+    deleted_at = db.Column(db.DateTime, nullable=True)
     user = db.relationship("User", backref=db.backref("collections", cascade="all, delete-orphan"))
     category = db.relationship("Category", backref="linked_collections")
     recipes = db.relationship("Recipe", secondary=recipe_collections, backref="collections", lazy=True)
@@ -198,6 +219,11 @@ class Collection(db.Model):
     def public_url_token(self):
         """Return slug if set, otherwise share_token."""
         return self.slug or self.share_token
+
+    @classmethod
+    def live(cls):
+        """Query of collections that are not soft-deleted. Use this everywhere a collection is shown."""
+        return cls.query.filter(cls.deleted_at.is_(None))
 
 
 class LoginAttempt(db.Model):
@@ -229,3 +255,43 @@ class ApiToken(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     last_used_at = db.Column(db.DateTime, nullable=True)
     user = db.relationship("User", backref=db.backref("api_tokens", cascade="all, delete-orphan"))
+
+
+# ── Cook photo files follow their CookLog row ──
+# A CookLog can go with its recipe or its user (ORM cascades), or on its own. Remember its photo
+# when the row is deleted and remove the file once the delete is committed (never on a rollback).
+
+from sqlalchemy import event
+from sqlalchemy.orm import Session as _OrmSession
+
+_PENDING_PHOTOS = "_cook_photos_to_delete"
+
+
+@event.listens_for(CookLog, "after_delete")
+def _remember_cook_photo(mapper, connection, target):
+    if target.photo:
+        from sqlalchemy.orm import object_session
+        sess = object_session(target)
+        if sess is not None:
+            sess.info.setdefault(_PENDING_PHOTOS, []).append(target.photo)
+
+
+@event.listens_for(_OrmSession, "after_commit")
+def _delete_cook_photos(session):
+    names = session.info.pop(_PENDING_PHOTOS, None)
+    if not names:
+        return
+    import os
+    from flask import current_app
+    from images import delete_image
+    try:
+        uploads = os.path.join(current_app.config["DATA_DIR"], "uploads")
+    except RuntimeError:  # no app context
+        return
+    for name in names:
+        delete_image(uploads, name)
+
+
+@event.listens_for(_OrmSession, "after_rollback")
+def _forget_cook_photos(session):
+    session.info.pop(_PENDING_PHOTOS, None)

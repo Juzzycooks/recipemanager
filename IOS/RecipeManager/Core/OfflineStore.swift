@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import os
 import UIKit
 
 /// Everything saved for offline use: GET responses, plus a full local copy of the recipe library so lists,
@@ -75,7 +76,7 @@ actor OfflineStore: ResponseCaching {
         switch op {
         case .favorite(let id, let wanted): library?[id]?.isFavorite = wanted
         case .rate(let id, let score): library?[id]?.myRating = score
-        case .madeIt(let id):
+        case .madeIt(let id, _, _):
             library?[id]?.madeCount += 1
             library?[id]?.lastMade = .now
         default: return
@@ -105,11 +106,72 @@ actor OfflineStore: ResponseCaching {
 
     private func loadLibrary() {
         guard library == nil else { return }
-        if let data = try? Data(contentsOf: libraryFile), let list = try? APIClient.decoder.decode([RecipeDetail].self, from: data) {
-            library = Dictionary(uniqueKeysWithValues: list.map { ($0.id, $0) })
+        let loaded = Self.readLibrary(at: libraryFile)
+        library = Dictionary(loaded.recipes.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+    }
+
+    private static let log = Logger(subsystem: "com.justinrahme.Spoonmate", category: "OfflineStore")
+    /// How many unreadable library files are kept aside (for a bug report) before the oldest goes.
+    static let keptCorruptFiles = 2
+
+    /// What reading the library file found.
+    struct LibraryRead: Sendable {
+        var recipes: [RecipeDetail] = []
+        /// Recipes in the file that didn't decode (a field the app no longer reads, a damaged entry) and were skipped.
+        var skipped = 0
+        var firstError: String?
+        /// Where an unreadable file was moved, so it isn't overwritten by the next save.
+        var movedAside: URL?
+    }
+
+    /// Reads the library recipe by recipe: one bad recipe is skipped (and downloaded again by the next sync) rather than
+    /// costing the whole offline copy. A file that can't be read at all is moved aside as `library-corrupt-<time>.json`
+    /// (the newest `keptCorruptFiles` are kept) and the library starts empty. No file is simply an empty library.
+    nonisolated static func readLibrary(at file: URL, now: Date = .now) -> LibraryRead {
+        guard let data = try? Data(contentsOf: file) else { return LibraryRead() }
+        // The usual case: everything decodes in one go.
+        if let all = try? APIClient.decoder.decode([RecipeDetail].self, from: data) { return LibraryRead(recipes: all) }
+
+        var result = LibraryRead()
+        if let items = (try? JSONSerialization.jsonObject(with: data)) as? [Any] {
+            for item in items {
+                do {
+                    let one = try JSONSerialization.data(withJSONObject: item, options: [.fragmentsAllowed])
+                    result.recipes.append(try APIClient.decoder.decode(RecipeDetail.self, from: one))
+                } catch {
+                    result.skipped += 1
+                    if result.firstError == nil { result.firstError = String(describing: error) }
+                }
+            }
+            if !result.recipes.isEmpty || items.isEmpty {
+                log.error("Offline library: skipped \(result.skipped, privacy: .public) of \(items.count, privacy: .public) recipes that didn't decode; first error: \(result.firstError ?? "", privacy: .public)")
+                return result
+            }
         } else {
-            library = [:]
+            result.firstError = "The file isn't a JSON list of recipes."
         }
+        result.movedAside = moveAside(file, now: now)
+        log.error("Offline library unreadable (\(result.skipped, privacy: .public) recipes failed; first error: \(result.firstError ?? "", privacy: .public)); moved to \(result.movedAside?.lastPathComponent ?? "nowhere", privacy: .public)")
+        result.recipes = []
+        return result
+    }
+
+    /// Renames an unreadable library to `library-corrupt-<milliseconds>.json` beside it, keeping only the newest few.
+    private nonisolated static func moveAside(_ file: URL, now: Date) -> URL? {
+        let folder = file.deletingLastPathComponent()
+        let target = folder.appendingPathComponent("library-corrupt-\(Int64(now.timeIntervalSince1970 * 1000)).json")
+        let fm = FileManager.default
+        try? fm.removeItem(at: target)
+        guard (try? fm.moveItem(at: file, to: target)) != nil else { return nil }
+        let corrupt = ((try? fm.contentsOfDirectory(atPath: folder.path)) ?? [])
+            .filter { $0.hasPrefix("library-corrupt-") && $0.hasSuffix(".json") }
+            .sorted { (stamp($0) ?? 0) > (stamp($1) ?? 0) }
+        for old in corrupt.dropFirst(keptCorruptFiles) { try? fm.removeItem(at: folder.appendingPathComponent(old)) }
+        return target
+    }
+
+    private nonisolated static func stamp(_ name: String) -> Int64? {
+        Int64(name.dropFirst("library-corrupt-".count).dropLast(".json".count))
     }
 
     private func saveLibrary() {

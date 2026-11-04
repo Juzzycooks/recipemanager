@@ -14,6 +14,7 @@ from functools import wraps
 from flask import Blueprint, current_app, g, jsonify, request, url_for
 from werkzeug.exceptions import HTTPException
 
+import households
 from images import delete_image
 from models import (
     ApiToken, Calculator, Category, Collection, Comment, CookLog, ExtraShare, Favorite,
@@ -246,7 +247,7 @@ def _recipe_detail(r):
     rating = Rating.query.filter_by(user_id=me().id, recipe_id=r.id).first()
     logs = CookLog.query.filter_by(user_id=me().id, recipe_id=r.id).order_by(CookLog.cooked_at.desc()).all()
     comments = Comment.query.filter_by(recipe_id=r.id).order_by(Comment.created_at.desc()).all()
-    mine = Collection.query.filter_by(user_id=me().id).order_by(Collection.name).all()
+    mine = Collection.live().filter_by(user_id=me().id).order_by(Collection.name).all()
     out.update(
         ingredients=r.ingredients or "", instructions=r.instructions or "", notes=r.notes or "",
         source_url=r.source_url or "",
@@ -448,6 +449,7 @@ def delete_me():
         raise ApiError("validation", "You're the only admin. Make someone else an admin before deleting your account.", 422)
     user = me()
     ShoppingListItem.query.filter_by(user_id=user.id).delete()
+    households.leave(user)
     db.session.delete(user)   # ORM delete so the cascades fire (tokens, recipes, ratings, ...)
     db.session.commit()
     return _no_content()
@@ -509,7 +511,7 @@ _SORTS = {"newest": lambda: Recipe.created_at.desc(), "oldest": lambda: Recipe.c
 
 def _accessible_collection(coll_id):
     coll = db.session.get(Collection, coll_id)
-    if coll is None or (coll.user_id != me().id and not me().is_admin):
+    if coll is None or coll.deleted_at is not None or (coll.user_id != me().id and not me().is_admin):
         raise ApiError("not_found", "No such collection.", 404)
     return coll
 
@@ -844,23 +846,118 @@ def unshare_recipe(recipe_id):
     return _no_content()
 
 
+def _cook_entry(log):
+    """One cook: {id, cooked_at, note, photo_url, recipe{id, title, image_url}}."""
+    r = log.recipe
+    return {"id": log.id, "cooked_at": _iso(log.cooked_at), "note": log.note or "",
+            "photo_url": _image(log.photo) or None,
+            "recipe": {"id": r.id, "title": r.title, "image_url": _image(r.image_url)} if r else None}
+
+
+def _cook_photo_upload():
+    """The multipart `photo`, stored like a recipe picture; None when none was sent. Raises on a bad file."""
+    from routes.recipes import save_cook_photo
+    upload = request.files.get("photo")
+    if not upload or not upload.filename:
+        return None
+    name = save_cook_photo(upload)
+    if not name:
+        raise ApiError("validation", "That file isn't a valid image.", 422)
+    return name
+
+
+def _cook_note(b):
+    from routes.recipes import COOK_NOTE_MAX
+    return b.text("note")[:COOK_NOTE_MAX]
+
+
 @api_v1_bp.route("/recipes/<int:recipe_id>/made", methods=["POST"])
 @api_auth()
 def made_it(recipe_id):
+    """No body, JSON {note?}, or multipart with `note` and `photo`."""
     Recipe.query.get_or_404(recipe_id)
-    log = CookLog(user_id=me().id, recipe_id=recipe_id)
+    b = Body() if (request.content_length or 0) > 0 else None  # an empty body (even typed as JSON) is fine
+    note = _cook_note(b) if b is not None else ""
+    photo = _cook_photo_upload() or ""
+    log = CookLog(user_id=me().id, recipe_id=recipe_id, note=note, photo=photo)
     db.session.add(log)
     db.session.commit()
     count = CookLog.query.filter_by(user_id=me().id, recipe_id=recipe_id).count()
-    return jsonify(made_count=count, cooked_at=_iso(log.cooked_at)), 201
+    out = _cook_entry(log)
+    out["made_count"] = count
+    return jsonify(out), 201
 
 
 @api_v1_bp.route("/recipes/<int:recipe_id>/cook-history")
 @api_auth()
 def cook_history(recipe_id):
     Recipe.query.get_or_404(recipe_id)
-    logs = CookLog.query.filter_by(user_id=me().id, recipe_id=recipe_id).order_by(CookLog.cooked_at.desc()).all()
-    return jsonify(items=[{"id": l.id, "cooked_at": _iso(l.cooked_at)} for l in logs])
+    logs = (CookLog.query.filter_by(user_id=me().id, recipe_id=recipe_id)
+            .order_by(CookLog.cooked_at.desc(), CookLog.id.desc()).all())
+    return jsonify(items=[_cook_entry(l) for l in logs])
+
+
+# ── Cook log (every recipe) ──
+
+def _own_cook_log(log_id):
+    log = db.session.get(CookLog, log_id)
+    if log is None or log.user_id != me().id:
+        raise ApiError("not_found", "No such cook-log entry.", 404)
+    return log
+
+
+@api_v1_bp.route("/cook-log")
+@api_auth()
+def cook_log():
+    """Timeline, newest first: ?limit=30 (max 100) &before=<entry id> for the next page."""
+    from routes.recipes import cook_log_page
+    limit = min(max(request.args.get("limit", 30, type=int), 1), MAX_PER_PAGE)
+    entries, next_before = cook_log_page(me().id, limit=limit, before=request.args.get("before", type=int))
+    return jsonify(entries=[_cook_entry(l) for l in entries], next_before=next_before)
+
+
+@api_v1_bp.route("/cook-log/<int:log_id>", methods=["PATCH"])
+@api_auth()
+def update_cook_log(log_id):
+    log = _own_cook_log(log_id)
+    b = Body()
+    if b.has("note"):
+        log.note = _cook_note(b)
+    db.session.commit()
+    return jsonify(_cook_entry(log))
+
+
+@api_v1_bp.route("/cook-log/<int:log_id>/photo", methods=["POST"])
+@api_auth()
+def put_cook_log_photo(log_id):
+    from routes.recipes import delete_cook_photo
+    log = _own_cook_log(log_id)
+    photo = _cook_photo_upload()
+    if photo is None:
+        raise ApiError("validation", "Send the picture as multipart field photo.", 422)
+    old, log.photo = log.photo, photo
+    db.session.commit()
+    delete_cook_photo(old)
+    return jsonify(_cook_entry(log))
+
+
+@api_v1_bp.route("/cook-log/<int:log_id>/photo", methods=["DELETE"])
+@api_auth()
+def delete_cook_log_photo(log_id):
+    from routes.recipes import delete_cook_photo
+    log = _own_cook_log(log_id)
+    old, log.photo = log.photo, ""
+    db.session.commit()
+    delete_cook_photo(old)
+    return jsonify(_cook_entry(log))
+
+
+@api_v1_bp.route("/cook-log/<int:log_id>", methods=["DELETE"])
+@api_auth()
+def delete_cook_log(log_id):
+    db.session.delete(_own_cook_log(log_id))  # the photo file is removed after the commit (models.py)
+    db.session.commit()
+    return _no_content()
 
 
 @api_v1_bp.route("/recipes/<int:recipe_id>/email", methods=["POST"])
@@ -1072,13 +1169,14 @@ def import_save():
 # ── Collections ──
 
 def _owned_collection(coll_id):
-    coll = Collection.query.get_or_404(coll_id)
+    from routes.collections import get_live_or_404
+    coll = get_live_or_404(coll_id)
     _owner_or_admin(coll)
     return coll
 
 
 def _apply_collection_fields(coll, b, creating):
-    from routes.collections import _slugify
+    from routes.collections import _slugify, slug_clash
     if b.has("name") or creating:
         name = b.text("name")[:200]
         if not name:
@@ -1093,8 +1191,7 @@ def _apply_collection_fields(coll, b, creating):
         coll.category_id = cat_id
     if b.has("slug"):
         slug = _slugify(b.text("slug")) if b.text("slug") else None
-        clash = Collection.query.filter_by(slug=slug).first() if slug else None
-        if clash and clash.id != coll.id:
+        if slug_clash(slug, coll.id):
             raise ApiError("conflict", "That web address is already used by another collection.", 409)
         coll.slug = slug
     upload = request.files.get("cover_image")
@@ -1120,7 +1217,9 @@ def _uploads_dir():
 @api_v1_bp.route("/collections")
 @api_auth()
 def list_collections():
-    colls = Collection.query.filter_by(user_id=me().id).order_by(Collection.name).all()
+    from routes.collections import purge_deleted
+    purge_deleted()
+    colls = Collection.live().filter_by(user_id=me().id).order_by(Collection.name).all()
     return jsonify(items=[_collection(c) for c in colls])
 
 
@@ -1152,9 +1251,22 @@ def update_collection(coll_id):
 @api_v1_bp.route("/collections/<int:coll_id>", methods=["DELETE"])
 @api_auth()
 def delete_collection(coll_id):
-    db.session.delete(_owned_collection(coll_id))
+    """Soft delete: hidden everywhere at once, restorable for 30 days, then purged."""
+    from routes.collections import soft_delete
+    until = soft_delete(_owned_collection(coll_id))
+    return jsonify(ok=True, restorable_until=_iso(until))
+
+
+@api_v1_bp.route("/collections/<int:coll_id>/restore", methods=["POST"])
+@api_auth()
+def restore_collection(coll_id):
+    from routes.collections import restorable
+    coll = restorable(coll_id, me())
+    if coll is None:
+        raise ApiError("not_found", "That collection isn't deleted, or it's too late to restore it.", 404)
+    coll.deleted_at = None
     db.session.commit()
-    return _no_content()
+    return jsonify(_collection(coll, detail=True))
 
 
 @api_v1_bp.route("/collections/<int:coll_id>/share", methods=["POST"])
@@ -1335,6 +1447,17 @@ def auto_generate_plan():
                     "entries": _plan_entries(me().id, week[0], week[-1])})
 
 
+@api_v1_bp.route("/mealplan/export.ics")
+@api_auth()
+def export_mealplan_ics():
+    """The plan for ?week=offset or ?from&to as an RFC 5545 calendar (text/calendar)."""
+    from routes.mealplan import build_ics, ics_response, plans_between
+    first, last = _plan_range()
+    body = build_ics(plans_between(me().id, first, last),
+                     lambda r: url_for("recipes.view", recipe_id=r.id, _external=True))
+    return ics_response(body, f"meal-plan-{first.isoformat()}.ics")
+
+
 @api_v1_bp.route("/mealplan/share", methods=["POST"])
 @api_auth()
 def share_mealplan():
@@ -1357,6 +1480,7 @@ def unshare_mealplan():
 
 
 # ── Shopping list ──
+# In a household the list is every member's items, and any member may change any of them.
 
 def _shopping_item(item, store_url):
     from routes.shopping import store_link
@@ -1365,6 +1489,7 @@ def _shopping_item(item, store_url):
     return {"id": item.id, "name": item.name, "checked": bool(item.checked), "recipe_id": item.recipe_id,
             "recipe_title": item.recipe.title if item.recipe else None,
             "aisle": aisle_for(name), "store_url": store_link(store_url, name) or None,
+            "added_by": _user_brief(item.user), "mine": item.user_id == me().id,
             "created_at": _iso(item.created_at)}
 
 
@@ -1373,13 +1498,21 @@ def _shopping_item(item, store_url):
 def get_shopping():
     from routes.shopping import _store_settings
     from shopping_utils import _AISLES
-    items = (ShoppingListItem.query.filter_by(user_id=me().id)
+    items = (households.shopping_query(me())
              .order_by(ShoppingListItem.checked, ShoppingListItem.created_at.desc(), ShoppingListItem.id.desc())
              .all())
     store_name, store_url = _store_settings()
     return jsonify(store={"name": store_name, "search_url": store_url},
                    aisle_order=[a for a, _ in _AISLES] + ["Other"],
+                   version=households.list_version(me()),
                    items=[_shopping_item(i, store_url) for i in items])
+
+
+@api_v1_bp.route("/shopping/version")
+@api_auth()
+def shopping_version():
+    """Cheap poll: refetch GET /shopping when this changes."""
+    return jsonify(version=households.list_version(me()))
 
 
 def _add_lines(lines, recipe_id=None):
@@ -1423,7 +1556,7 @@ def add_recipe_to_shopping(recipe_id):
 
 def _own_item(item_id):
     item = ShoppingListItem.query.get_or_404(item_id)
-    if item.user_id != me().id:
+    if not households.can_edit_item(me(), item):
         raise ApiError("forbidden", "That belongs to someone else, so you can't change it.", 403)
     return item
 
@@ -1441,6 +1574,7 @@ def update_shopping_item(item_id):
         if not name:
             raise ApiError("validation", "An item needs a name.", 422)
         item.name = name
+    item.updated_at = _now()  # even a no-op PATCH counts as a change for the list version
     db.session.commit()
     return jsonify(_shopping_item(item, _store_settings()[1]))
 
@@ -1456,13 +1590,62 @@ def delete_shopping_item(item_id):
 @api_v1_bp.route("/shopping/items", methods=["DELETE"])
 @api_auth()
 def clear_shopping():
-    """Clear the whole list, or only ticked items with ?checked=1."""
-    query = ShoppingListItem.query.filter_by(user_id=me().id)
+    """Clear the whole (household) list, or only ticked items with ?checked=1."""
+    query = households.shopping_query(me())
     if request.args.get("checked") in ("1", "true"):
-        query = query.filter_by(checked=True)
-    query.delete()
+        query = query.filter(ShoppingListItem.checked.is_(True))
+    query.delete(synchronize_session=False)
     db.session.commit()
     return _no_content()
+
+
+# ── Household (shared shopping list) ──
+
+def _household_response(status=200):
+    return jsonify(household=households.summary(me())), status
+
+
+def _household_call(fn, *args):
+    try:
+        fn(me(), *args)
+    except households.HouseholdError as e:
+        status = {"conflict": 409, "not_found": 404, "forbidden": 403}.get(e.kind, 422)
+        raise ApiError(e.kind, e.message, status)
+    db.session.commit()
+
+
+@api_v1_bp.route("/household")
+@api_auth()
+def get_household():
+    return _household_response()
+
+
+@api_v1_bp.route("/household", methods=["POST"])
+@api_auth()
+def create_household():
+    _household_call(households.create, Body().text("name"))
+    return _household_response(201)
+
+
+@api_v1_bp.route("/household/join", methods=["POST"])
+@api_auth()
+def join_household():
+    _household_call(households.join, Body().text("code"))
+    return _household_response()
+
+
+@api_v1_bp.route("/household/leave", methods=["POST"])
+@api_auth()
+def leave_household():
+    _household_call(households.leave)
+    return _household_response()
+
+
+@api_v1_bp.route("/household/code", methods=["POST"])
+@api_auth()
+def regenerate_household_code():
+    _household_call(households.regenerate_code)
+    return _household_response()
 
 
 # ── Guides (extras) and calculators ──
@@ -1631,6 +1814,7 @@ def admin_delete_user(user_id):
     if user.id == me().id:
         raise ApiError("validation", "You can't delete yourself.", 422)
     ShoppingListItem.query.filter_by(user_id=user.id).delete()
+    households.leave(user)
     db.session.delete(user)  # ORM delete so the cascades fire
     db.session.commit()
     return _no_content()

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Cook History - {{ app_name() }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
+{% block content %}
+<div class="form-narrow center-col">
+    <div class="page-header">
+        <h1>Cook History</h1>
+        {% if paged %}<a href="{{ url_for('recipes.cook_log') }}" class="btn btn-secondary btn-sm">Newest</a>{% endif %}
+    </div>
+    <p class="muted import-lead">Everything you've made, newest first. Add a note or a photo to remember how it went.</p>
+    {% if entries %}
+    <ol class="cook-timeline">
+        {% for log in entries %}
+        {% set show_recipe = true %}
+        {% set next_url = request.full_path.rstrip('?') %}
+        {% include "recipes/_cook_entry.html" %}
+        {% endfor %}
+    </ol>
+    {% if next_before %}
+    <div class="cook-more">
+        <a href="{{ url_for('recipes.cook_log', before=next_before) }}" class="btn btn-secondary">Older</a>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="card empty-state">
+        <p>{{ 'No older cooks.' if paged else "Nothing here yet. When you finish a recipe, tap \"I made this\" to log it." }}</p>
+        <a href="{{ url_for('recipes.index') }}" class="btn btn-primary">Browse recipes</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

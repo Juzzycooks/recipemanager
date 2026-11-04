@@ -74,3 +74,16 @@ dl.detail-meta.compact { margin: 0.5rem 0; padding: 0.6rem 0; gap: 1.75rem; }
 .nut-line-text { min-width: 0; overflow-wrap: anywhere; }
 .nut-line-food { display: block; font-size: var(--fs-xs); color: var(--text-tertiary); }
 .nut-line-kcal { flex: none; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+
+/* Photos from your own cooks of this recipe */
+.cook-photo-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: 0.75rem; }
+.cook-photo-grid li { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.cook-photo-grid a { display: block; aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: var(--border-light); }
+.cook-photo-grid img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cook-photo-date { font-size: var(--fs-xs); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+a.h-note { text-decoration: none; }
+a.h-note:hover { text-decoration: underline; }
+
+/* "I made this" dialog */
+.made-fields { padding: 0.5rem 1.25rem 0.25rem; overflow-y: auto; }
+.made-fields textarea { width: 100%; }

@@ -7,6 +7,11 @@ enum AppRoute: Hashable {
     case collection(Int)
     case recipeList(RecipeListKind)
     case devices
+    /// Every cook, newest first (Profile).
+    case cookLog
+    /// Your cooks of one recipe (its "Made N times").
+    case cookHistory(Int)
+    case household
     case settings
     case adminSettings
     case adminUsers
@@ -29,6 +34,9 @@ extension View {
             case .collection(let id): CollectionDetailView(id: id)
             case .recipeList(let kind): RecipeListView(kind: kind)
             case .devices: DevicesView()
+            case .cookLog: CookLogView(recipeID: nil)
+            case .cookHistory(let id): CookLogView(recipeID: id)
+            case .household: HouseholdView()
             case .settings: SettingsView()
             case .adminSettings: AdminSettingsView()
             case .adminUsers: AdminUsersView()

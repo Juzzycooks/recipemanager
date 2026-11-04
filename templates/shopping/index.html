@@ -2,19 +2,23 @@
 {% block title %}Shopping List - {{ app_name() }}{% endblock %}
 {% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tools.css', v=asset_v) }}">{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="page-header"{% if household %} data-shop-version="{{ version }}" data-shop-version-url="{{ url_for('shopping.version') }}"{% endif %}>
     <h1>Shopping List</h1>
     {% if unchecked or checked %}
     <div class="row-tools">
         <form method="POST" action="{{ url_for('shopping.clear_checked') }}">
             <button type="submit" class="btn btn-secondary btn-sm">Clear checked</button>
         </form>
-        <form method="POST" action="{{ url_for('shopping.clear') }}" onsubmit="return confirm('Clear entire shopping list?');">
+        <form method="POST" action="{{ url_for('shopping.clear') }}" onsubmit="return confirm('{{ 'Clear the whole list? It clears for everyone in your household.' if household else 'Clear entire shopping list?' }}');">
             <button type="submit" class="btn btn-danger btn-sm">Clear all</button>
         </form>
     </div>
     {% endif %}
 </div>
+
+{% if household %}
+<p class="muted shop-household">Shared with {{ household.name }}: {{ household.members|map(attribute='username')|join(', ') }}. Changes from the others show up here on their own.</p>
+{% endif %}
 
 <div class="card">
     <form method="POST" action="{{ url_for('shopping.add_item') }}" class="add-item-form">
@@ -37,6 +41,7 @@
         <div class="shop-name">
             <span>{{ item.name }}</span>
             {% if item.recipe %}<span class="badge badge-muted">{{ item.recipe.title }}</span>{% endif %}
+            {% if household and item.user_id != current_user.id and item.user %}<span class="shop-by">Added by {{ item.user.username }}</span>{% endif %}
         </div>
         {% if store_url %}
         <a href="{{ store_link(item.name) }}" target="_blank" rel="noopener noreferrer" class="shop-find" aria-label="Find {{ item.name }} at {{ store_name }}" title="Find at {{ store_name }}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></a>
@@ -64,7 +69,7 @@
                 <span class="shop-box is-checked"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
             </button>
         </form>
-        <div class="shop-name"><span>{{ item.name }}</span></div>
+        <div class="shop-name"><span>{{ item.name }}</span>{% if household and item.user_id != current_user.id and item.user %}<span class="shop-by">Added by {{ item.user.username }}</span>{% endif %}</div>
         <form method="POST" action="{{ url_for('shopping.remove', item_id=item.id) }}">
             <button type="submit" class="shop-remove" aria-label="Remove {{ item.name }}">
                 <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -85,4 +90,5 @@
     </div>
 </div>
 {% endif %}
+{% if household %}<script src="{{ url_for('static', filename='js/shoplist.js', v=asset_v) }}"></script>{% endif %}
 {% endblock %}

@@ -161,6 +161,8 @@ struct MealPlanView: View {
     @Environment(AppState.self) private var app
     @State private var model = MealPlanModel()
     @State private var picking: PlanTarget?
+    @State private var choosingCalendar: [EventKitExporter.CalendarChoice]?
+    @State private var settingsPrompt: SettingsPrompt?
     @ScaledMetric(relativeTo: .subheadline) private var dayColumn: CGFloat = 54
     @ScaledMetric(relativeTo: .body) private var thumbSize: CGFloat = 48
 
@@ -183,6 +185,7 @@ struct MealPlanView: View {
                 Menu {
                     Button("Jump to this week", systemImage: "calendar") { model.goToThisWeek() }.disabled(model.isCurrentWeek)
                     Button("Add week to shopping list", systemImage: "cart.badge.plus") { Task { await model.addWeekToShopping(session, app) } }
+                    Button("Add week to Calendar", systemImage: "calendar.badge.plus") { Task { await startCalendarExport() } }
                     Button("Fill empty dinners", systemImage: "wand.and.stars") { Task { await model.fillDinners(session, app) } }
                 } label: { Image(systemName: "ellipsis.circle") }.accessibilityLabel("Meal plan options")
             }
@@ -191,7 +194,38 @@ struct MealPlanView: View {
         .task(id: "\(model.weekStart.apiDay)#\(session.dataVersion)") { await model.load(session) }
         .refreshable { await model.load(session) }
         .sheet(item: $picking) { target in PlanRecipeSheet(initialDate: target.day) { await model.load(session) } }
+        .sheet(isPresented: Binding(get: { choosingCalendar != nil }, set: { if !$0 { choosingCalendar = nil } })) {
+            CalendarExportSheet(calendars: choosingCalendar ?? [], selection: EventKitExporter.shared.preferredCalendarID,
+                                week: model.rangeTitle, count: model.entries.filter { $0.id > 0 }.count) { calendarID in
+                exportToCalendar(calendarID)
+            }
+        }
+        .settingsPrompt($settingsPrompt)
         .errorAlert($model.error)
+    }
+
+    // MARK: Calendar
+
+    /// Asks for Calendar access (once), then lets the cook pick the calendar.
+    private func startCalendarExport() async {
+        let exporter = EventKitExporter.shared
+        guard await exporter.requestCalendarAccess() else { settingsPrompt = .calendar; return }
+        let calendars = exporter.writableCalendars
+        guard !calendars.isEmpty else { model.error = EventKitExporter.ExportError.noCalendar.localizedDescription; return }
+        choosingCalendar = calendars
+    }
+
+    private func exportToCalendar(_ calendarID: String?) {
+        choosingCalendar = nil
+        do {
+            let result = try EventKitExporter.shared.exportWeek(model.entries, from: model.weekStart.apiDay, to: model.lastDay.apiDay,
+                                                                calendarID: calendarID)
+            let nothing = result.added == 0 && result.updated == 0 && result.removed == 0
+            app.say(nothing && !model.entries.contains { $0.id > 0 } ? "Nothing planned this week."
+                    : CalendarExportDiff.summary(added: result.added, updated: result.updated, removed: result.removed))
+        } catch {
+            model.error = "Couldn't add this week to Calendar. \(error.localizedDescription)"
+        }
     }
 
     private var weekSelector: some View {
@@ -377,5 +411,56 @@ struct AddToPlanSheet: View {
             _ = try await MealPlanModel.add(recipe: recipe, date: date.apiDay, mealType: mealType, session)
             onAdded(); dismiss()
         } catch { self.error = "Couldn't add “\(title)” to your plan. \(error.localizedDescription)" }
+    }
+}
+
+/// Which calendar the week goes to (the last one used, else the default), and a button to send it.
+struct CalendarExportSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let calendars: [EventKitExporter.CalendarChoice]
+    let week: String
+    let count: Int
+    let onExport: (String?) -> Void
+    @State private var selection: String?
+
+    init(calendars: [EventKitExporter.CalendarChoice], selection: String?, week: String, count: Int, onExport: @escaping (String?) -> Void) {
+        self.calendars = calendars; self.week = week; self.count = count; self.onExport = onExport
+        _selection = State(initialValue: selection)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("Calendar", selection: $selection) {
+                        ForEach(calendars) { calendar in
+                            HStack(spacing: Spacing.xs) {
+                                Image(systemName: "circle.fill").foregroundStyle(calendar.color).font(.caption).accessibilityHidden(true)
+                                VStack(alignment: .leading, spacing: 0) {
+                                    Text(calendar.title)
+                                    if !calendar.account.isEmpty { Text(calendar.account).font(.caption).foregroundStyle(AppColors.textSecondary) }
+                                }
+                            }
+                            .tag(Optional(calendar.id))
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                } header: {
+                    Text("Calendar")
+                } footer: {
+                    Text("Each meal becomes an all-day event with a link back to the recipe. Adding the week again updates those events instead of adding copies.")
+                }
+            }
+            .appBackground()
+            .navigationTitle(week).navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(count == 0 ? "Update" : "Add \(count)") { onExport(selection) }.fontWeight(.semibold)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }

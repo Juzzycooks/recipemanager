@@ -46,5 +46,76 @@
         </div>
     </form>
 </div>
+
+<div class="card" id="household">
+    <h3 class="card-title card-title-gap">Household</h3>
+    {% if household %}
+    <p class="muted import-lead">
+        You share a shopping list with <strong>{{ household.name }}</strong>.
+        Everyone in it sees, ticks and edits the same items.
+    </p>
+    <div class="form-group">
+        <label for="household-code">Invite code</label>
+        <div class="share-row">
+            <input type="text" id="household-code" value="{{ household.invite_code }}" readonly class="household-code">
+            <button type="button" class="btn btn-secondary btn-sm" data-copy-target="household-code">Copy code</button>
+        </div>
+        <div class="form-hint">Someone joins by entering this code on their own profile page.</div>
+    </div>
+    <p class="menu-label">Members</p>
+    <ul class="household-members">
+        {% for m in household.members %}
+        <li>{{ m.username }}{% if m.id == current_user.id %} <span class="muted">(you)</span>{% endif %}{% if m.id == current_user.id and household.is_owner %} <span class="badge badge-muted">Owner</span>{% endif %}</li>
+        {% endfor %}
+    </ul>
+    <div class="form-actions household-actions">
+        {% if household.is_owner %}
+        <form method="POST" onsubmit="return confirm('Make a new invite code? The current one will stop working.');">
+            <input type="hidden" name="action" value="household_code">
+            <button type="submit" class="btn btn-secondary btn-sm">New invite code</button>
+        </form>
+        {% endif %}
+        <form method="POST" onsubmit="return confirm('Leave this household? Items you added leave with you.');">
+            <input type="hidden" name="action" value="household_leave">
+            <button type="submit" class="btn btn-danger btn-sm">Leave household</button>
+        </form>
+    </div>
+    {% else %}
+    <p class="muted import-lead">Share one shopping list with the people you live with.</p>
+    <form method="POST">
+        <input type="hidden" name="action" value="household_create">
+        <div class="form-group">
+            <label for="household-name">Start a household</label>
+            <div class="share-row">
+                <input type="text" id="household-name" name="name" maxlength="100" required placeholder="e.g. Home">
+                <button type="submit" class="btn btn-primary btn-sm">Create</button>
+            </div>
+        </div>
+    </form>
+    <form method="POST">
+        <input type="hidden" name="action" value="household_join">
+        <div class="form-group">
+            <label for="household-join">Join with an invite code</label>
+            <div class="share-row">
+                <input type="text" id="household-join" name="code" required autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD-EFGH" class="household-code">
+                <button type="submit" class="btn btn-secondary btn-sm">Join</button>
+            </div>
+            <div class="form-hint">Items already on your list join the shared one.</div>
+        </div>
+    </form>
+    {% endif %}
 </div>
+</div>
+<script>
+document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.dataset.copyTarget);
+        var label = btn.textContent;
+        input.select();
+        var done = function () { btn.textContent = 'Copied!'; setTimeout(function () { btn.textContent = label; }, 2000); };
+        if (navigator.clipboard) navigator.clipboard.writeText(input.value).then(done, function () {});
+        else { try { document.execCommand('copy'); done(); } catch (e) {} }
+    });
+});
+</script>
 {% endblock %}

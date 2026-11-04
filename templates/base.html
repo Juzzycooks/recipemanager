@@ -59,6 +59,7 @@
                     <summary>{{ current_user.username }}</summary>
                     <div class="menu-panel right">
                         <a href="{{ url_for('auth.profile') }}">Profile</a>
+                        <a href="{{ url_for('recipes.cook_log') }}">Cook history</a>
                         {% if current_user.is_admin %}<a href="{{ url_for('admin.dashboard') }}">Admin</a>{% endif %}
                         <button type="button" class="menu-item" data-open-shortcuts>Keyboard shortcuts</button>
                         <hr>
@@ -83,6 +84,14 @@
                     <span>{{ parts[0] }}</span>
                     {% if parts|length > 1 and parts[1] %}
                     <form method="POST" action="{{ url_for('recipes.restore', token=parts[1]) }}"><button type="submit" class="btn btn-sm btn-secondary">Undo</button></form>
+                    {% endif %}
+                </div>
+                {% elif category == 'undo_collection' %}
+                {% set parts = message.split('|') %}
+                <div class="flash success flash-undo" role="status">
+                    <span>{{ parts[0] }}</span>
+                    {% if parts|length > 1 and parts[1]|int %}
+                    <form method="POST" action="{{ url_for('collections.restore', coll_id=parts[1]|int) }}"><button type="submit" class="btn btn-sm btn-secondary">Undo</button></form>
                     {% endif %}
                 </div>
                 {% else %}

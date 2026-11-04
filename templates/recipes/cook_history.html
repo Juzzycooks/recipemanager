@@ -9,19 +9,14 @@
     </div>
     <p class="muted import-lead">{{ recipe.title }}: made {{ logs|length }} time{{ "" if logs|length == 1 else "s" }}</p>
     {% if logs %}
-    <div class="card">
-        <table class="table">
-            <thead><tr><th scope="col">#</th><th scope="col">Date</th></tr></thead>
-            <tbody>
-            {% for log in logs %}
-            <tr>
-                <td>{{ logs|length - loop.index0 }}</td>
-                <td>{{ log.cooked_at.strftime('%d %b %Y at %I:%M %p') }}</td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <ol class="cook-timeline">
+        {% for log in logs %}
+        {% set show_recipe = false %}
+        {% set next_url = url_for('recipes.cook_history', recipe_id=recipe.id) %}
+        {% include "recipes/_cook_entry.html" %}
+        {% endfor %}
+    </ol>
+    <div class="cook-more"><a href="{{ url_for('recipes.cook_log') }}" class="btn btn-secondary btn-sm">Everything you've cooked</a></div>
     {% else %}
     <div class="card empty-state">
         <p>You haven't logged making this recipe yet.</p>

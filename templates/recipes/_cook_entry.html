@@ -1,0 +1,45 @@
+{# One cook in a history list. Needs `log`, `next_url`; `show_recipe` adds the recipe title and picture. #}
+<li class="cook-entry" id="cook-{{ log.id }}">
+    {% if log.photo %}
+    <a href="{{ log.photo|recipe_image }}" class="cook-entry-photo" target="_blank" rel="noopener">
+        <img src="{{ log.photo|recipe_thumb }}" alt="Photo from {{ log.cooked_at.strftime('%d %b %Y') }}" loading="lazy">
+    </a>
+    {% elif show_recipe and log.recipe and log.recipe.image_url %}
+    <a href="{{ url_for('recipes.view', recipe_id=log.recipe_id) }}" class="cook-entry-photo is-recipe" tabindex="-1" aria-hidden="true">
+        <img src="{{ log.recipe.image_url|recipe_thumb }}" alt="" loading="lazy">
+    </a>
+    {% endif %}
+    <div class="cook-entry-body">
+        <p class="cook-entry-date"><time datetime="{{ log.cooked_at.strftime('%Y-%m-%dT%H:%M') }}">{{ log.cooked_at.strftime('%a %d %b %Y, %I:%M %p') }}</time></p>
+        {% if show_recipe %}
+        <h2 class="cook-entry-title">
+            {% if log.recipe %}<a href="{{ url_for('recipes.view', recipe_id=log.recipe_id) }}">{{ log.recipe.title }}</a>{% else %}A deleted recipe{% endif %}
+        </h2>
+        {% endif %}
+        {% if log.note %}<p class="cook-entry-note">{{ log.note }}</p>{% endif %}
+        <details class="cook-entry-edit">
+            <summary class="btn btn-secondary btn-sm">Edit</summary>
+            <form method="POST" action="{{ url_for('recipes.cook_log_edit', log_id=log.id) }}" enctype="multipart/form-data">
+                <input type="hidden" name="next" value="{{ next_url }}">
+                <div class="form-group">
+                    <label for="cook-note-{{ log.id }}">Note</label>
+                    <textarea id="cook-note-{{ log.id }}" name="note" rows="3" maxlength="5000" placeholder="How did it go? Anything to change next time?">{{ log.note }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="cook-photo-{{ log.id }}">{{ 'Replace photo' if log.photo else 'Add a photo' }}</label>
+                    <input type="file" id="cook-photo-{{ log.id }}" name="photo" accept="image/*">
+                    {% if log.photo %}
+                    <label class="check-row"><input type="checkbox" name="remove_photo" value="1"> Remove the photo</label>
+                    {% endif %}
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                </div>
+            </form>
+            <form method="POST" action="{{ url_for('recipes.cook_log_delete', log_id=log.id) }}" onsubmit="return confirm('Remove this cook from your history?');">
+                <input type="hidden" name="next" value="{{ next_url }}">
+                <button type="submit" class="btn btn-danger btn-sm">Delete this cook</button>
+            </form>
+        </details>
+    </div>
+</li>

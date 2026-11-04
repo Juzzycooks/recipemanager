@@ -148,7 +148,7 @@ Also tick **"Sign-in required"** and enter the same credentials in the demo-acco
 ## 8. Screenshots
 
 - **Size:** iPhone 6.9-inch: **1320 × 2868** (or 1290 × 2796). Provide this one set and App Store Connect scales it for smaller phones. Up to 10; use 5 to 8. iPad screenshots are not needed (iPhone only).
-- **How:** the ones in `docs/screenshots/ios` are 1206 × 2622 (6.3-inch), good for the README but not the store. Retake on the **iPhone 18 Pro Max** simulator, seeded with `tools/seed_demo.py`, status bar set with `xcrun simctl status_bar booted override --time 9:41 --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3`.
+- **How:** `IOS/scripts/run-ui-tests.sh --screenshots` captures 1206 × 2622 shots from the seeded demo server and frames them into the 6.9-inch and 6.5-inch slides (see `IOS/AppStore/Screenshots/README.md`).
 - **Suggested order:** Home → Recipe → Cooking mode (with the timer chip) → Meal plan → Shopping list → Collections → Offline → Dark theme. Put the strongest first; only the first three show in search results.
 - Captions over the screenshots are optional but help. No device-frame rules apply.
 

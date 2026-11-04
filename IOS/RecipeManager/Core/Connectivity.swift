@@ -10,7 +10,12 @@ final class Connectivity {
 
     private(set) var pathOnline = true
     private(set) var serverReachable = true
-    var isOffline: Bool { !pathOnline || !serverReachable }
+    var isOffline: Bool {
+        #if DEBUG
+        if UITestHooks.forcesOffline { return true }
+        #endif
+        return !pathOnline || !serverReachable
+    }
 
     /// Called when we go from offline to online (replay queued changes, sync).
     var onRegained: (() -> Void)?

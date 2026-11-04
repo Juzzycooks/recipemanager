@@ -72,14 +72,53 @@ final class RecipeDetailModel {
         } catch { self.error = error.localizedDescription; return false }
     }
 
-    func madeIt(_ session: Session, _ app: AppState) async {
-        struct Result: Decodable, Sendable { let madeCount: Int }
+    /// "I made this", with an optional note and photo (cook mode's finish panel). Online it's one request (multipart
+    /// when there's a photo). Offline it's queued with the note and the photo (kept on the phone until it's sent).
+    func madeIt(_ session: Session, _ app: AppState, note: String = "", photo: Data? = nil) async {
+        let id = self.id
+        let note = note.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
-            let result: Result? = try await session.runOrQueue(.madeIt(recipeID: id)) { [id] in try await $0.send("POST", "/recipes/\(id)/made") }
-            let count = result?.madeCount ?? ((recipe?.madeCount ?? 0) + 1)
+            var photoRefused: String?
+            let result: MadeResult
+            do {
+                result = try await session.run { try await CookLog.logMade($0, recipeID: id, note: note, photo: photo) }
+            } catch let APIError.server(status, _, message) where photo != nil && CookLog.isPhotoRejection(status) {
+                // The server won't take this picture: log the cook anyway and say why the photo is missing.
+                result = try await session.run { try await CookLog.logMade($0, recipeID: id, note: note, photo: nil) }
+                photoRefused = message
+            }
+            let count = result.madeCount ?? ((recipe?.madeCount ?? 0) + 1)
             recipe?.madeCount = count; recipe?.lastMade = .now
-            app.say(result == nil ? "Saved. It will sync when you're online." : "Logged. Made \(count) time\(count == 1 ? "" : "s").")
+            if let entry = result.entry { history.insert(entry, at: 0) }
+            if let photoRefused { self.error = "Logged, but the photo wasn't saved. \(photoRefused)" }
+            else { app.say("Logged. Made \(count) time\(count == 1 ? "" : "s").") }
+        } catch let e as APIError where e.isOffline {
+            let kept = photo.flatMap(Outbox.keepPhoto)
+            let op = OutboxOp.madeIt(recipeID: id, note: note.isEmpty ? nil : note, photo: kept)
+            Outbox.shared.enqueue(op)
+            await OfflineStore.shared.apply(op)
+            recipe?.madeCount = (recipe?.madeCount ?? 0) + 1; recipe?.lastMade = .now
+            if photo != nil && kept == nil {
+                // Couldn't keep the picture on the phone (no space): never drop it silently.
+                self.error = "Saved without the photo: there wasn't room to keep it until you're online. Add it from Cook history later."
+            } else {
+                app.say(photo == nil ? "Saved. It will sync when you're online." : "Saved with your photo. It's sent when you're back online.")
+            }
         } catch { self.error = error.localizedDescription }
+    }
+
+    /// Your past cooks of this recipe (newest first), for the photo strip. Empty on servers without cook history.
+    var history: [CookEntry] = []
+    var historyPhotos: [CookEntry] { history.filter(\.hasPhoto) }
+
+    func loadHistory(_ session: Session) async {
+        let id = self.id
+        do {
+            let result: ItemList<CookEntry> = try await session.run { try await $0.get("/recipes/\(id)/cook-history") }
+            history = result.items
+        } catch {
+            // Older server (404), offline with nothing saved, or cancelled: the strip simply doesn't show.
+        }
     }
 
     func postComment(_ text: String, _ session: Session) async -> Bool {

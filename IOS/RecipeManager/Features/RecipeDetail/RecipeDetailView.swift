@@ -25,6 +25,8 @@ struct RecipeDetailView: View {
     @State private var confirmDelete = false
     @State private var newComment = ""
     @State private var showingEstimate = false
+    /// A past cook's photo shown full size (from the strip under "I made this").
+    @State private var viewingPhoto: CookEntry?
     @ScaledMetric(relativeTo: .title2) private var stepNumeralWidth: CGFloat = 24
 
     init(id: Int) { _model = State(initialValue: RecipeDetailModel(id: id)) }
@@ -56,11 +58,12 @@ struct RecipeDetailView: View {
         .task(id: session.dataVersion) {
             await model.load(session)
             startCookingIfAsked()
+            await model.loadHistory(session)
         }
         .onChange(of: app.pendingCook) { startCookingIfAsked() }
         .refreshable { await model.load(session) }
         .fullScreenCover(isPresented: $showingCook) {
-            if let recipe = model.recipe { CookingView(recipe: recipe, units: units, scale: scale, onFinished: { Task { await model.madeIt(session, app) } }, onRate: { score in Task { await model.rate(score, session) } }) }
+            if let recipe = model.recipe { CookingView(recipe: recipe, units: units, scale: scale, onFinished: { finish in Task { await model.madeIt(session, app, note: finish.note, photo: finish.photo) } }, onRate: { score in Task { await model.rate(score, session) } }) }
         }
         .sheet(isPresented: $showingEditor) {
             NavigationStack { RecipeEditorView(mode: .edit(model.recipe!), onClose: { showingEditor = false }) { model.recipe = $0 } }
@@ -76,6 +79,7 @@ struct RecipeDetailView: View {
         .confirmationDialog("Delete this recipe?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) { Task { if await model.delete(session, app) { dismiss() } } }
         } message: { Text("You can undo for a few seconds afterwards.") }
+        .fullScreenCover(item: $viewingPhoto) { CookPhotoViewer(entry: $0) }
         .errorAlert($model.error)
     }
 
@@ -102,6 +106,7 @@ struct RecipeDetailView: View {
             HStack(alignment: .top, spacing: Spacing.xs) {
                 Text(r.title).font(AppTypography.title).foregroundStyle(AppColors.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading).accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("recipe.title")
                 FavoriteButton(isFavorite: r.isFavorite, size: 24) { Task { await model.toggleFavorite(session) } }
             }
             // Title, then meta, then the lede; rating and tags follow quietly (the stars stay tappable,
@@ -259,9 +264,18 @@ struct RecipeDetailView: View {
         HStack(spacing: Spacing.s) {
             Button { Task { await model.madeIt(session, app) } } label: { Label("I made this", systemImage: "checkmark.seal") }.buttonStyle(.bordered)
             if r.madeCount > 0 {
-                Text("Made \(r.madeCount) time\(r.madeCount == 1 ? "" : "s")").font(.footnote).foregroundStyle(AppColors.textSecondary)
+                NavigationLink(value: AppRoute.cookHistory(r.id)) {
+                    HStack(spacing: Spacing.xxs) {
+                        Text("Made \(r.madeCount) time\(r.madeCount == 1 ? "" : "s")")
+                        Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
+                    }
+                    .font(.footnote).foregroundStyle(AppColors.primary)
+                    .frame(minHeight: Size.tap)
+                }
+                .accessibilityHint("Shows your cook history for this recipe")
             }
         }
+        if !model.historyPhotos.isEmpty { cookPhotos }
         if !r.sourceUrl.isEmpty, let url = URL(string: r.sourceUrl) {
             Link(destination: url) { Label("Original recipe", systemImage: "link") }.font(.subheadline)
         }
@@ -283,6 +297,24 @@ struct RecipeDetailView: View {
             }
             .fontWeight(.semibold).disabled(newComment.trimmingCharacters(in: .whitespaces).isEmpty)
         }
+    }
+
+    /// Photos from past cooks, newest first; tap one to see it full size.
+    private var cookPhotos: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Spacing.xs) {
+                ForEach(model.historyPhotos) { entry in
+                    Button { viewingPhoto = entry } label: {
+                        RecipeImage(path: entry.photoUrl ?? "", title: entry.recipe?.title ?? "", id: entry.id)
+                            .frame(width: 88, height: 88)
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.card))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Cook photo" + (entry.cookedAt.map { ", \($0.formatted(date: .abbreviated, time: .omitted))" } ?? ""))
+                }
+            }
+        }
+        .scrollClipDisabled()
     }
 
     /// Calories per serving up top, the whole recipe (scaled) beneath, then the macros, then where the figures came from.

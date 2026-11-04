@@ -1,0 +1,12 @@
+{
+  "cooked_at": "2026-11-04T01:02:12.513091+00:00",
+  "id": 1,
+  "made_count": 1,
+  "note": "",
+  "photo_url": null,
+  "recipe": {
+    "id": 1,
+    "image_url": "",
+    "title": "Lemon risotto"
+  }
+}

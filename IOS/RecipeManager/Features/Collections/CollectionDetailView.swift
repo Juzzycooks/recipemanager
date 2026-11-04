@@ -122,10 +122,31 @@ struct CollectionDetailView: View {
         } catch { self.error = error.localizedDescription }
     }
 
+    /// Newer servers keep a deleted collection for 30 days (`{ok, restorable_until}`), so Undo restores it. Older ones
+    /// answer 204 with no body and can't bring it back: no Undo offered then.
     private func delete() async {
         do {
-            try await session.run { [id] in try await $0.send("DELETE", "/collections/\(id)") }
+            let body = try await session.run { [id] in try await $0.sendRaw("DELETE", "/collections/\(id)") }
+            let deleted = CollectionDeleted.read(body)
             session.recipesChanged(); dismiss()
+            guard deleted.canRestore else { return }
+            let (session, app, id) = (session, app, id)
+            await app.offerUndo("Collection deleted") {
+                await Self.restore(id, session, app)
+            }
         } catch { self.error = error.localizedDescription }
+    }
+
+    /// `POST /collections/{id}/restore`. The page is already closed, so a failure is said in the status pill.
+    private static func restore(_ id: Int, _ session: Session, _ app: AppState) async {
+        do {
+            let _: CollectionDetail = try await session.run { try await $0.send("POST", "/collections/\(id)/restore") }
+            session.recipesChanged()
+            app.say("Collection restored.")
+        } catch let APIError.server(status, _, _) where status == 404 || status == 405 {
+            app.say("This collection can't be restored any more.")
+        } catch {
+            app.say(error.localizedDescription)
+        }
     }
 }

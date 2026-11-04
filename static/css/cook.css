@@ -119,6 +119,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, label:focus-within {
 .timer-remove { min-height: 56px; min-width: 96px; padding: 0 1rem; background: var(--cook-surface-raised);
                 color: var(--cook-text); border: 0; border-radius: var(--radius-lg); font-size: var(--fs-base);
                 font-weight: 600; flex-shrink: 0; }
+.timer-extend { min-height: 56px; min-width: 96px; padding: 0 1rem; margin-left: auto; background: var(--cook-surface-raised); color: var(--cook-accent);
+                border: 2px solid var(--cook-accent); border-radius: var(--radius-lg); font-size: var(--fs-base); font-weight: 700; flex-shrink: 0; }
+.timer-extend + .timer-remove { margin-left: -0.5rem; }
 .timer-card.done { border-color: var(--cook-accent); animation: timer-flash 1s 6; }
 .timer-card.done .timer-time { color: var(--cook-accent); }
 @keyframes timer-flash { 0%, 100% { background-color: var(--cook-timer); } 50% { background-color: var(--cook-surface); } }
@@ -174,6 +177,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, label:focus-within {
 .finish-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 64px; padding: 0 2rem; border: 0; border-radius: var(--radius-lg);
                   background: var(--cook-accent-solid); color: #fff; font-size: var(--fs-lg); font-weight: 700; text-decoration: none; }
 .finish-primary:disabled { opacity: 0.7; cursor: default; }
+.finish-extras { width: 100%; max-width: 28rem; display: flex; flex-direction: column; gap: 0.4rem; text-align: left; }
+.finish-label { font-size: var(--fs-sm); font-weight: 700; color: var(--cook-muted); margin-top: 0.4rem; }
+.finish-label span { font-weight: 400; }
+.finish-extras textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--cook-line); border-radius: var(--radius-lg); background: var(--cook-inset);
+                          color: var(--cook-text); font: inherit; font-size: var(--fs-base); resize: vertical; }
+.finish-extras input[type="file"] { min-height: 48px; color: var(--cook-muted); font-size: var(--fs-sm); }
 .rate-row { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; justify-content: center; }
 .rate-label { font-size: var(--fs-base); color: var(--cook-muted); font-weight: 600; margin-right: 0.5rem; }
 .star-btn { width: 56px; height: 56px; border: 0; border-radius: var(--radius-lg); background: transparent; color: var(--cook-muted); display: inline-flex; align-items: center; justify-content: center; }

@@ -108,6 +108,11 @@ struct APIClient: Sendable {
         _ = try await data(method, path, query: query, body: body)
     }
 
+    /// The raw response body (empty for a 204), for answers whose shape depends on the server's age.
+    func sendRaw(_ method: String, _ path: String, body: (any Encodable & Sendable)? = nil) async throws -> Data {
+        try await data(method, path, query: [:], body: body)
+    }
+
     struct UploadFile: Sendable { let filename: String; let mime: String; let data: Data }
 
     /// Multipart upload of one or more files under the same field name (pictures, photo import).

@@ -32,14 +32,35 @@ enum StepIngredients {
         return h.count >= 3 ? h : nil
     }
 
+    /// Words for a part of the recipe made from its own list ("the dough", "the filling").
+    static let groups = ["dough", "batter", "mixture", "sauce", "marinade", "filling", "topping", "crumble", "glaze", "dressing",
+                         "icing", "frosting", "syrup", "paste", "custard", "base", "crust", "pastry", "streusel"]
+    private static let groupStems = Set(groups.map(stem))
+
+    /// The ingredient lines a step uses, in the recipe's order and each once: lines whose main word the step names
+    /// (preferring the step's own section), plus every line of a section the step refers to as a whole: "spread the
+    /// filling" brings in the whole "Filling" section when a heading names it (not when the step is in that section).
     static func match(step: String, section: String?, in sections: [RecipeSection]) -> [String] {
         let stepStems = Set(tokens(step).map(stem))
-        func run(_ lines: [String]) -> [String] { lines.filter { line in head(of: line).map(stepStems.contains) ?? false } }
-        if let section, !section.isEmpty {
-            let same = sections.filter { $0.heading?.lowercased() == section.lowercased() }.flatMap(\.lines)
-            let hit = run(same)
-            if !hit.isEmpty { return hit }
+        let lines = sections.enumerated().flatMap { s, sec in sec.lines.map { (section: s, line: $0) } }
+        func run(_ picked: [Int]) -> [Int] { picked.filter { head(of: lines[$0].line).map(stepStems.contains) ?? false } }
+
+        var hits: [Int] = []
+        let own = section.map { $0.lowercased() }.flatMap { $0.isEmpty ? nil : $0 }
+        if let own {
+            hits = run(lines.indices.filter { sections[lines[$0].section].heading?.lowercased() == own })
         }
-        return run(sections.flatMap(\.lines))
+        if hits.isEmpty { hits = run(Array(lines.indices)) }
+
+        let named = stepStems.intersection(groupStems)
+        if !named.isEmpty {
+            for (s, sec) in sections.enumerated() {
+                guard let heading = sec.heading, heading.lowercased() != own,
+                      !named.isDisjoint(with: tokens(heading).map(stem)) else { continue }
+                hits += lines.indices.filter { lines[$0].section == s }
+            }
+        }
+        var seen = Set<String>()
+        return Set(hits).sorted().map { lines[$0].line }.filter { seen.insert($0).inserted }
     }
 }

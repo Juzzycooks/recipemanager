@@ -1,0 +1,14 @@
+{
+  "household": {
+    "id": 1,
+    "invite_code": "V2JS-B28Z",
+    "is_owner": true,
+    "members": [
+      {
+        "id": 1,
+        "username": "sam"
+      }
+    ],
+    "name": "Home"
+  }
+}

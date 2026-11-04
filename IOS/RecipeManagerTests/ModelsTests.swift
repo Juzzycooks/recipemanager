@@ -117,7 +117,7 @@ struct ServerFixtureTests {
     }
 
     @Test func detectsTimerMinutes() {
-        #expect(CookTimer.detectMinutes(in: "Cook for 1–2 minutes until fragrant.") == 2)
+        #expect(CookTimer.detectMinutes(in: "Cook for 1–2 minutes until fragrant.") == 1)
         #expect(CookTimer.detectMinutes(in: "Simmer 20 min.") == 20)
         #expect(CookTimer.detectMinutes(in: "Bake for 1 hour") == 60)
         #expect(CookTimer.detectMinutes(in: "Stir well.") == nil)

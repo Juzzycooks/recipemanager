@@ -1,4 +1,6 @@
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 import WidgetKit
 
 /// The app's side of the widgets: writes the App Group snapshots whenever the plan or shopping list is saved, reloads
@@ -34,7 +36,89 @@ enum WidgetBridge {
         let merged = (store.plan ?? PlanSnapshot(meals: []))
             .merging(meals, from: from, to: to, today: today, keepUntil: PlanDay.key(daysFrom: now, planDays))
         copyPictures(for: merged.meals.filter { $0.date <= PlanDay.key(daysFrom: now, 1) }, store: store)
-        if store.write(plan: merged) { WidgetCenter.shared.reloadTimelines(ofKind: WidgetKind.tonight) }
+        if store.write(plan: merged) {
+            WidgetCenter.shared.reloadTimelines(ofKind: WidgetKind.tonight)
+            WidgetCenter.shared.reloadTimelines(ofKind: WidgetKind.week)
+        }
+    }
+
+    // MARK: Random recipe
+
+    /// Longest side of the Random Recipe widget's thumbnails, in pixels.
+    static let thumbnailSide = 300
+
+    /// Writes the Random Recipe widget's pool from the offline library (after each sync): up to 100 recipes, and up to
+    /// 60 per collection, each with a small JPEG made from the picture the app already downloaded. Recipes already in
+    /// the pool stay in it while they exist, so thumbnails aren't remade every time, and unused thumbnails are deleted.
+    /// Runs off the main actor (it decodes pictures).
+    nonisolated static func publishRecipePool(library: [RecipeDetail], base: URL?, store: SnapshotStore = .shared) async {
+        guard let folder = store.thumbnailsDirectory else { return }
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let previous = store.recipePool
+        var rng = SystemRandomNumberGenerator()
+        let byID = Dictionary(library.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let ids = byID.keys.sorted()
+
+        var made: [Int: PoolRecipe] = [:]
+        func entry(_ id: Int) -> PoolRecipe? {
+            if let done = made[id] { return done }
+            guard let recipe = byID[id] else { return nil }
+            let pool = PoolRecipe(id: id, title: recipe.title, image: thumbnail(for: recipe, base: base, folder: folder))
+            made[id] = pool
+            return pool
+        }
+
+        let all = RecipePoolSnapshot.select(ids, previous: previous?.all.map(\.id) ?? [], cap: RecipePoolSnapshot.allCap, using: &rng)
+            .compactMap(entry)
+        var members: [Int: (name: String, ids: [Int])] = [:]
+        for recipe in library {
+            for collection in recipe.collections { members[collection.id, default: (name: collection.name, ids: [])].ids.append(recipe.id) }
+        }
+        let collections = members.sorted { $0.value.name.localizedCaseInsensitiveCompare($1.value.name) == .orderedAscending }
+            .map { id, member in
+                let before = previous?.collections.first { $0.id == id }?.recipes.map(\.id) ?? []
+                let picked = RecipePoolSnapshot.select(member.ids.sorted(), previous: before, cap: RecipePoolSnapshot.collectionCap, using: &rng)
+                return PoolCollection(id: id, name: member.name, recipes: picked.compactMap(entry))
+            }
+
+        let snapshot = RecipePoolSnapshot(all: all, collections: collections)
+        let changed = store.write(recipePool: snapshot)
+        // Prune thumbnails nothing refers to any more (recipes dropped from the pool, pictures that changed).
+        let keep = snapshot.imageNames
+        for name in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] where !keep.contains(name) {
+            try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
+        }
+        if changed { WidgetCenter.shared.reloadTimelines(ofKind: WidgetKind.randomRecipe) }
+    }
+
+    /// The recipe's thumbnail file name, made now from the downloaded picture if it isn't there yet. Named after the
+    /// recipe and its picture's address, so a new picture gets a new file. Nil when the app has no copy of the picture.
+    private nonisolated static func thumbnail(for recipe: RecipeDetail, base: URL?, folder: URL) -> String? {
+        let path = recipe.thumbUrl.isEmpty ? recipe.imageUrl : recipe.thumbUrl
+        guard let link = WidgetMeal.resolve(path, base: base) else { return nil }
+        let name = "\(recipe.id)-\(SnapshotStore.digest(link.absoluteString).prefix(16)).jpg"
+        let target = folder.appendingPathComponent(name)
+        if FileManager.default.fileExists(atPath: target.path) { return name }
+        guard let source = ImageStore.shared.storedFile(for: link), let jpeg = smallJPEG(from: source) else { return nil }
+        do {
+            try jpeg.write(to: target, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            return name
+        } catch { return nil }
+    }
+
+    /// A JPEG no bigger than `thumbnailSide` on its longest side, decoded at that size (never the full picture).
+    nonisolated static func smallJPEG(from file: URL, side: Int = thumbnailSide) -> Data? {
+        guard let source = CGImageSourceCreateWithURL(file as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: side,
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: 0.75] as CFDictionary)
+        return CGImageDestinationFinalize(destination) ? data as Data : nil
     }
 
     /// Copies pictures the app already has into the App Group, so the widget shows them offline without downloading.

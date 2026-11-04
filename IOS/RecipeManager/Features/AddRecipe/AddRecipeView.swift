@@ -1,9 +1,10 @@
 import SwiftUI
 import PhotosUI
+import UniformTypeIdentifiers
 
-/// The Add sheet: three ways in, all ending in the editor so you can review before saving.
+/// The Add sheet: four ways in, all ending in the editor so you can review before saving.
 struct AddRecipeView: View {
-    private enum Step: Hashable { case url, photo, manual, review(ReviewBox) }
+    private enum Step: Hashable { case url, photo, pdf, manual, review(ReviewBox) }
     /// `ImportPreview` isn't Hashable; boxing it by identity lets it ride in the navigation path.
     struct ReviewBox: Hashable {
         let id = UUID(); let preview: ImportPreview
@@ -21,6 +22,7 @@ struct AddRecipeView: View {
                 VStack(spacing: Spacing.m) {
                     ActionCard(symbol: "link", title: "Import from a URL", subtitle: "Paste a link from any recipe site") { path.append(.url) }
                     ActionCard(symbol: "camera", title: "Scan from a photo", subtitle: "Snap a picture of a recipe") { path.append(.photo) }
+                    ActionCard(symbol: "doc.richtext", title: "Import a PDF", subtitle: "A recipe saved as a PDF in Files") { path.append(.pdf) }
                     ActionCard(symbol: "square.and.pencil", title: "Add manually", subtitle: "Enter the details yourself") { path.append(.manual) }
                 }
                 .screenPadding().padding(.top, Spacing.xl)
@@ -34,6 +36,7 @@ struct AddRecipeView: View {
                 switch step {
                 case .url: ImportURLView { path.append(.review(ReviewBox(preview: $0))) }
                 case .photo: PhotoImportView { path.append(.review(ReviewBox(preview: $0))) }
+                case .pdf: PDFImportView { path.append(.review(ReviewBox(preview: $0))) }
                 case .manual: editor(.create)
                 case .review(let box): editor(.imported(box.preview))
                 }
@@ -250,6 +253,115 @@ struct PhotoImportView: View {
                 problem = ImportProblem(title: images.count == 1 ? "Couldn't read the photo" : "Couldn't read the photos",
                                         detail: error.localizedDescription,
                                         next: "Try a sharper, well-lit picture with the text straight on, one page per photo.", retry: scan)
+            }
+        }
+    }
+}
+
+// MARK: Import a PDF
+
+/// Picks a PDF from Files (or any document provider) and has the server read it (`POST /import/pdf`, one file in
+/// `pdf_files`), which returns the same draft as a link import. Scanned PDFs have no text; the photo import reads those.
+struct PDFImportView: View {
+    @Environment(Session.self) private var session
+    let onPreview: (ImportPreview) -> Void
+    @State private var choosing = false
+    @State private var picked: PickedPDF?
+    @State private var isWorking = false
+    @State private var problem: ImportProblem?
+
+    struct PickedPDF: Equatable { let name: String; let data: Data }
+
+    /// The server's upload limit is generous, but a recipe PDF is rarely more than a few megabytes.
+    static let maxBytes = 20 << 20
+
+    var body: some View {
+        VerticalScroll {
+            VStack(alignment: .leading, spacing: Spacing.m) {
+                Text("Choose a PDF of a recipe. We'll read the ingredients and method, and you can check them before saving.")
+                    .foregroundStyle(AppColors.textSecondary)
+                let tint = AppColors.primary
+                Button { choosing = true } label: {
+                    Label(picked == nil ? "Choose a PDF" : "Choose a different PDF", systemImage: "folder")
+                        .fontWeight(.semibold).foregroundStyle(tint)
+                        .frame(maxWidth: .infinity, minHeight: 52).background(AppColors.surface, in: RoundedRectangle(cornerRadius: Radius.field))
+                }
+                .buttonStyle(.plain)
+                .disabled(isWorking)
+                if let picked {
+                    Label(picked.name, systemImage: "doc.richtext").font(.subheadline).foregroundStyle(AppColors.textPrimary)
+                        .lineLimit(2).accessibilityLabel("Chosen file: \(picked.name)")
+                }
+                if let problem { ImportProblemView(problem: problem) }
+                if picked != nil {
+                    PrimaryButton(title: isWorking ? "Reading the PDF…" : "Import recipe", systemImage: "doc.text.magnifyingglass",
+                                  isLoading: isWorking, action: upload)
+                        .disabled(isWorking)
+                }
+                Text("PDFs with real text work best. For a scanned page, use Scan from a photo instead.")
+                    .font(.footnote).foregroundStyle(AppColors.textSecondary)
+            }
+            .screenPadding().padding(.top, Spacing.m)
+        }
+        .background(AppColors.background)
+        .navigationTitle("Import a PDF").navigationBarTitleDisplayMode(.inline)
+        .fileImporter(isPresented: $choosing, allowedContentTypes: [.pdf]) { result in
+            switch result {
+            case .success(let url): read(url)
+            case .failure(let error):
+                problem = ImportProblem(title: "Couldn't open that file", detail: error.localizedDescription,
+                                        next: "Try choosing it again, or save it to On My iPhone first.", retry: nil)
+            }
+        }
+        .onAppear { if picked == nil && problem == nil { choosing = true } }
+    }
+
+    /// Files outside the app's sandbox (iCloud Drive, other apps' folders) are readable only inside a security scope.
+    private func read(_ url: URL) {
+        problem = nil
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            guard data.count <= Self.maxBytes else {
+                picked = nil
+                problem = ImportProblem(title: "That PDF is too big", detail: nil,
+                                        next: "Choose a PDF under \(Self.maxBytes >> 20) MB, or just the pages with the recipe.", retry: nil)
+                return
+            }
+            picked = PickedPDF(name: url.lastPathComponent, data: Data(data))
+            upload()
+        } catch {
+            picked = nil
+            problem = ImportProblem(title: "Couldn't open that file", detail: error.localizedDescription,
+                                    next: "If it's in iCloud Drive, make sure it has downloaded, then try again.", retry: nil)
+        }
+    }
+
+    private func upload() {
+        guard let picked, !isWorking else { return }
+        let name = picked.name.lowercased().hasSuffix(".pdf") ? picked.name : picked.name + ".pdf"
+        let file = APIClient.UploadFile(filename: name, mime: "application/pdf", data: picked.data)
+        isWorking = true; problem = nil
+        Task {
+            defer { isWorking = false }
+            do {
+                let preview: ImportPreview = try await session.run {
+                    try await $0.upload("POST", "/import/pdf", field: "pdf_files", files: [file])
+                }
+                onPreview(preview)
+            } catch let e as APIError where e.isOffline {
+                problem = ImportProblem(title: "You're offline", detail: nil,
+                                        next: "Reading a PDF happens on your server. Connect to the internet, then try again.", retry: upload)
+            } catch let APIError.server(status, _, message) where status == 413 {
+                problem = ImportProblem(title: "That PDF is too big for your server", detail: message,
+                                        next: "Try a smaller PDF, or just the pages with the recipe.", retry: nil)
+            } catch let APIError.server(_, code, message) where code == "import_failed" {
+                problem = ImportProblem(title: "Couldn't find a recipe in that PDF", detail: message,
+                                        next: "If it's a scan, use Scan from a photo with screenshots of the pages.", retry: nil)
+            } catch {
+                problem = ImportProblem(title: "Couldn't read that PDF", detail: error.localizedDescription,
+                                        next: "Check your connection and try again.", retry: upload)
             }
         }
     }

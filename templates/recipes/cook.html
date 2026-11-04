@@ -97,6 +97,12 @@
                 <svg class="finish-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>
                 <h2>Done. Nice work.</h2>
                 <p>Log it so you remember when you last made {{ recipe.title }}.</p>
+                <div class="finish-extras">
+                    <label for="made-note" class="finish-label">Note <span>(optional)</span></label>
+                    <textarea id="made-note" rows="3" maxlength="5000" placeholder="How did it go? Anything to change next time?" data-made-note></textarea>
+                    <label for="made-photo" class="finish-label">Photo <span>(optional)</span></label>
+                    <input type="file" id="made-photo" accept="image/*" data-made-photo>
+                </div>
                 <button type="button" class="finish-primary" data-made>I made this</button>
                 <div class="rate-row" role="group" aria-label="Rate this recipe">
                     <span class="rate-label">How was it?</span>

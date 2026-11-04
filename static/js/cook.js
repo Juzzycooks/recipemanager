@@ -29,7 +29,11 @@
   }
   function unitRank(u) { u = u.toLowerCase(); return u[0] === 'h' ? 3 : u[0] === 'm' ? 2 : 1; }
 
-  /* "simmer for 10 minutes", "marinate 3-4 hrs", "1 hour 30 minutes" -> [{minutes, maxMinutes, text}] */
+  var OVERNIGHT_RE = /\bovernight\b/gi;
+  var DOUBLED_RE = /until\s+(?:it\s+)?(?:has\s+)?doubled?s?(?:\s+in\s+(?:size|bulk))?/i;
+
+  /* "simmer for 10 minutes", "marinate 3-4 hrs", "1 hour 30 minutes", "overnight", "until doubled"
+     -> [{minutes, maxMinutes, text, approx}] in the order they appear. `approx` marks the rough ones. */
   function findDurations(text) {
     var found = [], m;
     DURATION_RE.lastIndex = 0;
@@ -54,8 +58,20 @@
         start: m.index, end: m.index + m[0].length, rank: unitRank(unit), text: m[0].trim()
       });
     }
-    return found.filter(function (d) { return d.minutes > 0 && d.minutes <= 72 * 60; })
-      .map(function (d) { return { minutes: d.minutes, maxMinutes: d.maxMinutes, text: d.text }; });
+    found = found.filter(function (d) { return d.minutes > 0 && d.minutes <= 72 * 60; });
+    // Rough waits with no number: "overnight" is 8-12 hours. "Until doubled" is about 1-1½ hours,
+    // but only when the step gives no proper time of its own ("rise 1-2 hours until doubled").
+    var plain = found.length;
+    OVERNIGHT_RE.lastIndex = 0;
+    while ((m = OVERNIGHT_RE.exec(text))) {
+      found.push({ minutes: 480, maxMinutes: 720, start: m.index, text: m[0], approx: true });
+    }
+    if (!plain) {
+      DOUBLED_RE.lastIndex = 0;
+      if ((m = DOUBLED_RE.exec(text))) found.push({ minutes: 60, maxMinutes: 90, start: m.index, text: m[0], approx: true });
+    }
+    return found.sort(function (a, b) { return a.start - b.start; })
+      .map(function (d) { return { minutes: d.minutes, maxMinutes: d.maxMinutes, text: d.text, approx: !!d.approx }; });
   }
 
   function fmtMinutes(m) {
@@ -90,7 +106,12 @@
     return { head: stem(words[words.length - 1]), words: words.map(stem) };
   }
 
-  /* Which ingredients does this step mention? Prefers ingredients from the same "# Section". */
+  /* Words for a group of ingredients made earlier: "spread the filling" means everything under "# Filling". */
+  var GROUP = ('dough batter mixture sauce marinade filling topping crumble glaze dressing icing frosting syrup paste ' +
+    'custard base crust pastry streusel').split(' ').map(stem);
+
+  /* Which ingredients does this step mention? Prefers ingredients from the same "# Section".
+     A group word ("the dough") that names another section brings in that whole section. */
   function matchIngredients(stepText, ingredients, section) {
     var stepStems = {};
     tokens(stepText).forEach(function (w) { stepStems[stem(w)] = true; });
@@ -101,11 +122,25 @@
       });
     }
     var out = [];
+    var own = (section || '').toLowerCase();
     if (section) {
-      var sec = ingredients.filter(function (i) { return i.section && i.section.toLowerCase() === section.toLowerCase(); });
+      var sec = ingredients.filter(function (i) { return i.section && i.section.toLowerCase() === own; });
       out = run(sec);
     }
-    return out.length ? out : run(ingredients);
+    if (!out.length) out = run(ingredients);
+
+    var groups = GROUP.filter(function (g) { return stepStems[g]; });
+    if (!groups.length) return out;
+    var picked = out.slice();
+    ingredients.forEach(function (ing) {
+      if (!ing.section || picked.indexOf(ing) !== -1) return;
+      var heading = ing.section.toLowerCase();
+      if (heading === own) return;
+      var words = tokens(heading).map(stem);
+      if (groups.some(function (g) { return words.indexOf(g) !== -1; })) picked.push(ing);
+    });
+    if (picked.length === out.length) return out;
+    return ingredients.filter(function (ing) { return picked.indexOf(ing) !== -1; });
   }
 
   if (typeof module !== 'undefined' && module.exports) {
@@ -144,6 +179,11 @@
     return out;
   }
 
+  /* "overnight" -> "Overnight · about 8 hr" */
+  function approxLabel(d) {
+    return d.text.charAt(0).toUpperCase() + d.text.slice(1) + ' \u00b7 about ' + fmtMinutes(d.minutes);
+  }
+
   function renderStepExtras(stepEl) {
     var text = stepEl.querySelector('.step-text').textContent;
     var chips = stepEl.querySelector('[data-chips]'), needs = stepEl.querySelector('[data-needs]');
@@ -156,11 +196,12 @@
         b.type = 'button'; b.className = 'timer-chip';
         b.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7.5"/><path d="M12 9v4l2.5 1.5M9.5 3h5"/></svg>';
         var label = document.createElement('span');
-        label.textContent = 'Start ' + fmtMinutes(d.minutes) + ' timer';
+        var name = d.approx ? approxLabel(d) : fmtMinutes(d.minutes);
+        label.textContent = d.approx ? name : 'Start ' + name + ' timer';
         b.appendChild(label);
-        if (d.maxMinutes > d.minutes) b.title = 'The recipe says ' + d.text + '; this starts the shorter time';
+        if (d.maxMinutes > d.minutes) b.title = 'The recipe says ' + d.text + '; this starts the shorter time, and offers the rest when it ends';
         b.addEventListener('click', function () {
-          window.startTimer(d.minutes, 'Step ' + n + ': ' + fmtMinutes(d.minutes));
+          window.startTimer(d.minutes, 'Step ' + n + ': ' + name, d.maxMinutes - d.minutes);
           announce('Timer started for ' + fmtMinutes(d.minutes) + '.');
         });
         chips.appendChild(b);
@@ -239,11 +280,21 @@
 
   /* Timers */
   var timers = [], timerId = 0;
-  window.startTimer = function (minutes, label) {
-    var t = { id: ++timerId, label: label, endTime: Date.now() + minutes * 60000, interval: null, done: false };
+  /* `extra`: for a range ("2-3 hours") the timer runs the low end, then offers the rest as "+1 hr". */
+  window.startTimer = function (minutes, label, extra) {
+    var t = { id: ++timerId, label: label, endTime: Date.now() + minutes * 60000, interval: null, done: false,
+              extra: extra > 0 ? extra : 0 };
     t.interval = setInterval(function () { tick(t); }, 250);
     timers.push(t); renderTimers(); updatePill();
   };
+  function extendTimer(t) {
+    var more = t.extra; if (!(more > 0)) return;
+    t.extra = 0; t.done = false; t.endTime = Date.now() + more * 60000;
+    clearInterval(t.interval);
+    t.interval = setInterval(function () { tick(t); }, 250);
+    renderTimers(); updatePill();
+    announce('Added ' + fmtMinutes(more) + '.');
+  }
   window.startCustomTimer = function () {
     var h = parseInt($('custom-hr').value, 10) || 0, m = parseInt($('custom-min').value, 10) || 0, s = parseInt($('custom-sec').value, 10) || 0;
     var total = h * 60 + m + s / 60; if (total <= 0) return;
@@ -288,7 +339,15 @@
       var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'timer-remove'; rm.textContent = 'Remove';
       rm.setAttribute('aria-label', 'Remove timer ' + t.label);
       rm.addEventListener('click', function () { window.removeTimer(t.id); });
-      card.appendChild(info); card.appendChild(rm); c.appendChild(card);
+      card.appendChild(info);
+      if (t.done && t.extra > 0) {
+        var more = document.createElement('button'); more.type = 'button'; more.className = 'timer-extend';
+        more.textContent = '+' + fmtMinutes(t.extra);
+        more.setAttribute('aria-label', 'Add ' + fmtMinutes(t.extra) + ' to ' + t.label);
+        more.addEventListener('click', function () { extendTimer(t); });
+        card.appendChild(more);
+      }
+      card.appendChild(rm); c.appendChild(card);
     });
   }
   function updatePill() {
@@ -346,8 +405,16 @@
   var made = fin && fin.querySelector('[data-made]');
   if (made) made.addEventListener('click', function () {
     made.disabled = true;
-    post(fin.dataset.madeUrl).then(function (r) {
-      if (!r.ok) throw new Error(); made.textContent = 'Logged'; announce('Logged. Enjoy!');
+    var note = fin.querySelector('[data-made-note]'), photo = fin.querySelector('[data-made-photo]');
+    var fd = new FormData();
+    if (note && note.value.trim()) fd.append('note', note.value.trim());
+    if (photo && photo.files && photo.files[0]) fd.append('photo', photo.files[0]);
+    fetch(fin.dataset.madeUrl, { method: 'POST', credentials: 'same-origin', body: fd,
+                                 headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'fetch' } }).then(function (r) {
+      if (r.status === 422) { made.disabled = false; announce('That photo can’t be used. Try a JPEG or PNG, or leave it out.'); return; }
+      if (!r.ok) throw new Error();
+      made.textContent = 'Logged'; announce('Logged. Enjoy!');
+      if (note) note.disabled = true; if (photo) photo.disabled = true;
     }).catch(function () { made.disabled = false; announce('Couldn’t log that. Check your connection and try again.'); });
   });
   fin && fin.querySelectorAll('[data-score]').forEach(function (b) {

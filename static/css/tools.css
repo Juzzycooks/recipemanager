@@ -108,6 +108,8 @@
 .shop-name { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.1rem 0.6rem; padding: 0.4rem 0.25rem;
         font-size: var(--fs-base); font-weight: 500; overflow-wrap: anywhere; }
 .shop-name .badge { font-weight: 500; }
+.shop-by { font-size: var(--fs-xs); font-weight: 400; color: var(--text-tertiary); }
+.shop-household { font-size: var(--fs-sm); margin: -0.25rem 0 0.75rem; }
 .shop-find { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--radius); color: var(--text-tertiary); }
 .shop-find:hover { background: var(--accent-subtle); color: var(--accent); }
 @media (pointer: coarse) { .shop-find { width: 44px; height: 44px; } }
@@ -261,3 +263,29 @@
     .stat-grid .stat-value { font-size: 1.75rem; }
     .stat-grid .stat-label { letter-spacing: 0.02em; }
 }
+
+/* Profile: household */
+.household-code { font-family: ui-monospace, Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+.household-members { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.household-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* Cook history: a timeline of cooks, each with an optional photo and note */
+.cook-timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.cook-entry { display: flex; gap: 1rem; align-items: flex-start; background: var(--surface); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm); padding: 1rem; }
+.cook-entry-photo { flex: none; width: 6rem; height: 6rem; border-radius: var(--radius); overflow: hidden; background: var(--border-light); }
+.cook-entry-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cook-entry-photo.is-recipe { opacity: 0.7; }
+.cook-entry-body { flex: 1; min-width: 0; }
+.cook-entry-date { margin: 0; font-size: var(--fs-xs); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.cook-entry-title { margin: 0.15rem 0 0; font-family: var(--font-display); font-size: var(--fs-lg); line-height: 1.25; }
+.cook-entry-title a { color: inherit; text-decoration: none; }
+.cook-entry-title a:hover { text-decoration: underline; }
+.cook-entry-note { margin: 0.4rem 0 0; white-space: pre-line; overflow-wrap: anywhere; color: var(--text-secondary); }
+.cook-entry-edit { margin-top: 0.6rem; }
+.cook-entry-edit > summary { list-style: none; }
+.cook-entry-edit > summary::-webkit-details-marker { display: none; }
+.cook-entry-edit[open] > summary { margin-bottom: 0.75rem; }
+.cook-entry-edit form + form { margin-top: 0.75rem; }
+.cook-more { display: flex; justify-content: center; margin-top: 1rem; }
+@media (max-width: 480px) { .cook-entry-photo { width: 4.5rem; height: 4.5rem; } }

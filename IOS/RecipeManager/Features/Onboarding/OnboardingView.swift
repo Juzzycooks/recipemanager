@@ -23,6 +23,7 @@ struct OnboardingView: View {
                     .font(.body).multilineTextAlignment(.center).foregroundStyle(AppColors.textSecondary)
                 Spacer(minLength: Spacing.xl)
                 PrimaryButton(title: "Sign in") { showingSignIn = true }
+                    .accessibilityIdentifier("onboarding.signIn")
                     .padding(.bottom, Spacing.m)
             }
             .multilineTextAlignment(.center)

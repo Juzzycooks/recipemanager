@@ -24,9 +24,10 @@ enum SystemTimer {
     static let burstCount = 6
 
     /// `name` is what the cook called this timer ("Pasta", "Step 3"); several can be scheduled at once, each under its own id.
-    static func schedule(id: UUID, seconds: Int, name: String, recipeTitle: String) async -> Outcome {
+    /// `extraMinutes` > 0 (a range timer) adds a "+N min" button to the alarm that runs the rest of the range.
+    static func schedule(id: UUID, seconds: Int, name: String, recipeTitle: String, extraMinutes: Int = 0) async -> Outcome {
         if #available(iOS 26.1, *) {
-            switch await scheduleAlarm(id: id, seconds: seconds, name: name, recipeTitle: recipeTitle) {
+            switch await scheduleAlarm(id: id, seconds: seconds, name: name, recipeTitle: recipeTitle, extraMinutes: extraMinutes) {
             case .some(let outcome): return outcome
             case .none: break   // AlarmKit refused; try notifications
             }
@@ -51,7 +52,7 @@ enum SystemTimer {
     // MARK: AlarmKit
 
     @available(iOS 26.1, *)
-    private static func scheduleAlarm(id: UUID, seconds: Int, name: String, recipeTitle: String) async -> Outcome? {
+    private static func scheduleAlarm(id: UUID, seconds: Int, name: String, recipeTitle: String, extraMinutes: Int) async -> Outcome? {
         let manager = AlarmManager.shared
         if manager.authorizationState == .notDetermined {
             do { _ = try await manager.requestAuthorization() }
@@ -62,15 +63,24 @@ enum SystemTimer {
             return nil
         }
 
+        // A range timer ("2–3 hours", started at 2) offers the rest of the range from the alert itself.
+        let alert = extraMinutes > 0
+            ? AlarmPresentation.Alert(title: "\(name): time's up",
+                                      secondaryButton: AlarmButton(text: "+\(extraMinutes) min", textColor: .white, systemImageName: "plus"),
+                                      secondaryButtonBehavior: .custom)
+            : AlarmPresentation.Alert(title: "\(name): time's up")
+        let extend = extraMinutes > 0
+            ? ExtendKitchenTimerIntent(alarmID: id.uuidString, minutes: extraMinutes, name: name, recipeTitle: recipeTitle) : nil
         let presentation = AlarmPresentation(
-            alert: AlarmPresentation.Alert(title: "\(name): time's up"),
+            alert: alert,
             countdown: AlarmPresentation.Countdown(title: LocalizedStringResource(stringLiteral: name)),
             paused: nil)
         // `detail` carries the timer's name, so the Live Activity can tell "Pasta" from "Sauce".
         let attributes = AlarmAttributes(presentation: presentation,
                                          metadata: TimerMetadata(recipeTitle: recipeTitle, detail: name),
                                          tintColor: ThemeStore.shared.theme.tint)
-        let configuration = AlarmManager.AlarmConfiguration.timer(duration: TimeInterval(seconds), attributes: attributes, sound: .default)
+        let configuration = AlarmManager.AlarmConfiguration.timer(duration: TimeInterval(seconds), attributes: attributes,
+                                                                  secondaryIntent: extend, sound: .default)
         do {
             _ = try await manager.schedule(id: id, configuration: configuration)
             return .alarm

@@ -40,10 +40,16 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Spoonmate adds your planned meals to the calendar you choose, and updates them when you export the week again.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo of what you cooked to keep with your cook history. Photos go only to your own recipe server.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Spoonmate connects to the recipe server you choose. If it runs on your home network, iOS asks for this permission so the app can reach it.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Hands-free cook mode listens for commands like “next step” while you cook. It only listens while cook mode is open and hands-free is on.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Spoonmate adds your shopping list to a Reminders list called “Spoonmate shopping”, and ticks items off there when you tick them in the app.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Hands-free cook mode turns what you say into commands. This happens on your iPhone; your voice is never sent anywhere.</string>
 	<key>NSSupportsLiveActivities</key>
