@@ -16,7 +16,7 @@ A working guide for the first submission. It covers what is already done in the 
 | Area | State |
 |:--|:--|
 | Devices | iPhone only (`TARGETED_DEVICE_FAMILY = 1` for the app and both extensions); portrait only; not offered on Apple-silicon Macs or Vision Pro |
-| Version | 1.1.0 (build 14; 1.0.0 was build 11), read from `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` by the app **and** both extensions (they must match or validation fails) |
+| Version | 1.1.0 (build 15; 1.0.0 was build 11), read from `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` by the app **and** both extensions (they must match or validation fails) |
 | Icon | 1024 px light, dark and tinted, no transparency |
 | Privacy manifest | `PrivacyInfo.xcprivacy`: no tracking, no data collected, UserDefaults reason `CA92.1` |
 | Permission texts | Alarms, Local Network (app and share extension), Microphone and Speech Recognition (hands-free cook mode, asked only when turned on); Photos uses the system picker, so no permission is needed |

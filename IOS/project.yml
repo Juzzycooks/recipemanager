@@ -11,7 +11,7 @@ settings:
     STRING_CATALOG_GENERATE_SYMBOLS: YES
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "1.1.0"
-    CURRENT_PROJECT_VERSION: "14"
+    CURRENT_PROJECT_VERSION: "15"
     CODE_SIGN_STYLE: Automatic
     # DEVELOPMENT_TEAM is set per target below (app, ShareExtension, TimerWidget); the test bundle has none.
     TARGETED_DEVICE_FAMILY: "1"                 # iPhone only (the iPad layout has not been designed or tested)
